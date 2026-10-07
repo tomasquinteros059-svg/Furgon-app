@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furgón Escolar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: tablero de despacho — mapa del recorrido a la izquierda, los dos teléfonos (conductor y apoderado) a la derecha, bitácora debajo. */
+:root {
+  --bg: #ECEFF2;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7F9;
+  --ink: #15202B;
+  --muted: #5A6573;
+  --line: #D3D9E0;
+  --road: #C4CBD3;
+  --bus: #F5B700;
+  --bus-ink: #2A2100;
+  --navy: #16324F;
+  --ok: #1D7F45;
+  --alert: #C4281C;
+  --alert-soft: #FCE9E7;
+  --ok-soft: #E4F3EA;
+  --bus-soft: #FFF4CC;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E141A; --surface: #17212A; --surface-2: #1D2832; --ink: #E7ECF1; --muted: #95A2B0;
+    --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --navy: #8DB8E6;
+    --ok: #4DC47F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --ok-soft: #15301F; --bus-soft: #3A3010;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E141A; --surface: #17212A; --surface-2: #1D2832; --ink: #E7ECF1; --muted: #95A2B0;
+  --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --navy: #8DB8E6;
+  --ok: #4DC47F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --ok-soft: #15301F; --bus-soft: #3A3010;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; padding: 20px 16px 40px; }
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 { font-size: 34px; line-height: 1; }
+h2 { font-size: 20px; text-transform: uppercase; letter-spacing: .06em; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--bus); outline-offset: 2px; }
+
+/* Cabecera */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.marca { display: flex; align-items: center; gap: 12px; }
+.placa { background: var(--bus); color: var(--bus-ink); font-family: var(--font-display); font-weight: 700; font-size: 15px; padding: 4px 10px; border-radius: 4px; border: 2px solid var(--bus-ink); letter-spacing: .08em; }
+.sub { color: var(--muted); max-width: 62ch; margin: 6px 0 0; }
+
+/* Controles */
+.controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.btn { border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 700; background: var(--navy); color: var(--surface); }
+.btn.bus { background: var(--bus); color: var(--bus-ink); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink); padding: 7px 11px; font-weight: 700; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; user-select: none; }
+.chk input { width: 18px; height: 18px; accent-color: var(--navy); }
+.grupo { display: inline-flex; align-items: center; gap: 6px; }
+.etq { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+
+/* Grilla principal */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
+@media (max-width: 1080px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+.cifras { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-bottom: 10px; }
+.cifra { display: flex; flex-direction: column; }
+.cifra b { font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+.cifra span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.mapa { width: 100%; height: auto; display: block; border-radius: 8px; background: var(--surface-2); }
+.leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.leyenda i { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; }
+
+/* Teléfonos */
+.telefonos { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.tel { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.tel > .etq { text-align: center; }
+.pantalla { position: relative; height: 600px; background: var(--surface); border: 10px solid var(--ink); border-radius: 34px; overflow: hidden; display: flex; flex-direction: column; }
+.barra { display: flex; justify-content: space-between; padding: 8px 16px 4px; font-size: 12px; font-family: var(--font-mono); color: var(--muted); }
+.app { flex: 1; overflow-y: auto; padding: 4px 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.app h3 { font-size: 22px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.chip.alerta { background: var(--alert-soft); color: var(--alert); border-color: transparent; }
+.chip.bus { background: var(--bus-soft); color: var(--ink); border-color: transparent; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.parada { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+.parada.actual { border: 2px solid var(--bus); }
+.parada.hecha { opacity: .6; }
+.parada .nom { font-weight: 700; font-size: 17px; }
+.parada .dir { font-size: 13px; color: var(--muted); }
+.acciones { display: grid; grid-template-columns: 2fr 1fr; gap: 6px; }
+.grande { border: 0; border-radius: 10px; min-height: 52px; font-weight: 700; font-size: 16px; color: #fff; }
+.grande.ok { background: var(--ok); }
+.grande.no { background: var(--alert); }
+.grande:disabled { opacity: .4; cursor: not-allowed; }
+.nota { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+
+.pestanas { display: flex; gap: 4px; padding: 0 12px; }
+.pestanas button { flex: 1; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 8px; padding: 6px 4px; font-size: 13px; font-weight: 700; position: relative; }
+.pestanas button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.pestanas .badge { position: absolute; top: -6px; right: -4px; background: var(--alert); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; }
+.hijo { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.estado { border-radius: 8px; padding: 8px 10px; font-size: 14px; background: var(--surface-2); }
+.estado.bus { background: var(--bus-soft); }
+.estado.ok { background: var(--ok-soft); }
+.fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.sw { position: relative; width: 40px; height: 22px; flex: none; }
+.sw input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+.sw span { position: absolute; inset: 0; background: var(--road); border-radius: 999px; transition: background .15s; pointer-events: none; }
+.sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.sw input:checked + span { background: var(--alert); }
+.sw input:checked + span::after { transform: translateX(18px); }
+.sw input:disabled + span { opacity: .4; }
+.minimapa { border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.minimapa svg { display: block; width: 100%; height: auto; background: var(--surface-2); }
+.privado { font-size: 12px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+.notif { border-radius: 10px; padding: 8px 10px; background: var(--surface-2); font-size: 13px; }
+.notif b { display: block; font-size: 14px; }
+.notif.alarma { background: var(--alert-soft); }
+.notif.ok { background: var(--ok-soft); }
+.notif small { color: var(--muted); font-family: var(--font-mono); }
+.btn-sm { border: 0; border-radius: 8px; padding: 8px 10px; font-weight: 700; background: var(--ok); color: #fff; font-size: 14px; }
+
+/* Banner de push y llamada entrante */
+.banner { position: absolute; left: 8px; right: 8px; top: 30px; z-index: 5; border-radius: 14px; padding: 10px 12px; background: var(--surface); border: 2px solid var(--alert); box-shadow: 0 10px 30px rgba(0,0,0,.25); cursor: pointer; }
+.banner.ok { border-color: var(--ok); }
+.banner .app-n { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.banner b { display: block; }
+@media (prefers-reduced-motion: no-preference) {
+  .banner { animation: baja .35s ease-out; }
+  .banner.alarma-on { animation: baja .35s ease-out, vibra .5s linear .35s 3; }
+  .van-marker { transition: none; }
+}
+@keyframes baja { from { transform: translateY(-120%); } to { transform: none; } }
+@keyframes vibra { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.llamada { position: absolute; inset: 0; z-index: 6; background: var(--navy); color: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 18px 28px; text-align: center; }
+.llamada .quien { font-family: var(--font-display); font-size: 30px; }
+.llamada .voz { background: rgba(255,255,255,.12); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.llamada .teclas { display: flex; gap: 18px; }
+.tecla { width: 72px; height: 72px; border-radius: 50%; border: 0; font-weight: 700; font-size: 14px; color: #fff; }
+.tecla.uno { background: #1D7F45; font-size: 26px; }
+.tecla.colgar { background: #C4281C; }
+.llamada small { opacity: .8; }
+
+/* Bitácora */
+.bitacora { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+.bitacora li { display: grid; grid-template-columns: 74px 22px minmax(0, 1fr); gap: 6px; padding: 5px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.bitacora li.aviso { background: var(--alert-soft); }
+.bitacora li.ok { background: var(--ok-soft); }
+.bitacora .h { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+.dos { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .dos { grid-template-columns: minmax(0, 1fr); } }
+.claves { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.claves li { max-width: 65ch; }
+a { color: var(--navy); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="marca"><span class="placa">DEMO·11</span><h1>Furgón Escolar</h1></div>
+      <p class="sub">Simulación interactiva del prototipo. El furgón avanza solo por una ruta en Santiago y, cuando le quedan unos 5 minutos para llegar a una casa, el apoderado recibe la alarma y la llamada sin que el conductor toque el teléfono.</p>
+    </div>
+  </header>
+
+  <section class="controles" aria-label="Controles de la simulación">
+    <button class="btn bus" id="btnPlay">▶ Iniciar recorrido</button>
+    <button class="btn ghost" id="btnReset">Reiniciar</button>
+    <span class="grupo"><span class="etq">Recorrido</span>
+      <span class="seg" id="segTipo"><button data-v="vuelta" aria-pressed="true">Vuelta</button><button data-v="ida" aria-pressed="false">Ida</button></span></span>
+    <span class="grupo"><span class="etq">Velocidad</span>
+      <span class="seg" id="segVel"><button data-v="10" aria-pressed="false">×10</button><button data-v="30" aria-pressed="true">×30</button><button data-v="60" aria-pressed="false">×60</button></span></span>
+    <label class="chk"><input type="checkbox" id="chkSenal"> Sin señal</label>
+    <label class="chk"><input type="checkbox" id="chkApi"> Falla la API de mapas</label>
+    <label class="chk"><input type="checkbox" id="chkAuto" checked> Entregar automáticamente</label>
+    <label class="chk"><input type="checkbox" id="chkSonido" checked> Sonido</label>
+  </section>
+
+  <div class="main">
+    <section class="panel" aria-label="Mapa del recorrido">
+      <div class="cifras">
+        <div class="cifra"><b id="cReloj">16:30:00</b><span>Hora simulada</span></div>
+        <div class="cifra"><b id="cSig">—</b><span>Próxima casa</span></div>
+        <div class="cifra"><b id="cEta">—</b><span>ETA (<span id="cFuente">ruta con tráfico</span>)</span></div>
+        <div class="cifra"><b id="cAvisos">0</b><span>Avisos enviados</span></div>
+        <div class="cifra"><b id="cPos">0</b><span>Posiciones recibidas</span></div>
+        <div class="cifra"><b id="cCola">0</b><span>En cola sin señal</span></div>
+      </div>
+      <svg class="mapa" id="mapa" viewBox="0 0 1000 640" role="img" aria-label="Mapa con la ruta del furgón y las casas de los alumnos"></svg>
+      <div class="leyenda">
+        <span><i style="border-color: var(--navy)"></i>Recorrido hecho</span>
+        <span><i style="border-color: var(--road); border-top-style: dashed"></i>Por recorrer</span>
+        <span><i style="border-color: var(--alert); border-top-style: dotted"></i>Geocerca de respaldo (≈1,4 km)</span>
+        <span><i style="border-color: var(--bus)"></i>Radio de proximidad (300 m)</span>
+      </div>
+    </section>
+
+    <div class="telefonos">
+      <div class="tel">
+        <span class="etq">Teléfono del conductor</span>
+        <div class="pantalla" id="telConductor"></div>
+      </div>
+      <div class="tel">
+        <span class="etq">Teléfono del apoderado</span>
+        <div class="pantalla" id="telApoderado"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dos">
+    <section class="panel" aria-label="Bitácora">
+      <h2>Bitácora del sistema</h2>
+      <p class="muted" style="margin: 4px 0 10px; font-size: 13px;">Lo que hace el servidor con cada lote de posiciones. Lo más reciente aparece arriba.</p>
+      <ul class="bitacora" id="bitacora"></ul>
+    </section>
+    <section class="panel" aria-label="Qué probar">
+      <h2>Qué probar</h2>
+      <ul class="claves" style="margin-top: 10px;">
+        <li><b>Aviso único.</b> Cada alumno recibe un solo aviso por recorrido, aunque el ETA suba y baje.</li>
+        <li><b>Llamada con confirmación.</b> Si no presionas 1, el sistema vuelve a llamar a los 30 s y después llama al contacto secundario.</li>
+        <li><b>Sin señal.</b> Activa “Sin señal” unos segundos: las posiciones quedan en cola y se reenvían al recuperarla.</li>
+        <li><b>API caída.</b> Con “Falla la API de mapas”, el ETA pasa a la geocerca de respaldo.</li>
+        <li><b>Privacidad.</b> El apoderado ve el furgón solo desde el aviso de su hijo hasta la entrega.</li>
+        <li><b>Hoy no viaja.</b> Desde el teléfono del apoderado, el alumno se salta en la ruta.</li>
+        <li><b>Entrega manual.</b> Desactiva “Entregar automáticamente” y marca desde el teléfono del conductor.</li>
+      </ul>
+      <p class="muted" style="font-size: 13px; margin-top: 12px;">La lógica de disparo es la misma del prototipo (ETA acumulado por la ruta, ventana de 5 min + 30 s, radio de 300 m). El código está en la rama <a href="https://github.com/tomasquinteros059-svg/Furgon-app/tree/ccr-56babac3-pakmvc" target="_blank" rel="noopener">ccr-56babac3-pakmvc</a>.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Datos de la demo (mismos del simulador) ----------
+  const COLEGIO = { lat: -33.4565, lng: -70.5978, nombre: "Colegio (Plaza Ñuñoa)" };
+  const BASE = { lat: -33.4705, lng: -70.6130, nombre: "Base del furgón" };
+  const ALUMNOS = [
+    { id: "sofia", nombre: "Sofía", apellido: "Pérez", apoderado: "ana", direccion: "Av. Ossa 1200, La Reina", lat: -33.4495, lng: -70.5560 },
+    { id: "matias", nombre: "Matías", apellido: "Soto", apoderado: "luis", direccion: "Av. Tomás Moro 300, Las Condes", lat: -33.4180, lng: -70.5540 },
+    { id: "isidora", nombre: "Isidora", apellido: "Rojas", apoderado: "ana", direccion: "Av. Pedro de Valdivia 900, Providencia", lat: -33.4260, lng: -70.6100 },
+  ];
+  const APODERADOS = {
+    ana: { nombre: "Ana Pérez", corto: "Ana", tel: "+56 9 1111 1111", secundario: "Pedro (abuelo)", telSec: "+56 9 2222 2222" },
+    luis: { nombre: "Luis Soto", corto: "Luis", tel: "+56 9 3333 3333", secundario: "Carmen (tía)", telSec: "+56 9 4444 4444" },
+  };
+  const CFG = { margen: 30, velocidadKmh: 30, respaldoKmh: 20, factorCalles: 1.3, parada: 60, proximidad: 300, gpsCada: 10, detencion: 30, sonando: 25, reintento: 30 };
+
+  // ---------- Geometría ----------
+  const R = 6371000, rad = (g) => g * Math.PI / 180;
+  function dist(a, b) {
+    const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  function trazar(puntos) {
+    const r = [];
+    puntos.forEach((p, i) => { if (i > 0) r.push({ lat: puntos[i - 1].lat, lng: p.lng }); r.push(p); });
+    return r;
+  }
+  const lngMin = -70.6185, lngMax = -70.5480, latMin = -33.4745, latMax = -33.4130;
+  const mPorLng = 111195 * Math.cos(rad(-33.445)), mPorLat = 111195;
+  const anchoM = (lngMax - lngMin) * mPorLng, altoM = (latMax - latMin) * mPorLat;
+  const esc = Math.min(960 / anchoM, 600 / altoM);
+  const ox = (1000 - anchoM * esc) / 2, oy = (640 - altoM * esc) / 2;
+  const px = (p) => ({ x: ox + (p.lng - lngMin) * mPorLng * esc, y: oy + (latMax - p.lat) * mPorLat * esc });
+
+  // ---------- Estado ----------
+  let S;
+  const ui = { tipo: "vuelta", vel: 30, corriendo: false, verApoderado: "ana", banner: {} };
+
+  function nuevoEstado(tipo) {
+    const orden = tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
+    const puntos = tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden];
+    const ruta = trazar(puntos);
+    const acum = [0];
+    for (let i = 1; i < ruta.length; i++) acum.push(acum[i - 1] + dist(ruta[i - 1], ruta[i]));
+    const paradas = orden.map((a, j) => ({
+      ...a, minutos: 5, dRuta: acum[2 * (j + 1)], estado: "pendiente",
+      avisado: false, avisoT: null, confirmado: false, eta: null, entregaT: null,
+    }));
+    return {
+      tipo, ruta, acum, largo: acum[acum.length - 1], paradas,
+      t: 0, d: 0, detenidoEn: null, detenidoDesde: 0, terminado: false, iniciado: false,
+      cola: 0, recibidas: 0, avisos: 0, fuente: "eta",
+      llamadas: [], notifs: { ana: [], luis: [] }, log: [],
+    };
+  }
+
+  function puntoEn(d) {
+    const { acum, ruta } = S;
+    let i = acum.findIndex((a) => a >= d);
+    if (i <= 0) i = 1;
+    if (d >= S.largo) return ruta[ruta.length - 1];
+    const t = (d - acum[i - 1]) / ((acum[i] - acum[i - 1]) || 1);
+    return { lat: ruta[i - 1].lat + (ruta[i].lat - ruta[i - 1].lat) * t, lng: ruta[i - 1].lng + (ruta[i].lng - ruta[i - 1].lng) * t };
+  }
+
+  const horaBase = () => (S.tipo === "ida" ? 7 * 3600 : 16 * 3600 + 30 * 60);
+  function hhmmss(t) { const s = Math.floor(horaBase() + t); return [s / 3600, (s % 3600) / 60, s % 60].map((n) => String(Math.floor(n)).padStart(2, "0")).join(":"); }
+  const hhmm = (t) => hhmmss(t).slice(0, 5);
+  const nombreCompleto = (p) => `${p.nombre} ${p.apellido}`;
+
+  function log(icono, texto, clase = "") {
+    S.log.unshift({ t: S.t, icono, texto, clase });
+    if (S.log.length > 120) S.log.pop();
+  }
+
+  // ---------- Lógica de disparo (igual al prototipo) ----------
+  function evaluar(pos) {
+    const pend = S.paradas.filter((p) => p.estado === "pendiente");
+    const api = !document.getElementById("chkApi").checked;
+    S.fuente = api ? "eta" : "geocerca";
+    const v = CFG.velocidadKmh / 3.6, vr = CFG.respaldoKmh / 3.6;
+    let acumRecta = 0, previo = pos;
+    pend.forEach((p, i) => {
+      if (api) {
+        // "Routes API": distancia real por la ruta / velocidad + detenciones intermedias
+        p.eta = Math.max(0, (p.dRuta - S.d) / v) + i * CFG.parada;
+      } else {
+        acumRecta += dist(previo, p); previo = p;
+        p.eta = (acumRecta * CFG.factorCalles) / vr + i * CFG.parada;
+      }
+    });
+    for (const p of pend) {
+      if (p.avisado) continue;
+      const cerca = dist(pos, p) <= CFG.proximidad;
+      if (cerca || p.eta <= p.minutos * 60 + CFG.margen) disparar(p, cerca ? "proximidad" : S.fuente);
+    }
+  }
+
+  function textoCuando(p, motivo) {
+    if (motivo === "proximidad" || p.eta < 90) return "está por llegar";
+    const m = Math.max(1, Math.round(p.eta / 60));
+    return `llegará en aproximadamente ${m} ${m === 1 ? "minuto" : "minutos"}`;
+  }
+
+  function disparar(p, motivo) {
+    if (p.avisado) return; // restricción UNIQUE (recorrido, alumno)
+    p.avisado = true; p.avisoT = S.t; S.avisos++;
+    const cuando = textoCuando(p, motivo);
+    const cuerpo = S.tipo === "ida"
+      ? `El furgón ${cuando} a buscar a ${nombreCompleto(p)}. Por favor, que esté listo.`
+      : `El furgón ${cuando} con ${nombreCompleto(p)}. Por favor, que alguien esté esperando en casa.`;
+    const titulo = S.tipo === "ida" ? `🚐 Furgón en camino a buscar a ${p.nombre}` : `🚐 ${p.nombre} llega pronto a casa`;
+    const fuenteTxt = { eta: "ETA con tráfico", geocerca: "geocerca de respaldo", proximidad: "a menos de 300 m" }[motivo];
+    log("🔔", `Aviso para ${nombreCompleto(p)} (${fuenteTxt}, ETA ${mmss(p.eta)}). Se envía la push con alarma a ${APODERADOS[p.apoderado].nombre} y se inicia la llamada.`, "aviso");
+    notificar(p.apoderado, { tipo: "aviso", titulo, cuerpo, paradaId: p.id });
+    alarma();
+    S.llamadas.push({ parada: p, intento: 1, contacto: "principal", fase: "sonando", hasta: S.t + CFG.sonando, voz: cuerpo.replace(" Por favor, que esté listo.", "") });
+    log("📞", `Llamada 1 a ${APODERADOS[p.apoderado].nombre} (${APODERADOS[p.apoderado].tel}).`);
+  }
+
+  function notificar(apoderado, n) {
+    S.notifs[apoderado].unshift({ ...n, t: S.t });
+    ui.banner[apoderado] = { ...n, hastaReal: performance.now() + 7000 };
+  }
+
+  // ---------- Escalera de llamadas ----------
+  function detenerLlamadasDe(p, motivo) {
+    for (const ll of S.llamadas) {
+      if (ll.parada === p && ll.fase !== "fin") { ll.fase = "fin"; ll.resultado = motivo; }
+    }
+  }
+
+  function avanzarLlamadas() {
+    for (const ll of S.llamadas) {
+      if (ll.fase === "fin") continue;
+      const p = ll.parada, a = APODERADOS[p.apoderado];
+      if (p.estado !== "pendiente" || p.confirmado) { ll.fase = "fin"; continue; }
+      if (ll.fase === "esperando" && S.t >= ll.hasta) {
+        ll.fase = "sonando"; ll.hasta = S.t + CFG.sonando;
+        log("📞", ll.contacto === "principal" ? `Llamada ${ll.intento}: reintento a ${a.nombre}.` : `Llamada ${ll.intento} al contacto secundario: ${a.secundario} (${a.telSec}).`);
+      }
+      if (ll.fase === "sonando" && ll.contacto === "secundario" && S.t >= ll.hasta - 15) {
+        // El contacto secundario no está en esta demo: se simula que contesta y presiona 1.
+        confirmar(p, `${a.secundario} contestó y presionó 1`);
+      } else if (ll.fase === "sonando" && S.t >= ll.hasta) {
+        log("✖️", `${ll.contacto === "principal" ? a.nombre : a.secundario} no contestó la llamada ${ll.intento}.`);
+        if (ll.contacto === "principal" && ll.intento === 1) {
+          Object.assign(ll, { intento: 2, fase: "esperando", hasta: S.t + CFG.reintento });
+          log("⏳", `Reintento a ${a.nombre} programado en 30 s.`);
+        } else if (ll.contacto === "principal") {
+          Object.assign(ll, { intento: 3, contacto: "secundario", fase: "esperando", hasta: S.t });
+        } else {
+          ll.fase = "fin"; log("⚠️", `Se agotaron los contactos de ${nombreCompleto(p)}.`);
+        }
+      }
+    }
+  }
+
+  function confirmar(p, como) {
+    if (p.confirmado) return;
+    p.confirmado = true;
+    detenerLlamadasDe(p, "confirmada");
+    log("✅", `Aviso de ${nombreCompleto(p)} confirmado (${como}). Se cancelan los reintentos.`, "ok");
+  }
+
+  // ---------- Paradas ----------
+  function marcar(p, estado) {
+    if (p.estado !== "pendiente") return;
+    p.estado = estado; p.entregaT = S.t;
+    detenerLlamadasDe(p, "detenido");
+    const verbo = estado === "ausente" ? "marcado ausente" : S.tipo === "ida" ? "subió al furgón" : "llegó a casa";
+    log(estado === "ausente" ? "🚫" : "🏠", `${nombreCompleto(p)} ${verbo} a las ${hhmm(S.t)}. Push de confirmación al apoderado.`, "ok");
+    notificar(p.apoderado, {
+      tipo: estado,
+      titulo: estado === "ausente" ? `${p.nombre}: marcado ausente` : S.tipo === "ida" ? `✅ ${p.nombre} subió al furgón` : `✅ ${p.nombre} llegó a casa`,
+      cuerpo: estado === "ausente" ? `El conductor marcó a ${nombreCompleto(p)} como ausente a las ${hhmm(S.t)}.`
+        : S.tipo === "ida" ? `${nombreCompleto(p)} subió al furgón a las ${hhmm(S.t)}.` : `${nombreCompleto(p)} llegó a casa a las ${hhmm(S.t)}.`,
+      paradaId: p.id,
+    });
+    if (S.detenidoEn === p) S.detenidoEn = null;
+  }
+
+  function noViaja(p, valor) {
+    if (valor && p.estado === "pendiente") {
+      p.estado = "no_viaja"; detenerLlamadasDe(p, "detenido");
+      log("📅", `${APODERADOS[p.apoderado].nombre} marcó “hoy no viaja” para ${nombreCompleto(p)}. Se salta en la ruta.`);
+      if (S.detenidoEn === p) S.detenidoEn = null;
+    } else if (!valor && p.estado === "no_viaja" && S.d < p.dRuta) {
+      p.estado = "pendiente";
+      log("📅", `${nombreCompleto(p)} vuelve a la ruta de hoy.`);
+    }
+    render();
+  }
+
+  // ---------- Simulación ----------
+  function paso() {
+    if (S.terminado) return;
+    S.t += 1;
+    const v = CFG.velocidadKmh / 3.6;
+    const objetivo = S.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= S.d - 1);
+    if (S.detenidoEn) {
+      if (document.getElementById("chkAuto").checked && S.t - S.detenidoDesde >= CFG.detencion) marcar(S.detenidoEn, "entregado");
+    } else {
+      const tope = objetivo ? objetivo.dRuta : S.largo;
+      S.d = Math.min(tope, S.d + v);
+      if (objetivo && S.d >= objetivo.dRuta) {
+        S.detenidoEn = objetivo; S.detenidoDesde = S.t;
+        log("🅿️", `El furgón llegó donde ${nombreCompleto(objetivo)}.`);
+      }
+    }
+    if (S.t % CFG.gpsCada === 0) gps();
+    avanzarLlamadas();
+    const quedan = S.paradas.some((p) => p.estado === "pendiente");
+    if (!quedan && !S.detenidoEn && S.d >= S.largo) {
+      S.terminado = true; ui.corriendo = false;
+      if (S.cola) gps(true);
+      log("🏁", `Recorrido finalizado a las ${hhmm(S.t)}. El GPS del conductor se detiene y nadie puede ver más la ubicación.`);
+    }
+  }
+
+  function gps(forzar = false) {
+    const sinSenal = document.getElementById("chkSenal").checked && !forzar;
+    if (sinSenal) { S.cola++; return; }
+    const lote = S.cola + 1;
+    if (S.cola > 0) log("📶", `Volvió la señal: se reenvían ${lote} posiciones guardadas en cola (los duplicados se ignoran). Solo la más reciente se usa para decidir.`);
+    S.cola = 0; S.recibidas += lote;
+    evaluar(puntoEn(S.d));
+  }
+
+  const mmss = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+  // ---------- Sonido ----------
+  let audio = null;
+  function alarma() {
+    if (!document.getElementById("chkSonido").checked) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audio.currentTime;
+      [880, 1175, 1568, 880, 1175, 1568].forEach((f, i) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "square"; o.frequency.value = f;
+        const t = t0 + i * 0.22;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.08, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        o.connect(g).connect(audio.destination); o.start(t); o.stop(t + 0.2);
+      });
+    } catch (e) { /* sin audio */ }
+  }
+
+  // ---------- Render ----------
+  const $ = (id) => document.getElementById(id);
+  let presionando = false;
+  addEventListener("pointerdown", () => { presionando = true; }, true);
+  addEventListener("pointerup", () => { setTimeout(() => { presionando = false; }, 0); }, true);
+  addEventListener("pointercancel", () => { presionando = false; }, true);
+  const previo = {};
+  function pintar(el, html, forzar) {
+    if (previo[el.id] === html) return;
+    if (presionando && !forzar) return;
+    previo[el.id] = html; el.innerHTML = html;
+  }
+  const esc_ = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function renderMapa() {
+    const svg = $("mapa");
+    const pts = S.ruta.map(px);
+    const hecho = [], i0 = S.acum.findIndex((a) => a >= S.d);
+    for (let i = 0; i < pts.length && (i0 === -1 || i < i0); i++) hecho.push(pts[i]);
+    const van = px(puntoEn(S.d));
+    hecho.push(van);
+    const kmPx = 1000 * esc;
+    let calles = "";
+    for (let x = ox % (kmPx / 2); x < 1000; x += kmPx / 2) calles += `<line x1="${x}" y1="0" x2="${x}" y2="640" />`;
+    for (let y = oy % (kmPx / 2); y < 640; y += kmPx / 2) calles += `<line x1="0" y1="${y}" x2="1000" y2="${y}" />`;
+    const siguiente = S.paradas.find((p) => p.estado === "pendiente" && !p.avisado);
+    const rGeo = (((5 * 60 + CFG.margen) * CFG.respaldoKmh / 3.6) / CFG.factorCalles) * esc;
+    const casas = S.paradas.map((p, j) => {
+      const c = px(p);
+      const col = p.estado === "entregado" ? "var(--ok)" : p.estado === "pendiente" ? (p.avisado ? "var(--alert)" : "var(--navy)") : "var(--muted)";
+      const etiqueta = `${j + 1}. ${p.nombre}${p.estado === "no_viaja" ? " · no viaja" : p.estado === "ausente" ? " · ausente" : p.estado === "entregado" ? " ✓" : p.avisado ? " · avisado" : ""}`;
+      const izq = c.x > 820;
+      return `
+        ${siguiente === p ? `<circle cx="${c.x}" cy="${c.y}" r="${rGeo}" fill="none" stroke="var(--alert)" stroke-width="1.5" stroke-dasharray="3 5" opacity=".7"/>` : ""}
+        <circle cx="${c.x}" cy="${c.y}" r="${CFG.proximidad * esc}" fill="var(--bus)" fill-opacity=".14" stroke="var(--bus)" stroke-width="1.5"/>
+        <path d="M${c.x - 11} ${c.y + 2} L${c.x} ${c.y - 10} L${c.x + 11} ${c.y + 2} L${c.x + 8} ${c.y + 2} L${c.x + 8} ${c.y + 11} L${c.x - 8} ${c.y + 11} L${c.x - 8} ${c.y + 2} Z" fill="${col}" stroke="var(--surface)" stroke-width="2"/>
+        <text x="${c.x + (izq ? -16 : 16)}" y="${c.y + 5}" text-anchor="${izq ? "end" : "start"}" font-family="var(--font-body)" font-size="24" font-weight="700" fill="var(--ink)" paint-order="stroke" stroke="var(--surface-2)" stroke-width="5">${esc_(etiqueta)}</text>`;
+    }).join("");
+    const col = px(COLEGIO), base = px(BASE);
+    svg.innerHTML = `
+      <g stroke="var(--line)" stroke-width="1">${calles}</g>
+      <polyline points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--road)" stroke-width="7" stroke-dasharray="2 10" stroke-linecap="round"/>
+      <polyline points="${hecho.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="${col.x - 12}" y="${col.y - 12}" width="24" height="24" rx="4" fill="var(--ink)"/>
+      <text x="${col.x}" y="${col.y + 6}" text-anchor="middle" font-size="15" fill="var(--surface)" font-family="var(--font-display)" font-weight="700">C</text>
+      <text x="${col.x + 18}" y="${col.y + 34}" font-family="var(--font-body)" font-size="21" fill="var(--muted)">${esc_(COLEGIO.nombre)}</text>
+      ${S.tipo === "ida" ? `<circle cx="${base.x}" cy="${base.y}" r="7" fill="var(--muted)"/><text x="${base.x + 12}" y="${base.y + 5}" font-size="21" fill="var(--muted)" font-family="var(--font-body)">${BASE.nombre}</text>` : ""}
+      ${casas}
+      <g class="van-marker" transform="translate(${van.x} ${van.y})">
+        <rect x="-24" y="-15" width="48" height="30" rx="7" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2.5"/>
+        <rect x="-13" y="-7" width="10" height="7" rx="1.5" fill="var(--bus-ink)" opacity=".75"/>
+        <rect x="1" y="-7" width="10" height="7" rx="1.5" fill="var(--bus-ink)" opacity=".75"/>
+        ${$("chkSenal").checked ? `<text x="0" y="-22" text-anchor="middle" font-size="22" font-weight="700" fill="var(--alert)" font-family="var(--font-body)">sin señal</text>` : ""}
+      </g>
+      <g transform="translate(${1000 - 30 - kmPx} 616)">
+        <line x1="0" y1="0" x2="${kmPx}" y2="0" stroke="var(--ink)" stroke-width="3"/>
+        <line x1="0" y1="-6" x2="0" y2="6" stroke="var(--ink)" stroke-width="2"/><line x1="${kmPx}" y1="-6" x2="${kmPx}" y2="6" stroke="var(--ink)" stroke-width="2"/>
+        <text x="${kmPx / 2}" y="-8" text-anchor="middle" font-size="20" fill="var(--ink)" font-family="var(--font-mono)">1 km</text>
+      </g>`;
+  }
+
+  function renderCifras() {
+    $("cReloj").textContent = hhmmss(S.t);
+    const sig = S.paradas.find((p) => p.estado === "pendiente");
+    $("cSig").textContent = sig ? `${sig.nombre} · ${((sig.dRuta - S.d) / 1000).toFixed(1)} km` : S.terminado ? "Fin" : "—";
+    $("cEta").textContent = sig && sig.eta != null && S.iniciado ? mmss(sig.eta) : "—";
+    $("cFuente").textContent = S.fuente === "eta" ? "ruta con tráfico" : "geocerca de respaldo";
+    $("cAvisos").textContent = S.avisos;
+    $("cPos").textContent = S.recibidas;
+    $("cCola").textContent = S.cola;
+  }
+
+  function renderConductor() {
+    const el = $("telConductor");
+    const barra = `<div class="barra"><span>${hhmm(S.t)}</span><span>${$("chkSenal").checked ? "sin señal" : "4G ▮▮▮"}</span></div>`;
+    if (!S.iniciado) {
+      pintar(el, `${barra}<div class="app">
+        <h3>Hola, Jorge</h3>
+        <div class="nota">Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas.</div>
+        <div class="parada"><span class="nom">${S.tipo === "ida" ? "🌅 Ida mañana" : "🏠 Vuelta tarde"}</span>
+          <span class="dir">${S.tipo === "ida" ? "Casa → colegio · 07:00" : "Colegio → casa · 16:30"} · 3 alumnos</span>
+          <button class="grande ok" data-acc="iniciar" style="background: var(--navy)">Iniciar recorrido</button></div>
+      </div>`);
+      return;
+    }
+    const pend = S.paradas.filter((p) => p.estado === "pendiente");
+    const hechas = S.paradas.filter((p) => p.estado !== "pendiente");
+    const ok = S.tipo === "ida" ? "Subió ✅" : "Entregado ✅";
+    pintar(el, `${barra}<div class="app">
+      <h3>${S.tipo === "ida" ? "Recorrido de ida" : "Recorrido de vuelta"}</h3>
+      <div class="chips">
+        ${S.terminado ? `<span class="chip">GPS detenido</span>` : $("chkSenal").checked
+          ? `<span class="chip alerta"><span class="dot"></span>Sin señal · ${S.cola} en cola</span>`
+          : `<span class="chip ok"><span class="dot"></span>Compartiendo ubicación</span>`}
+        ${S.detenidoEn ? `<span class="chip bus">Detenido donde ${esc_(S.detenidoEn.nombre)}</span>` : ""}
+      </div>
+      ${pend.map((p, i) => `<div class="parada ${i === 0 ? "actual" : ""}">
+          <span class="nom">${S.paradas.indexOf(p) + 1}. ${esc_(nombreCompleto(p))}</span>
+          <span class="dir">${esc_(p.direccion)}</span>
+          <span class="dir">${p.avisado ? "🔔 Apoderado avisado" : "Aún sin aviso"}${p.eta != null ? ` · llegada en ~${Math.max(1, Math.round(p.eta / 60))} min` : ""}</span>
+          <div class="acciones"><button class="grande ok" data-acc="entregado" data-id="${p.id}">${ok}</button><button class="grande no" data-acc="ausente" data-id="${p.id}">Ausente</button></div>
+        </div>`).join("")}
+      ${pend.length === 0 ? `<div class="nota">${S.terminado ? "Recorrido finalizado." : "No quedan alumnos pendientes. Rumbo al final de la ruta."}</div>` : ""}
+      ${hechas.length ? `<span class="etq">Atendidos</span>` : ""}
+      ${hechas.map((p) => `<div class="parada hecha"><span>${S.paradas.indexOf(p) + 1}. ${esc_(nombreCompleto(p))} · ${{ entregado: S.tipo === "ida" ? "Subió ✅" : "Entregado ✅", ausente: "Ausente", no_viaja: "Hoy no viaja" }[p.estado]}</span></div>`).join("")}
+    </div>`);
+  }
+
+  function miniMapa(p) {
+    const a = puntoEn(S.d), dx = (p.lng - a.lng) * mPorLng, dy = (p.lat - a.lat) * mPorLat;
+    const span = Math.max(600, Math.abs(dx) * 2.4, Math.abs(dy) * 2.4 * (260 / 140));
+    const k = 260 / span, cx = 130 - (dx * k) / 2, cy = 70 + (dy * k) / 2;
+    const h = { x: cx + dx * k, y: cy - dy * k };
+    return `<div class="minimapa"><svg viewBox="0 0 260 140" role="img" aria-label="Ubicación del furgón respecto de la casa">
+      <line x1="${cx}" y1="${cy}" x2="${h.x}" y2="${h.y}" stroke="var(--road)" stroke-width="4" stroke-dasharray="3 6" stroke-linecap="round"/>
+      <path d="M${h.x - 9} ${h.y + 2} L${h.x} ${h.y - 8} L${h.x + 9} ${h.y + 2} L${h.x + 6} ${h.y + 2} L${h.x + 6} ${h.y + 9} L${h.x - 6} ${h.y + 9} L${h.x - 6} ${h.y + 2} Z" fill="var(--navy)"/>
+      <rect x="${cx - 14}" y="${cy - 9}" width="28" height="18" rx="5" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/>
+      <text x="8" y="132" font-size="12" fill="var(--muted)" font-family="var(--font-body)">En vivo · ${(dist(a, p) / 1000).toFixed(1)} km</text>
+    </svg></div>`;
+  }
+
+  function renderApoderado() {
+    const el = $("telApoderado");
+    const ap = ui.verApoderado, A = APODERADOS[ap];
+    const hijos = S.paradas.filter((p) => p.apoderado === ap);
+    const llamada = S.llamadas.find((l) => l.fase === "sonando" && l.contacto === "principal" && l.parada.apoderado === ap);
+    const otro = ap === "ana" ? "luis" : "ana";
+    const llamadaOtro = S.llamadas.some((l) => l.fase === "sonando" && l.contacto === "principal" && l.parada.apoderado === otro);
+    const sinLeer = (k) => (ui.banner[k] && ui.banner[k].hastaReal > performance.now() ? 1 : 0) || (S.llamadas.some((l) => l.fase === "sonando" && l.contacto === "principal" && l.parada.apoderado === k) ? 1 : 0);
+    const b = ui.banner[ap];
+    const bannerVivo = b && b.hastaReal > performance.now();
+    pintar(el, `
+      <div class="barra"><span>${hhmm(S.t)}</span><span>${esc_(A.corto)}</span></div>
+      <div class="pestanas" role="group" aria-label="Elegir apoderado">
+        ${["ana", "luis"].map((k) => `<button data-acc="ver" data-id="${k}" aria-pressed="${k === ap}">${APODERADOS[k].nombre}${k !== ap && sinLeer(k) ? `<span class="badge">${llamadaOtro && k === otro ? "📞" : "1"}</span>` : ""}</button>`).join("")}
+      </div>
+      <div class="app">
+        <h3>Hola, ${esc_(A.corto)}</h3>
+        ${hijos.map((p) => {
+          let estado, clase = "";
+          if (!S.iniciado) estado = "Te avisaremos cuando el furgón esté cerca.";
+          else if (p.estado === "entregado") { estado = `${S.tipo === "ida" ? "Subió al furgón" : "Llegó a casa"} a las ${hhmm(p.entregaT)} ✅`; clase = "ok"; }
+          else if (p.estado === "ausente") estado = "Marcado ausente por el conductor";
+          else if (p.estado === "no_viaja") estado = "Hoy no viaja";
+          else if (p.avisado) { estado = `🔔 Llega en ~${Math.max(1, Math.round(p.eta / 60))} min (aviso ${hhmm(p.avisoT)})`; clase = "bus"; }
+          else estado = `${S.tipo === "ida" ? "🌅 Recorrido de ida" : "🏠 Recorrido de vuelta"} en curso. Te avisaremos cuando el furgón esté cerca.`;
+          const verMapa = S.iniciado && p.avisado && p.estado === "pendiente" && !S.terminado;
+          const bloqueado = p.estado !== "pendiente" && p.estado !== "no_viaja" || (p.estado === "no_viaja" && S.d >= p.dRuta);
+          return `<div class="hijo">
+            <span class="nom" style="font-weight: 700; font-size: 17px;">${esc_(nombreCompleto(p))}</span>
+            <div class="estado ${clase}">${estado}</div>
+            ${verMapa ? miniMapa(p) : S.iniciado && p.estado === "pendiente" ? `<div class="privado">🔒 El furgón aparece en el mapa solo desde tu aviso hasta la entrega.</div>` : ""}
+            ${p.avisado && !p.confirmado && p.estado === "pendiente" ? `<button class="btn-sm" data-acc="recibido" data-id="${p.id}">Recibido, estoy atento/a</button>` : ""}
+            <div class="fila"><span>Hoy no viaja (${S.tipo})</span>
+              <label class="sw"><input type="checkbox" id="nv-${p.id}" data-acc="noviaja" data-id="${p.id}" ${p.estado === "no_viaja" ? "checked" : ""} ${bloqueado ? "disabled" : ""} aria-label="Hoy no viaja ${esc_(p.nombre)}"><span></span></label></div>
+            <span class="dir" style="font-size: 12px; color: var(--muted);">Aviso 5 min antes · ${esc_(p.direccion)}</span>
+          </div>`;
+        }).join("")}
+        ${S.notifs[ap].length ? `<span class="etq">Notificaciones</span>` : ""}
+        ${S.notifs[ap].slice(0, 6).map((n) => `<div class="notif ${n.tipo === "aviso" ? "alarma" : "ok"}"><b>${esc_(n.titulo)}</b>${esc_(n.cuerpo)} <small>${hhmm(n.t)}</small></div>`).join("")}
+      </div>
+      ${bannerVivo && !llamada ? `<div class="banner ${b.tipo === "aviso" ? "alarma-on" : "ok"}" data-acc="banner" data-id="${b.paradaId}" role="button" tabindex="0">
+        <span class="app-n">${b.tipo === "aviso" ? "🔊 Furgón Escolar · alarma" : "Furgón Escolar"}</span><b>${esc_(b.titulo)}</b>${esc_(b.cuerpo)}</div>` : ""}
+      ${llamada ? `<div class="llamada" role="dialog" aria-label="Llamada entrante">
+        <div><small>Llamada automática · intento ${llamada.intento}</small><div class="quien">Furgón Escolar</div><small>+56 2 2123 4567</small></div>
+        <div class="voz">🗣️ “Hola. Le avisamos del furgón escolar. ${esc_(llamada.voz.replace(/^El furgón/, "El furgón"))} Para confirmar que recibió este aviso, presione 1.”</div>
+        <div><div class="teclas"><button class="tecla uno" data-acc="uno" data-id="${llamada.parada.id}">1</button><button class="tecla colgar" data-acc="colgar" data-id="${llamada.parada.id}">Colgar</button></div>
+        <small style="display:block; margin-top: 10px;">Si no presionas 1, cuenta como no contestada · ${Math.max(0, llamada.hasta - S.t)} s</small></div>
+      </div>` : ""}`);
+  }
+
+  function renderLog() {
+    pintar($("bitacora"), S.log.length ? S.log.map((e) => `<li class="${e.clase}"><span class="h">${hhmmss(e.t)}</span><span>${e.icono}</span><span>${esc_(e.texto)}</span></li>`).join("")
+      : `<li><span class="h">${hhmmss(0)}</span><span>🚐</span><span>Pulsa “Iniciar recorrido”. El furgón sale ${S.tipo === "ida" ? "de su base a buscar a tres alumnos" : "del colegio a dejar a tres alumnos"}.</span></li>`, true);
+  }
+
+  function render() {
+    renderMapa(); renderCifras(); renderConductor(); renderApoderado(); renderLog();
+    $("btnPlay").textContent = S.terminado ? "Recorrido terminado" : ui.corriendo ? "⏸ Pausar" : S.iniciado ? "▶ Continuar" : "▶ Iniciar recorrido";
+    $("btnPlay").disabled = S.terminado;
+    document.querySelectorAll("#segTipo button").forEach((b) => { b.disabled = S.iniciado; b.setAttribute("aria-pressed", String(b.dataset.v === S.tipo)); });
+  }
+
+  // ---------- Interacción ----------
+  function iniciar() {
+    if (S.terminado) return;
+    if (!S.iniciado) {
+      S.iniciado = true;
+      log("▶️", `Jorge inicia el recorrido de ${S.tipo}. El teléfono empieza a enviar su posición cada ${CFG.gpsCada} s.`);
+      const sinViaje = S.paradas.filter((p) => p.estado === "no_viaja");
+      if (sinViaje.length) log("📅", `Se salta a: ${sinViaje.map(nombreCompleto).join(", ")} (hoy no viaja).`);
+      gps();
+      try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {}
+    }
+    ui.corriendo = !ui.corriendo;
+    render();
+  }
+
+  $("btnPlay").addEventListener("click", iniciar);
+  $("btnReset").addEventListener("click", () => { S = nuevoEstado(ui.tipo); ui.corriendo = false; ui.banner = {}; render(); });
+  $("segTipo").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b || S.iniciado) return;
+    ui.tipo = b.dataset.v; S = nuevoEstado(ui.tipo); render();
+  });
+  $("segVel").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    ui.vel = Number(b.dataset.v);
+    document.querySelectorAll("#segVel button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+  ["chkSenal", "chkApi"].forEach((id) => $(id).addEventListener("change", () => {
+    if (id === "chkSenal") log($(id).checked ? "📵" : "📶", $(id).checked ? "El furgón entra a una zona sin señal. Las posiciones se guardan en el teléfono." : "Señal recuperada.");
+    if (id === "chkApi") log($(id).checked ? "⚠️" : "🗺️", $(id).checked ? "La API de mapas no responde: el ETA pasa a la geocerca de respaldo." : "La API de mapas responde otra vez.");
+    render();
+  }));
+
+  function porId(id) { return S.paradas.find((p) => p.id === id); }
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-acc]"); if (!el || el.tagName === "INPUT") return;
+    const acc = el.dataset.acc, p = porId(el.dataset.id);
+    if (acc === "iniciar") { if (!ui.corriendo) iniciar(); }
+    else if (acc === "entregado" || acc === "ausente") marcar(p, acc);
+    else if (acc === "ver") ui.verApoderado = el.dataset.id;
+    else if (acc === "recibido") confirmar(p, `${APODERADOS[p.apoderado].corto} tocó “Recibido” en la app`);
+    else if (acc === "banner") { ui.banner[ui.verApoderado] = null; if (p && p.avisado) confirmar(p, `${APODERADOS[p.apoderado].corto} abrió la notificación`); }
+    else if (acc === "uno") confirmar(p, `${APODERADOS[p.apoderado].corto} contestó y presionó 1`);
+    else if (acc === "colgar") {
+      const ll = S.llamadas.find((l) => l.parada === p && l.fase === "sonando");
+      if (ll) ll.hasta = S.t; // cuenta como no contestada
+    }
+    render();
+  });
+  document.addEventListener("change", (e) => {
+    const el = e.target; if (el.dataset && el.dataset.acc === "noviaja") noViaja(porId(el.dataset.id), el.checked);
+  });
+
+  // Bucle: paso fijo de 1 s simulado.
+  let ultimo = performance.now(), acum = 0, ultimoRender = 0;
+  function bucle(ahora) {
+    const dt = Math.min(0.25, (ahora - ultimo) / 1000); ultimo = ahora;
+    if (ui.corriendo && !S.terminado) {
+      acum += dt * ui.vel;
+      while (acum >= 1 && !S.terminado) { paso(); acum -= 1; }
+    }
+    if (ahora - ultimoRender > 120) { render(); ultimoRender = ahora; }
+    requestAnimationFrame(bucle);
+  }
+
+  S = nuevoEstado("vuelta");
+  render();
+  requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>
