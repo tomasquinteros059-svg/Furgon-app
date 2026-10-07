@@ -417,6 +417,23 @@ table.det td.mono { font-size: 12px; }
     ],
   };
   const nombreDe = (id) => ALUMNOS.find((a) => a.id === id)?.nombre ?? "—";
+  // Conexiones con familias: la tía aparece en la búsqueda de las familias (si quiere) y
+  // encuentra a una familia solo con su correo o teléfono exactos.
+  const CONEX = {
+    visible: true, comunas: "Ñuñoa, La Reina, Providencia", resultado: null,
+    familias: [ // familias con cuenta en la app (no se pueden listar: solo búsqueda exacta)
+      { id: "ana", nombre: "Ana Pérez", email: "ana.perez@correo.cl", tel: "+56911111111" },
+      { id: "carla", nombre: "Carla Muñoz", email: "carla@correo.cl", tel: "+56944441212" },
+      { id: "rocio", nombre: "Rocío Torres", email: "rocio@correo.cl", tel: "+56966664545" },
+    ],
+    lista: [
+      { familia: "rocio", estado: "pendiente", inicio: "familia", mensaje: "Hola tía, Josefa entra a kínder en el Colegio Demo. ¿Tiene cupo en la vuelta?", hijos: [] },
+      { familia: "ana", estado: "aceptada", inicio: "tia", hijos: ["Sofía", "Isidora"] },
+    ],
+  };
+  const famDe = (id) => CONEX.familias.find((f) => f.id === id);
+  const conexPendientes = () => CONEX.lista.filter((c) => c.estado === "pendiente" && c.inicio === "familia");
+  const telNorm = (t) => { let d = String(t).replace(/\D/g, ""); if (d.length === 9 && d.startsWith("9")) d = "56" + d; return d; };
   const pesosTxt = (n) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
   const nuevoCodigo = () => Math.random().toString(16).slice(2, 10).toUpperCase().padEnd(8, "0");
   const mensajeFamilia = (nombre, codigo) => `Hola 👋 Para recibir los avisos del furgón de ${nombre}: 1) Descarga la app «Furgón Escolar». 2) Toca «Crear cuenta» y escribe este código: ${codigo}. ¡Listo! Te avisaremos unos 5 minutos antes de que llegue el furgón.`;
@@ -531,6 +548,33 @@ table.det td.mono { font-size: 12px; }
           ${sol.tipo === "cancelacion_servicio" ? `<button class="btn peligro" data-a="resolverAdm" data-v="si">Aprobar cancelación y dar de baja</button><button class="btn sec" data-a="resolverAdm" data-v="no">Rechazar</button>`
             : `<button class="btn" data-a="responderAdm">Responder</button>`}`}</div>`;
     }
+    if (ADM.vista === "conexiones") {
+      const f = ADM.form ?? (ADM.form = {});
+      const recibidas = conexPendientes(), enviadas = CONEX.lista.filter((c) => c.estado === "pendiente" && c.inicio === "tia");
+      const conectadas = CONEX.lista.filter((c) => c.estado === "aceptada");
+      const r = CONEX.resultado;
+      const estadoDe = (id) => CONEX.lista.find((c) => c.familia === id)?.estado;
+      return `<div class="vista">${volver}<h1>Conexiones con familias</h1>${msg}
+        ${recibidas.map((c) => `<div class="card" style="border:2px solid var(--ok)"><b>🤝 ${esc(famDe(c.familia).nombre)} quiere conectarse</b>
+          ${c.mensaje ? `<span>“${esc(c.mensaje)}”</span>` : ""}
+          <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="aceptarFam" data-id="${c.familia}">Aceptar</button><button class="no" style="min-height:52px;font-size:16px;background:var(--surface-2);color:var(--ink)" data-a="rechazarFam" data-id="${c.familia}">Rechazar</button></div></div>`).join("")}
+        <div class="card">
+          <div class="fila"><div style="min-width:0"><b>Que las familias me encuentren</b><br><span class="muted" style="font-size:13px">Apareces con tu nombre, tu furgón y tus comunas. Nunca tu teléfono ni tus rutas.</span></div>
+            <label class="chk" style="flex-shrink:0"><input type="checkbox" id="chkVisible" ${CONEX.visible ? "checked" : ""}> ${CONEX.visible ? "Sí" : "No"}</label></div>
+          <div class="campo"><label for="adm-comunas">Comunas donde trabajas</label>
+            <div style="display:flex;gap:8px"><input id="adm-comunas" data-f="comunas" value="${esc(f.comunas ?? CONEX.comunas)}" style="flex:1;min-width:0"><button class="btn sec" style="min-height:44px" data-a="guardarComunas">Guardar</button></div></div>
+        </div>
+        <div class="card"><h3>Buscar una familia</h3>
+          <span class="muted" style="font-size:13px">Por privacidad, solo con su correo o teléfono exactos. Prueba con carla@correo.cl o 9 4444 1212.</span>
+          <div style="display:flex;gap:8px"><input id="adm-buscarFam" data-f="buscarFam" value="${esc(f.buscarFam ?? "")}" placeholder="Correo o teléfono" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--ink)"><button class="btn" style="min-height:44px" data-a="buscarFam">Buscar</button></div>
+          ${r === null ? "" : r === "nada" ? `<span class="muted" style="font-size:13px">No hay una familia con ese correo o teléfono. Puedes enviarle un código de invitación desde «Mis alumnos».</span>`
+            : `<div class="fila"><b>${esc(famDe(r).nombre)}</b>${estadoDe(r) === "aceptada" ? `<span class="chip ok">✓ Conectados</span>` : estadoDe(r) === "pendiente" ? `<span class="chip bus">Pendiente</span>` : `<button class="btn" style="min-height:40px" data-a="invitarFam" data-id="${r}">🤝 Invitar</button>`}</div>`}
+        </div>
+        ${enviadas.length ? `<h3>Invitaciones enviadas</h3>${enviadas.map((c) => `<div class="card"><b>${esc(famDe(c.familia).nombre)}</b><span class="muted" style="font-size:13px">Esperando que acepte en su app</span></div>`).join("")}` : ""}
+        <h3>Familias conectadas (${conectadas.length})</h3>
+        ${conectadas.map((c) => `<div class="card"><b>✓ ${esc(famDe(c.familia).nombre)}</b><span class="muted" style="font-size:13px">${c.hijos.length ? `Hijos: ${esc(c.hijos.join(", "))}` : "Aún no registra a sus hijos"}</span></div>`).join("")}
+      </div>`;
+    }
     if (ADM.vista === "solicitudes") {
       const abiertas = ADM.solicitudes.filter((x) => x.estado !== "cerrada");
       return `<div class="vista">${volver}<h1>Solicitudes</h1>${msg}
@@ -547,6 +591,7 @@ table.det td.mono { font-size: 12px; }
       ${opcion("alumnos", "👧 Mis alumnos", `${activos.length} activos${sinApp ? ` · ${sinApp} familia(s) sin la app` : ""}`, false)}
       ${opcion("rutas", "🗺️ Rutas", "Ruta recomendada, orden y «hoy no va»", false)}
       ${opcion("cobros", "💳 Cobros y precios", `${pesosTxt(porCobrar)} por cobrar en ${mesTxt}`, ADM.cobros.some((c) => c.estado === "pendiente" && c.vencido))}
+      ${opcion("conexiones", "🤝 Conexiones con familias", conexPendientes().length ? `${conexPendientes().length} familia(s) quieren conectarse` : "Busca familias o deja que te encuentren", conexPendientes().length > 0)}
       ${opcion("solicitudes", "💬 Solicitudes de las familias", sinResp ? `${sinResp} sin responder` : "Todo respondido", sinResp > 0)}
       <p class="nota">También puedes entrar al panel web de administración con esta misma cuenta.</p></div>`;
   }
@@ -663,6 +708,11 @@ table.det td.mono { font-size: 12px; }
       R.d = Math.min(tope, R.d + v);
       if (obj && R.d >= obj.dRuta) { R.detenido = obj; evento("🅿️", `Llegaste donde ${obj.nombre}. Marca la ${R.ruta.tipo === "ida" ? "subida" : "entrega"}.`); }
     }
+    // Demostración: en la vuelta, la mamá de Sofía toca «Ya subió» en su app.
+    if (R.ruta.tipo === "vuelta" && R.t === 12) {
+      const p = R.paradas.find((x) => x.id === "sofia" && x.estado === "pendiente");
+      if (p) { p.subioFamilia = true; evento("🙋", `${p.apoderado} confirmó que ${p.nombre.split(" ")[0]} subió: la sigue en vivo hasta su hogar.`); }
+    }
     if (R.t % CFG.gps === 0) gps();
     llamadas();
   }
@@ -735,6 +785,7 @@ table.det td.mono { font-size: 12px; }
         <p class="nota" style="margin:0">📡 Tu celular es el GPS del furgón: la ubicación que ven los apoderados sale de este teléfono, solo durante el recorrido.</p>
         <div class="chips"><span class="chip ok">✓ Ubicación “Siempre”</span><span class="chip ok">✓ Notificaciones</span><span class="chip ok">✓ Batería 82%</span><span class="chip ok">✓ Ahorro de batería desactivado</span></div>
       </div>
+      ${conexPendientes().length ? `<button class="card" style="text-align:left;cursor:pointer;border:2px solid var(--ok)" data-a="irConexiones"><b>🤝 ${esc(famDe(conexPendientes()[0].familia).nombre)} quiere conectarse contigo</b><span class="muted" style="font-size:14px">Toca para responder</span></button>` : ""}
       ${rutas}
       <p class="nota">Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.</p>
     </div>`;
@@ -806,7 +857,7 @@ table.det td.mono { font-size: 12px; }
           <span class="num">Parada ${R.paradas.indexOf(p) + 1}${aqui ? " · estás aquí" : p.eta != null ? ` · llegada en ~${Math.max(1, Math.round(p.eta / 60))} min` : ""}</span>
           <span class="nom">${esc(p.nombre)}</span>
           <span class="muted">${esc(p.direccion)} · ${esc(p.indic)}</span>
-          <div class="chips">${estadoAviso(p)}</div>
+          <div class="chips">${p.subioFamilia ? `<span class="chip ok">🙋 Su familia confirmó que subió</span>` : ""}${estadoAviso(p)}</div>
           ${i === 0 && !aqui ? `<a class="btn-nav" href="${urlNavegar(p)}" target="_blank" rel="noopener">🧭 Navegar con <b>Google Maps</b></a>` : ""}
           ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
         </div>`;
@@ -929,7 +980,7 @@ table.det td.mono { font-size: 12px; }
     if (a === "cerrarHoja" && el !== e.target && el.classList.contains("hoja-fondo")) return;
     if (a === "entrar") { app.vista = "hoy"; app.tab = "hoy"; }
     else if (a === "tab") { app.tab = el.dataset.id; if (el.dataset.id === "admin") { ADM.vista = "menu"; ADM.msg = null; } }
-    else if (a === "adm") { ADM.vista = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.agregarEn = null; ADM.rec = null; ADM.editMonto = null; }
+    else if (a === "adm") { ADM.vista = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.agregarEn = null; ADM.rec = null; ADM.editMonto = null; CONEX.resultado = null; }
     else if (a === "recomendar") { const r = RUTAS.find((x) => x.id === el.dataset.id); ADM.rec = { ruta: r.id, ...recomendarRuta(r) }; ADM.msg = null; }
     else if (a === "descartarRec") ADM.rec = null;
     else if (a === "aplicarRec") {
@@ -945,6 +996,40 @@ table.det td.mono { font-size: 12px; }
       app.toast = { txt: `📅 ${ADM.msg.txt}`, hasta: performance.now() + 3500 };
       ADM.rec = null;
     }
+    else if (a === "irConexiones") { app.tab = "admin"; ADM.vista = "conexiones"; ADM.msg = null; ADM.form = null; CONEX.resultado = null; }
+    else if (a === "aceptarFam" || a === "rechazarFam") {
+      const c = CONEX.lista.find((x) => x.familia === el.dataset.id), fam = famDe(c.familia);
+      if (a === "rechazarFam") { CONEX.lista = CONEX.lista.filter((x) => x !== c); ADM.msg = { ok: true, txt: "Solicitud rechazada." }; }
+      else {
+        c.estado = "aceptada";
+        ADM.msg = { ok: true, txt: `${fam.nombre} quedó conectada a tu furgón. Cuando registre a sus hijos, aparecerán en «Mis alumnos».` };
+        // Demostración: la familia registra a su hija en su app a los pocos segundos.
+        if (fam.id === "rocio") setTimeout(() => {
+          if (!ALUMNOS.some((x) => x.id === "josefa")) {
+            ALUMNOS.push({ id: "josefa", nombre: "Josefa Torres", curso: "Kínder", apoderado: "Rocío (mamá)", direccion: "José Pedro Alessandri 1100, Ñuñoa", indic: "Casa azul",
+              lat: -33.4610, lng: -70.5830, respuesta: "app", activo: true, familiaApp: true, mensualidad: 60000 });
+            c.hijos = ["Josefa"];
+            app.toast = { txt: "👧 Rocío registró a Josefa Torres en su app. Agrégala a una ruta en Administrar → Rutas.", hasta: performance.now() + 6000 };
+            previo = ""; render(true);
+          }
+        }, 3000);
+      }
+    }
+    else if (a === "buscarFam") {
+      const q = String(ADM.form?.buscarFam ?? "").trim().toLowerCase();
+      const fam = CONEX.familias.find((x) => (q.includes("@") && x.email === q) || (telNorm(q).length >= 11 && telNorm(x.tel) === telNorm(q)));
+      CONEX.resultado = fam ? fam.id : "nada"; ADM.msg = null;
+    }
+    else if (a === "invitarFam") {
+      const fam = famDe(el.dataset.id);
+      CONEX.lista.push({ familia: fam.id, estado: "pendiente", inicio: "tia", hijos: [] });
+      ADM.msg = { ok: true, txt: `Invitación enviada a ${fam.nombre}. Le aparecerá en su app para aceptarla.` };
+      setTimeout(() => {
+        const c = CONEX.lista.find((x) => x.familia === fam.id && x.estado === "pendiente");
+        if (c) { c.estado = "aceptada"; app.toast = { txt: `🤝 ${fam.nombre} aceptó tu invitación: ya está conectada.`, hasta: performance.now() + 5000 }; previo = ""; render(true); }
+      }, 4000);
+    }
+    else if (a === "guardarComunas") { if (ADM.form?.comunas !== undefined) CONEX.comunas = ADM.form.comunas.trim(); ADM.msg = { ok: true, txt: "Comunas guardadas: así te encuentran las familias." }; }
     else if (a === "subCobros") { ADM.subCobros = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.editMonto = null; }
     else if (a === "editarMonto") { ADM.editMonto = el.dataset.id || null; ADM.msg = null; }
     else if (a === "guardarMonto" || a === "guardarPrecio") {
@@ -1028,6 +1113,11 @@ table.det td.mono { font-size: 12px; }
     if (k && ADM.form) { ADM.form[k] = e.target.value; previo = construirHtml(); }
   });
   document.addEventListener("change", (e) => {
+    if (e.target.id === "chkVisible") {
+      CONEX.visible = e.target.checked;
+      ADM.msg = { ok: true, txt: CONEX.visible ? "Las familias ya te pueden encontrar." : "Ya no apareces en la búsqueda de las familias." };
+      previo = ""; render(true); return;
+    }
     if (e.target.id === "chkSenal") {
       app.senal = !e.target.checked;
       if (R) evento(app.senal ? "📶" : "📵", app.senal ? "Señal de vuelta." : "Sin señal: las posiciones se guardan en el teléfono.");

@@ -1,0 +1,116 @@
+// La tía o el tío del furgón: aparecer (o no) en la búsqueda de las familias, buscar a una
+// familia por su correo o teléfono para invitarla, y responder las solicitudes que llegan.
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Switch, Text, View } from "react-native";
+import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
+import { type Conexion, misConexiones } from "../../lib/conexiones";
+import { useSesion } from "../../lib/sesion";
+import { mensajeError, supabase } from "../../lib/supabase";
+
+interface Familia { id: string; nombre: string; conexion: string | null }
+
+export default function Conexiones() {
+  const { perfil } = useSesion();
+  const [conexiones, setConexiones] = useState<Conexion[]>([]);
+  const [visible, setVisible] = useState(false);
+  const [comunas, setComunas] = useState("");
+  const [presentacion, setPresentacion] = useState("");
+  const [texto, setTexto] = useState("");
+  const [familias, setFamilias] = useState<Familia[] | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+
+  const cargar = useCallback(async () => {
+    try { setConexiones(await misConexiones()); } catch (e) { setMsg({ ok: false, txt: mensajeError(e) }); }
+    const { data } = await supabase.from("perfiles").select("visible_en_busqueda, comunas, presentacion").eq("id", perfil?.id ?? "").maybeSingle();
+    if (data) { setVisible(data.visible_en_busqueda); setComunas(data.comunas ?? ""); setPresentacion(data.presentacion ?? ""); }
+  }, [perfil?.id]);
+  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
+
+  async function ejecutar(p: PromiseLike<{ error: unknown }>, ok: string) {
+    setMsg(null);
+    const { error } = await p;
+    setMsg(error ? { ok: false, txt: mensajeError(error) } : { ok: true, txt: ok });
+    if (!error && familias) buscar();
+    cargar();
+  }
+
+  async function buscar() {
+    setMsg(null);
+    const { data, error } = await supabase.rpc("buscar_familia", { p_texto: texto });
+    if (error) setMsg({ ok: false, txt: mensajeError(error) }); else setFamilias((data as Familia[]) ?? []);
+  }
+
+  const guardarPerfil = (cambios: { visible_en_busqueda?: boolean; comunas?: string; presentacion?: string }, ok: string) =>
+    ejecutar(supabase.from("perfiles").update(cambios).eq("id", perfil?.id ?? ""), ok);
+
+  const recibidas = conexiones.filter((c) => c.estado === "pendiente" && c.iniciada_por === "apoderado");
+  const enviadas = conexiones.filter((c) => c.estado === "pendiente" && c.iniciada_por === "conductor");
+  const conectadas = conexiones.filter((c) => c.estado === "aceptada");
+
+  return (
+    <Pantalla titulo="Conexiones con familias" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+      {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
+
+      {recibidas.map((c) => (
+        <Tarjeta key={c.id} estilo={{ borderColor: colores.verde, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>🤝 {c.otro_nombre} quiere conectarse</Text>
+          {c.mensaje ? <Text style={estilos.texto}>“{c.mensaje}”</Text> : null}
+          <View style={estilos.fila}>
+            <Boton titulo="Aceptar" variante="exito" estilo={{ flex: 1 }}
+              onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: true }), `${c.otro_nombre} quedó conectada a tu furgón. Cuando registre a sus hijos, aparecerán en «Alumnos sin ruta».`)} />
+            <Boton titulo="Rechazar" variante="secundario" estilo={{ flex: 1 }}
+              onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: false }), "Solicitud rechazada.")} />
+          </View>
+        </Tarjeta>
+      ))}
+
+      <Tarjeta>
+        <View style={[estilos.fila, { justifyContent: "space-between" }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[estilos.texto, { fontWeight: "700" }]}>Que las familias me encuentren</Text>
+            <Text style={estilos.textoSuave}>Apareces en la búsqueda con tu nombre, tu furgón y tus comunas. Nunca se muestran tu teléfono ni tus rutas.</Text>
+          </View>
+          <Switch value={visible} trackColor={{ true: colores.verde }}
+            onValueChange={(v) => { setVisible(v); guardarPerfil({ visible_en_busqueda: v }, v ? "Ahora las familias te pueden encontrar." : "Ya no apareces en la búsqueda."); }} />
+        </View>
+        <Campo etiqueta="Comunas donde trabajas" value={comunas} onChangeText={setComunas} placeholder="Ej: Ñuñoa, La Reina, Providencia" />
+        <Campo etiqueta="Presentación (opcional)" value={presentacion} onChangeText={setPresentacion} placeholder="Ej: 12 años de experiencia, Colegio X" maxLength={300} />
+        <Boton titulo="Guardar" variante="secundario" onPress={() => guardarPerfil({ comunas: comunas.trim(), presentacion: presentacion.trim() }, "Datos guardados.")} />
+      </Tarjeta>
+
+      <Tarjeta>
+        <Text style={estilos.subtitulo}>Buscar una familia</Text>
+        <Text style={estilos.textoSuave}>Por privacidad, solo con su correo o su teléfono exactos.</Text>
+        <Campo etiqueta="Correo o teléfono" value={texto} onChangeText={(t) => { setTexto(t); setFamilias(null); }} autoCapitalize="none" placeholder="ana@correo.cl o 9 1234 5678" />
+        <Boton titulo="Buscar" deshabilitado={texto.trim().length < 6} onPress={buscar} />
+        {familias?.length === 0 ? <Text style={estilos.textoSuave}>No hay una familia registrada con ese correo o teléfono. Puedes enviarle un código de invitación.</Text> : null}
+        {familias?.map((f) => (
+          <View key={f.id} style={{ paddingTop: 10, gap: 6 }}>
+            <Text style={[estilos.texto, { fontWeight: "700" }]}>{f.nombre}</Text>
+            {f.conexion === "aceptada" ? <Text style={{ color: colores.verde, fontWeight: "700" }}>✓ Conectados</Text>
+              : f.conexion === "pendiente" ? <Text style={estilos.textoSuave}>Solicitud pendiente</Text>
+              : <Boton titulo="🤝 Invitar a conectarse" onPress={() => ejecutar(supabase.rpc("solicitar_conexion", { p_otro: f.id, p_mensaje: null }), `Invitación enviada a ${f.nombre}.`)} />}
+          </View>
+        ))}
+      </Tarjeta>
+
+      {enviadas.length ? <Text style={estilos.etiqueta}>Invitaciones enviadas</Text> : null}
+      {enviadas.map((c) => (
+        <Tarjeta key={c.id}>
+          <Text style={[estilos.texto, { fontWeight: "700" }]}>{c.otro_nombre}</Text>
+          <Text style={estilos.textoSuave}>Esperando respuesta</Text>
+          <Boton titulo="Retirar invitación" variante="texto" onPress={() => ejecutar(supabase.rpc("cancelar_conexion", { p_conexion: c.id }), "Invitación retirada.")} />
+        </Tarjeta>
+      ))}
+
+      {conectadas.length ? <Text style={estilos.etiqueta}>Familias conectadas ({conectadas.length})</Text> : null}
+      {conectadas.map((c) => (
+        <Tarjeta key={c.id}>
+          <Text style={[estilos.texto, { fontWeight: "700" }]}>✓ {c.otro_nombre}</Text>
+          <Text style={estilos.textoSuave}>{c.hijos?.length ? `Hijos: ${c.hijos.join(", ")}` : "Aún no registra a sus hijos"}</Text>
+        </Tarjeta>
+      ))}
+    </Pantalla>
+  );
+}

@@ -17,6 +17,7 @@ interface Parada {
   alumno: { nombre: string };
   domicilio: { direccion: string; indicaciones: string | null; lat: number; lng: number };
   avisos: { id: string }[];
+  a_bordo_por: "familia" | "tia" | null;
 }
 
 const ETIQUETA: Record<EstadoParada, string> = {
@@ -39,7 +40,7 @@ export default function RecorridoConductor() {
       supabase.from("recorridos").select("tipo, estado").eq("id", id).single(),
       supabase
         .from("recorrido_alumnos")
-        .select("id, orden, estado, eta_seg, alumno:alumnos(nombre), domicilio:domicilios(direccion, indicaciones, lat, lng), avisos(id)")
+        .select("id, orden, estado, eta_seg, alumno:alumnos(nombre), domicilio:domicilios(direccion, indicaciones, lat, lng), avisos(id), a_bordo_por")
         .eq("recorrido_id", id)
         .order("orden"),
     ]);
@@ -121,6 +122,7 @@ export default function RecorridoConductor() {
           <Text style={estilos.texto}>{p.domicilio.direccion}</Text>
           {p.domicilio.indicaciones ? <Text style={estilos.textoSuave}>{p.domicilio.indicaciones}</Text> : null}
           <Text style={[estilos.textoSuave, { marginTop: 4 }]}>
+            {p.a_bordo_por === "familia" ? "✓ Su familia confirmó que subió · " : ""}
             {p.avisos.length ? "🔔 Apoderado avisado" : "Aún sin aviso"}
             {p.eta_seg !== null ? ` · llegada en ~${Math.max(1, Math.round(p.eta_seg / 60))} min` : ""}
           </Text>

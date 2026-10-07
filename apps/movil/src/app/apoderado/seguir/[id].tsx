@@ -1,6 +1,7 @@
 // Seguimiento en vivo del furgón (estilo Uber).
 //  - Antes del aviso: zona aproximada (~1 km) que se mueve, paradas que faltan y ETA.
 //  - Desde el aviso hasta la entrega: furgón exacto y trayecto recorrido desde el aviso.
+//  - Mientras el hijo/a va a bordo («Ya subió»): furgón exacto y trayecto desde que subió.
 // Las reglas de privacidad las aplica el servidor (seguimiento_furgon y RLS de posiciones).
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,6 +27,8 @@ interface Seguimiento {
   paradas_antes: number;
   aviso_en: string | null;
   confirmado_en: string | null;
+  a_bordo: boolean;
+  a_bordo_desde: string | null;
   conductor: string | null;
   patente: string | null;
   furgon: string | null;
@@ -46,8 +49,8 @@ export default function SeguirFurgon() {
     const { data } = await supabase.rpc("seguimiento_furgon", { p_alumno: alumnoId });
     const seg = (data as Seguimiento | null) ?? null;
     setS(seg);
-    if (seg?.ubicacion?.exacta && seg.aviso_en) {
-      // RLS solo entrega las posiciones registradas desde el aviso.
+    if (seg?.ubicacion?.exacta) {
+      // RLS solo entrega las posiciones registradas desde el aviso o desde que subió.
       const { data: pos } = await supabase
         .from("posiciones")
         .select("lat, lng")
@@ -92,7 +95,9 @@ export default function SeguirFurgon() {
   }, [casa?.latitude, casa?.longitude, furgon?.latitude, furgon?.longitude]);
 
   const exacta = !!s?.ubicacion?.exacta;
-  const titulo = !s ? "" : s.estado === "entregado" ? `${nombre ?? "Tu hijo/a"} está en su hogar`
+  const corto = (nombre ?? "Tu hijo/a").split(" ")[0];
+  const titulo = !s ? "" : s.a_bordo && s.tipo === "ida" ? `${corto} va rumbo al colegio`
+    : s.estado === "entregado" ? `${nombre ?? "Tu hijo/a"} está en su hogar`
     : s.estado !== "pendiente" ? "Hoy no viaja"
     : s.eta_seg !== null && s.eta_seg < 90 ? "El furgón está llegando"
     : s.eta_seg !== null ? `Llega en ${Math.max(1, Math.round(s.eta_seg / 60))} min` : "Furgón en camino";
@@ -149,16 +154,25 @@ export default function SeguirFurgon() {
           <>
             <Text style={estilos.titulo}>{titulo}</Text>
             <Text style={estilos.suave}>
-              {s.estado === "entregado" && s.marcado_en ? `En su hogar desde las ${hora(s.marcado_en)}.`
+              {s.a_bordo && s.a_bordo_desde ? `🚐 ${corto} va a bordo desde las ${hora(s.a_bordo_desde)}. Ubicación exacta en vivo.`
+                : s.estado === "entregado" && s.marcado_en ? `En su hogar desde las ${hora(s.marcado_en)}.`
                 : exacta ? `Aviso enviado a las ${hora(s.aviso_en!)}${s.confirmado_en ? " · confirmado ✓" : ""}. Ubicación exacta en vivo.`
                 : s.paradas_antes > 0 ? `Faltan ${s.paradas_antes} parada${s.paradas_antes === 1 ? "" : "s"} antes de tu casa. Ubicación aproximada.`
                 : "Tu casa es la próxima parada. Ubicación aproximada hasta el aviso."}
             </Text>
             <View style={estilos.pasos}>
               {[
-                { ok: true, txt: s.tipo === "ida" ? "Salió a buscar" : "Salió del colegio" },
-                { ok: !!s.aviso_en, txt: "Aviso" },
-                { ok: s.estado === "entregado", txt: s.tipo === "ida" ? "Subió" : "En casa" },
+                ...(s.tipo === "ida" ? [
+                  { ok: true, txt: "Salió a buscar" },
+                  { ok: !!s.aviso_en, txt: "Aviso" },
+                  { ok: s.estado === "entregado" || !!s.a_bordo_desde, txt: "Subió" },
+                  { ok: false, txt: "En el colegio" },
+                ] : [
+                  { ok: !!s.a_bordo_desde, txt: "Subió" },
+                  { ok: true, txt: "Salió del colegio" },
+                  { ok: !!s.aviso_en, txt: "Aviso" },
+                  { ok: s.estado === "entregado", txt: "En su hogar" },
+                ]),
               ].map((p, i) => (
                 <View key={i} style={{ flex: 1, gap: 4 }}>
                   <View style={[estilos.barra, { backgroundColor: p.ok ? colores.verde : colores.borde }]} />
@@ -175,7 +189,7 @@ export default function SeguirFurgon() {
               {s.patente ? <Text style={estilos.patente}>{s.patente}</Text> : null}
             </View>
             <Text style={[estilos.suave, { fontSize: 12 }]}>
-              🔒 Por privacidad, la ubicación exacta se muestra solo desde tu aviso hasta la entrega.
+              🔒 Por privacidad, la ubicación exacta se muestra solo mientras tu hijo/a va a bordo o desde tu aviso hasta la llegada.
             </Text>
           </>
         )}

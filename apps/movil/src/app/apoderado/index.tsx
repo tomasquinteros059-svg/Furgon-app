@@ -17,6 +17,7 @@ interface EstadoHoy {
   estado: "pendiente" | "entregado" | "ausente" | "no_viaja";
   eta_seg: number | null;
   marcado_en: string | null;
+  a_bordo_desde: string | null;
   recorrido: { tipo: "ida" | "vuelta"; estado: string };
   avisos: { id: string; disparado_en: string; confirmado_en: string | null }[];
 }
@@ -29,29 +30,36 @@ const hora = (iso: string) =>
   new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
 
 export default function InicioApoderado() {
-  const { perfil, cerrarSesion } = useSesion();
+  const { perfil, cerrarSesion, recargarPerfil } = useSesion();
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [estados, setEstados] = useState<EstadoHoy[]>([]);
   const [noViaja, setNoViaja] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [solicitudes, setSolicitudes] = useState(0);
 
   const cargar = useCallback(async () => {
     const [{ data: a }, { data: e }, { data: i }] = await Promise.all([
       supabase.from("alumnos").select("id, nombre, colegio, minutos_aviso").eq("activo", true).order("nombre"),
       supabase
         .from("recorrido_alumnos")
-        .select("alumno_id, estado, eta_seg, marcado_en, recorrido:recorridos!inner(tipo, estado), avisos(id, disparado_en, confirmado_en)")
+        .select("alumno_id, estado, eta_seg, marcado_en, a_bordo_desde, recorrido:recorridos!inner(tipo, estado), avisos(id, disparado_en, confirmado_en)")
         .eq("recorrido.estado", "activo"),
       supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", hoy()),
     ]);
     setAlumnos((a as Alumno[]) ?? []);
     setEstados((e as unknown as EstadoHoy[]) ?? []);
     setNoViaja(new Set((i ?? []).map((x) => `${x.alumno_id}:${x.tipo}`)));
+    // Invitaciones de tías o tíos esperando respuesta.
+    const { data: c } = await supabase.rpc("mis_conexiones");
+    setSolicitudes(((c as { estado: string; iniciada_por: string }[] | null) ?? []).filter((x) => x.estado === "pendiente" && x.iniciada_por === "conductor").length);
   }, []);
 
   useFocusEffect(useCallback(() => {
     cargar();
-  }, [cargar]));
+    // Si una tía aceptó la conexión, la familia ya tiene furgón: se recarga el perfil.
+    if (!perfil?.empresa_id) recargarPerfil();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargar, perfil?.empresa_id]));
 
   // Tiempo real: cambios de estado/ETA y avisos de mis hijos (Realtime respeta RLS).
   useEffect(() => {
@@ -72,6 +80,14 @@ export default function InicioApoderado() {
     });
     if (error) setError(mensajeError(error));
     cargar();
+  }
+
+  async function yaSubio(alumno: Alumno) {
+    setError(null);
+    const { error } = await supabase.rpc("confirmar_subida", { p_alumno: alumno.id });
+    if (error) { setError(mensajeError(error)); return; }
+    await cargar();
+    router.push({ pathname: "/apoderado/seguir/[id]", params: { id: alumno.id, nombre: alumno.nombre } });
   }
 
   async function confirmar(avisoId: string) {
@@ -96,13 +112,27 @@ export default function InicioApoderado() {
   return (
     <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`} accion={<Boton titulo="Salir" variante="texto" onPress={cerrarSesion} />}>
       {error ? <Aviso texto={error} tipo="error" /> : null}
-      {alumnos.length === 0 ? (
+      {!perfil?.empresa_id ? (
+        <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>🤝 Conéctate con tu tía o tío del furgón</Text>
+          <Text style={estilos.textoSuave}>Búscalo por su nombre o comuna y envíale una solicitud. Cuando la acepte, registras a tus hijos y empiezas a recibir los avisos.</Text>
+          <Boton titulo="Buscar a mi tía o tío" onPress={() => router.push("/apoderado/conectar")} />
+        </Tarjeta>
+      ) : alumnos.length === 0 ? (
         <Aviso texto="Aún no registras alumnos. Agrega a tu hijo/a con su dirección exacta para recibir los avisos." />
+      ) : null}
+      {solicitudes ? (
+        <Boton titulo={`🤝 ${solicitudes === 1 ? "Una tía o tío quiere" : `${solicitudes} tías o tíos quieren`} conectarse contigo`} variante="exito"
+          onPress={() => router.push("/apoderado/conectar")} />
       ) : null}
 
       {alumnos.map((alumno) => {
         const enCurso = estados.find((e) => e.alumno_id === alumno.id);
         const aviso = enCurso?.avisos[0];
+        const nombreCorto = alumno.nombre.split(" ")[0];
+        // A bordo: en la vuelta hasta llegar a su hogar; en la ida hasta llegar al colegio.
+        const aBordo = !!enCurso?.a_bordo_desde && (enCurso.estado === "pendiente" || (enCurso.recorrido.tipo === "ida" && enCurso.estado === "entregado"));
+        const puedeDecirQueSubio = !!enCurso && !enCurso.a_bordo_desde && enCurso.estado === "pendiente";
         return (
           <Tarjeta key={alumno.id}>
             <Text style={estilos.subtitulo}>{alumno.nombre}</Text>
@@ -121,8 +151,14 @@ export default function InicioApoderado() {
                     : aviso ? `🔔 Llega en ~${Math.max(1, Math.round((enCurso.eta_seg ?? 60) / 60))} min (aviso ${hora(aviso.disparado_en)})`
                     : "Te avisaremos cuando el furgón esté cerca."}
                 </Text>
-                {enCurso.estado === "pendiente" ? (
-                  <Boton titulo="🗺️ Seguir el furgón en vivo" variante="secundario"
+                {aBordo ? (
+                  <Text style={[estilos.texto, { color: colores.verde, fontWeight: "700" }]}>🚐 {nombreCorto} va a bordo desde las {hora(enCurso.a_bordo_desde!)}</Text>
+                ) : null}
+                {puedeDecirQueSubio ? (
+                  <Boton titulo={`🙋 Ya subió ${nombreCorto}`} variante="exito" onPress={() => yaSubio(alumno)} />
+                ) : null}
+                {enCurso.estado === "pendiente" || aBordo ? (
+                  <Boton titulo={aBordo ? `🗺️ Seguir a ${nombreCorto} en vivo` : "🗺️ Seguir el furgón en vivo"} variante={aBordo ? "primario" : "secundario"}
                     onPress={() => router.push({ pathname: "/apoderado/seguir/[id]", params: { id: alumno.id, nombre: alumno.nombre } })} />
                 ) : null}
                 {aviso && !aviso.confirmado_en && enCurso.estado === "pendiente" ? (
@@ -152,7 +188,8 @@ export default function InicioApoderado() {
         <Boton titulo="💳 Pagos" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
         <Boton titulo="💬 Ayuda" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
       </View>
-      <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} />
+      <Boton titulo="🤝 Conectar con mi tía o tío" variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
+      {perfil?.empresa_id ? <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
     </Pantalla>
   );
 }

@@ -57,6 +57,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); position: relative; }
 .tabs button span { font-size: 20px; line-height: 1; }
 .tabs button[aria-current="page"] { color: var(--ink); }
+.card.invita { border: 2px solid var(--ok); text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.tia-res { display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 10px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .fila > * { min-width: 0; }
@@ -188,6 +190,14 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       pin: { x: 0.38, y: 0.58 }, minutos: 5, noViaja: { ida: false, vuelta: false }, asignado: true,
       contactos: [{ nombre: "Ana (mamá)", tel: "+56 9 1111 1111" }, { nombre: "Pedro (abuelo)", tel: "+56 9 2222 2222" }] },
   ];
+  // Tías y tíos que activaron «Que las familias me encuentren» (búsqueda por nombre, furgón o comuna).
+  const TIAS = [
+    { id: "marcela", nombre: "Marcela Fuentes (tía Marcela)", empresa: "Furgones Tía Marcela", comunas: "Ñuñoa, La Reina, Providencia", presentacion: "12 años llevando niños al Colegio Demo.", estado: "aceptada", inicio: "yo" },
+    { id: "rosa", nombre: "Rosa Muñoz (tía Rosa)", empresa: "Furgón Tía Rosa", comunas: "Providencia, Las Condes, Vitacura", presentacion: "Colegio Alemán y Saint George. Furgón con cinturones en todos los asientos.", estado: null },
+    { id: "jorge", nombre: "Jorge Díaz (tío Jorge)", empresa: "Transportes Jorge", comunas: "Ñuñoa, Macul, Peñalolén", presentacion: "Liceo Lastarria y Colegio Macul.", estado: "pendiente", inicio: "tia", mensaje: "Hola Ana, me dieron tu contacto en el colegio. Tengo cupo en la vuelta de las 16:30." },
+    { id: "pedro", nombre: "Pedro Salas (tío Pedro)", empresa: "Furgones del Sur", comunas: "La Florida, Puente Alto", presentacion: null, estado: null },
+  ];
+  const tiasConectadas = () => TIAS.filter((t) => t.estado === "aceptada");
   const HISTORIAL = [
     { fecha: "Lun 6 oct · Vuelta", ejemplo: true, items: [["16:34", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 Contestaste y presionaste 1"], ["16:40", "✅ Sofía está en su hogar"], ["16:55", "🔔 Aviso: Isidora llega en ~5 min"], ["16:55", "📱 Tocaste “Recibido”"], ["17:01", "✅ Isidora está en su hogar"]] },
     { fecha: "Lun 6 oct · Ida", ejemplo: true, items: [["07:01", "🔔 Aviso: el furgón pasa por Isidora en ~5 min"], ["07:06", "✅ Isidora subió al furgón"], ["07:20", "🔔 Aviso: el furgón pasa por Sofía en ~5 min"], ["07:26", "✅ Sofía subió al furgón"]] },
@@ -210,7 +220,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   const formatear = (e) => { const m = /^\+56(9)(\d{4})(\d{4})$/.exec(e); return m ? `+56 ${m[1]} ${m[2]} ${m[3]}` : e; };
 
   // ---------- Estado ----------
-  const app = { vista: "login", tab: "inicio", sub: null, hijoId: null, editPin: false, form: null, errores: {}, vel: 10, alarma: true, llamadaAuto: true, banner: null, notifs: [], internet: true, pendientes: [], llamGratis: 0, llamPagadas: 0 };
+  const app = { vista: "login", tab: "inicio", sub: null, busqueda: "", eligiendo: null, msgCon: null, hijoId: null, editPin: false, form: null, errores: {}, vel: 10, alarma: true, llamadaAuto: true, banner: null, notifs: [], internet: true, pendientes: [], llamGratis: 0, llamPagadas: 0 };
   let R = null; // simulación de la vuelta de hoy
 
   function nuevaSimulacion() {
@@ -398,6 +408,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       : `<div class="estado"><b>Vuelta hoy · 16:30</b><span>Te avisaremos unos ${h.minutos} minutos antes de que llegue el furgón.</span></div>`;
     if (p.estado === "no_viaja") return `<div class="estado no"><b>Hoy no viaja</b><span>Se saltó en la ruta.</span></div>`;
     if (p.estado === "entregado") return `<div class="estado ok"><b>🏠 En su hogar desde las ${hora(p.marcaT)}</b><span>Dejado/a por la tía Marcela.</span></div>`;
+    if (p.aBordoT != null && p.avisoT === null) return `<div class="estado bus"><b>🚐 ${esc(h.nombre)} va a bordo</b><span>Confirmaste que subió a las ${hora(p.aBordoT)} · llega en ~${Math.max(1, Math.round((p.eta ?? 600) / 60))} min. La ves en vivo.</span></div>`;
     if (p.avisoT !== null) {
       const aqui = Math.abs(p.dRuta - R.d) < 2;
       return `<div class="estado bus"><b>${aqui ? "🚐 El furgón está afuera de tu casa" : `🔔 Llega en ~${Math.max(1, Math.round(p.eta / 60))} min`}</b><span>Aviso enviado a las ${hora(p.avisoT)}${p.confT !== null ? " · ✓ confirmado" : ""}</span></div>`;
@@ -417,14 +428,16 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     </div>`;
     const tarjetas = HIJOS.map((h) => {
       const p = parDe(h);
-      const verMapa = R && p && p.avisoT !== null && p.estado === "pendiente";
+      const aBordo = R && p && p.estado === "pendiente" && p.aBordoT != null;
+      const verMapa = R && p && p.estado === "pendiente" && (p.avisoT !== null || aBordo);
       return `<div class="card">
         <div class="fila"><div style="display:flex; gap:10px; align-items:center; min-width:0"><div class="avatar chico">${esc(h.nombre[0])}</div><div style="min-width:0"><h2>${esc(h.nombre)} ${esc(h.apellido)}</h2><span class="muted" style="font-size:13px">${esc(h.curso)} · ${esc(h.colegio)}</span></div></div>
           <button class="btn link" data-a="ficha" data-id="${h.id}">Ficha ›</button></div>
         ${estadoHijo(h)}
-        ${verMapa ? miniMapa(p) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Verás el furgón en el mapa desde tu aviso hasta que ${esc(h.nombre)} llegue a casa.</div>` : ""}
-        ${R && !R.fin && p && p.estado === "pendiente" ? `<button class="btn" data-a="seguir" data-id="${h.id}">🗺️ Seguir el furgón en vivo</button>` : ""}
-        ${verMapa && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
+        ${verMapa ? miniMapa(p) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Cuando ${esc(h.nombre)} se suba, toca «Ya subió» y la verás en vivo. Si no, verás el furgón desde tu aviso.</div>` : ""}
+        ${R && !R.fin && p && p.estado === "pendiente" && !aBordo ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
+        ${R && !R.fin && p && p.estado === "pendiente" ? `<button class="btn" data-a="seguir" data-id="${h.id}">🗺️ ${aBordo ? `Seguir a ${esc(h.nombre)} en vivo` : "Seguir el furgón en vivo"}</button>` : ""}
+        ${p && p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
         ${h.asignado ? `<div><span style="font-weight:700; font-size:14px">Hoy no viaja</span>
           ${["ida", "vuelta"].map((t) => {
             const bloqueado = t === "ida" || (R && p && (p.estado === "entregado" || (p.estado === "pendiente" && p.avisoT !== null && Math.abs(p.dRuta - R.d) < 2)));
@@ -435,8 +448,10 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     return `<div class="vista">
       <div><span class="muted">Martes 7 de octubre</span><h1>Hola, ${AP.corto}</h1></div>
       ${demo}
+      ${TIAS.some((t) => t.estado === "pendiente" && t.inicio === "tia") ? `<button class="card invita" data-a="conectar">🤝 <b>${esc(TIAS.find((t) => t.estado === "pendiente" && t.inicio === "tia").nombre)}</b> quiere conectarse contigo<span class="muted" style="font-size:13px">Toca para responder</span></button>` : ""}
       ${tarjetas}
       <button class="btn sec" data-a="agregar">+ Agregar hijo/a</button>
+      <button class="btn sec" data-a="conectar">🤝 Conectar con tía o tío</button>
       ${app.notifs.length ? `<h3>Notificaciones</h3>${app.notifs.slice(0, 6).map((n) => `<div class="notif ${n.tipo === "aviso" ? "alarma" : n.tipo === "ok" ? "ok" : ""}"><b>${esc(n.titulo)}</b>${esc(n.cuerpo)} <small>${hora(n.t)}</small></div>`).join("")}` : ""}
     </div>`;
   }
@@ -494,6 +509,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       ${campo("nombre", "Nombre", 'autocomplete="off"')}
       ${campo("apellido", "Apellido", 'autocomplete="off"')}
       <div class="dos">${campo("curso", "Curso", 'placeholder="2° Básico"')}${campo("colegio", "Colegio")}</div>
+      ${tiasConectadas().length > 1 ? `<div class="campo"><label>¿Con qué tía o tío va?</label><div class="chips">${tiasConectadas().map((t) => `<button class="chip ${f.tia === t.id ? "ok" : ""}" style="border:0;cursor:pointer;font-size:14px;padding:8px 12px" data-a="tiaHijo" data-id="${t.id}">${f.tia === t.id ? "✓ " : ""}${esc(t.nombre.replace(/ \(.*\)$/, ""))}</button>`).join("")}</div>${e.tia ? `<small style="color:var(--alert)">${e.tia}</small>` : ""}</div>` : ""}
       ${campo("direccion", "Dirección", 'placeholder="Calle, número, comuna"')}
       ${barrio(f.pin, true)}
       ${e.pin ? `<small style="color:var(--alert)">${e.pin}</small>` : `<small class="muted">Toca el mapa para marcar la puerta de tu casa.</small>`}
@@ -501,8 +517,43 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <h3>Teléfonos para la llamada automática</h3>
       <div class="dos">${campo("c1n", "Principal · nombre")}${campo("c1t", "Teléfono", 'inputmode="tel" placeholder="9 1234 5678"')}</div>
       <div class="dos">${campo("c2n", "Secundario · nombre")}${campo("c2t", "Teléfono", 'inputmode="tel" placeholder="Opcional"')}</div>
-      <p class="nota">El dueño del furgón asignará a tu hijo/a a la ruta. Hasta entonces verás “Esperando asignación”.</p>
+      <p class="nota">La tía o el tío asignará a tu hijo/a a su ruta. Hasta entonces verás “Esperando asignación”.</p>
       <button class="btn xl" data-a="guardar">Guardar</button>
+    </div>`;
+  }
+
+  // Conectar con la tía o el tío: búsqueda por nombre, furgón o comuna, e invitaciones recibidas.
+  function vConectar() {
+    const q = app.busqueda.trim().toLowerCase();
+    const sinTilde = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const res = q.length >= 2 ? TIAS.filter((t) => sinTilde(`${t.nombre} ${t.empresa} ${t.comunas}`).includes(sinTilde(q))) : null;
+    const recibidas = TIAS.filter((t) => t.estado === "pendiente" && t.inicio === "tia");
+    const enviadas = TIAS.filter((t) => t.estado === "pendiente" && t.inicio === "yo");
+    const fila = (t) => `<div class="tia-res"><div class="avatar chico">${esc(t.nombre[0])}</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+        <b>${esc(t.nombre)}</b><span class="muted" style="font-size:13px">🚐 ${esc(t.empresa)} · ${esc(t.comunas)}</span>${t.presentacion ? `<span class="muted" style="font-size:13px">${esc(t.presentacion)}</span>` : ""}
+        ${t.estado === "aceptada" ? `<span class="chip ok" style="align-self:flex-start">✓ Conectados</span>`
+          : t.estado === "pendiente" && t.inicio === "yo" ? `<span class="chip bus" style="align-self:flex-start">Solicitud enviada · esperando respuesta</span>`
+          : t.estado === "pendiente" ? `<span class="chip bus" style="align-self:flex-start">Te invitó · responde arriba</span>`
+          : app.eligiendo === t.id ? `<div class="campo"><label for="f-msgCon">Mensaje (opcional)</label><input id="f-msgCon" data-f="msgCon" value="${esc(app.form?.msgCon ?? "")}" placeholder="Ej: Hola tía, Sofía va en 3° básico"></div>
+              <div class="dos"><button class="btn" data-a="enviarCon" data-id="${t.id}">Enviar solicitud</button><button class="btn sec" data-a="cancelarElegir">Cancelar</button></div>`
+          : `<button class="btn sec" style="align-self:flex-start;min-height:40px" data-a="elegirCon" data-id="${t.id}">🤝 Conectar</button>`}
+      </div></div>`;
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <h1>Conectar con tu tía o tío</h1>
+      ${app.msgCon ? `<p class="nota" style="color:${app.msgCon.ok ? "var(--ok)" : "var(--alert)"};margin:0">${esc(app.msgCon.txt)}</p>` : ""}
+      ${recibidas.map((t) => `<div class="card" style="border:2px solid var(--ok)"><b>🤝 ${esc(t.nombre)} quiere conectarse contigo</b>
+        <span class="muted" style="font-size:13px">🚐 ${esc(t.empresa)} · ${esc(t.comunas)}</span>${t.mensaje ? `<span>“${esc(t.mensaje)}”</span>` : ""}
+        <div class="dos"><button class="btn ok" data-a="aceptarCon" data-id="${t.id}">Aceptar</button><button class="btn sec" data-a="rechazarCon" data-id="${t.id}">Rechazar</button></div></div>`).join("")}
+      <div class="card">
+        <div class="campo"><label for="buscar">Buscar tía o tío del furgón</label><input id="buscar" data-f="buscar" value="${esc(app.busqueda)}" placeholder="Nombre, furgón o comuna" autocomplete="off"></div>
+        ${res === null ? `<span class="muted" style="font-size:13px">Prueba con «Rosa», «Ñuñoa» o «Furgones». Solo aparecen quienes activaron «Que las familias me encuentren».</span>`
+          : res.length ? res.map(fila).join("") : `<span class="muted" style="font-size:13px">No encontramos a nadie con «${esc(app.busqueda.trim())}». Pídele a tu tía o tío que active la búsqueda en su app o que te envíe un código.</span>`}
+      </div>
+      ${enviadas.length ? `<h3>Solicitudes enviadas</h3>${enviadas.map((t) => `<div class="card"><b>${esc(t.nombre)}</b><span class="muted" style="font-size:13px">Esperando respuesta</span><button class="btn link" data-a="retirarCon" data-id="${t.id}">Retirar solicitud</button></div>`).join("")}` : ""}
+      <h3>Conectada con</h3>
+      ${tiasConectadas().map((t) => `<div class="card"><b>✓ ${esc(t.nombre)}</b><span class="muted" style="font-size:13px">🚐 ${esc(t.empresa)} · ${(() => { const n = HIJOS.filter((h) => (h.tia ?? "marcela") === t.id).map((h) => h.nombre); return n.length ? `lleva a ${esc(n.join(" e "))}` : "aún no lleva a tus hijos: agrégalos con «+ Agregar hijo/a»"; })()}</span></div>`).join("")}
+      <p class="nota">🔒 La tía o el tío solo ve tu nombre y el de tus hijos cuando se conectan. Tu dirección la ve solo en su ruta.</p>
     </div>`;
   }
 
@@ -521,13 +572,15 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <div class="card"><h3>Mis datos</h3>
         <div class="dato"><span>Teléfono</span><span class="mono">${AP.tel}</span></div>
         <div class="dato"><span>Correo</span><span>${AP.email}</span></div>
-        <div class="dato"><span>Furgón</span><span>Furgones Demo</span></div>
+      </div>
+      <div class="card"><div class="fila"><h3>Mis tías y tíos</h3><button class="btn link" data-a="conectar">Conectar ›</button></div>
+        ${tiasConectadas().map((t) => `<div class="dato"><span>✓ ${esc(t.nombre)}</span><span class="muted">${esc(t.empresa)}</span></div>`).join("")}
       </div>
       <div class="card"><h3>Avisos</h3>
         <div class="sw-fila"><span><b>Alarma sonora</b><br><span class="muted" style="font-size:13px">Suena aunque el teléfono esté en silencio (Android)</span></span><label class="sw"><input type="checkbox" data-a="optAlarma" ${app.alarma ? "checked" : ""} aria-label="Alarma sonora"><span></span></label></div>
         <div class="sw-fila"><span><b>Llamada automática</b><br><span class="muted" style="font-size:13px">Te llamamos con un mensaje de voz</span></span><label class="sw"><input type="checkbox" data-a="optLlamada" ${app.llamadaAuto ? "checked" : ""} aria-label="Llamada automática"><span></span></label></div>
       </div>
-      <p class="nota">🔒 Solo ves el furgón desde tu aviso hasta que tu hijo/a llega a casa. No puedes ver dónde viven los demás niños, ni ellos dónde vives tú.</p>
+      <p class="nota">🔒 Ves el furgón exacto mientras tu hijo/a va a bordo o desde tu aviso hasta que llega a su hogar. Nadie ve dónde vives.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
     </div>`;
   }
@@ -581,7 +634,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       return `<div class="seguir">${arriba("")}<div class="hoja-seg"><div class="asa"></div><span class="eta-grande">Sin recorrido en curso</span>
         <span class="muted">El mapa se activa cuando la tía Marcela inicia el recorrido.</span></div></div>`;
     }
-    const exacta = p.avisoT !== null && p.estado === "pendiente";
+    const aBordo = p.estado === "pendiente" && p.aBordoT != null;
+    const exacta = p.estado === "pendiente" && (p.avisoT !== null || aBordo);
     let titulo, detalle;
     if (p.estado === "entregado") { titulo = `${h.nombre} está en su hogar`; detalle = `En su hogar desde las ${hora(p.marcaT)} por la tía Marcela.`; }
     else if (p.estado !== "pendiente") { titulo = "Hoy no viaja"; detalle = "El furgón no pasará por tu casa."; }
@@ -589,7 +643,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       const aqui = Math.abs(p.dRuta - R.d) < 2;
       titulo = aqui ? "El furgón está afuera" : p.eta < 90 ? "Está llegando" : `Llega en ${Math.max(1, Math.round(p.eta / 60))} min`;
       const antes = R.paradas.filter((x) => x.estado === "pendiente" && x.dRuta < p.dRuta).length;
-      detalle = exacta ? `Hora estimada ${hora(R.t + p.eta)} · aviso enviado a las ${hora(p.avisoT)}${p.confT !== null ? " · confirmado ✓" : ""}`
+      detalle = p.avisoT !== null ? `Hora estimada ${hora(R.t + p.eta)} · aviso enviado a las ${hora(p.avisoT)}${p.confT !== null ? " · confirmado ✓" : ""}`
+        : aBordo ? `🚐 ${h.nombre} va a bordo desde las ${hora(p.aBordoT)} · hora estimada ${hora(R.t + p.eta)}`
         : antes ? `Hora estimada ${hora(R.t + p.eta)} · faltan ${antes} parada${antes === 1 ? "" : "s"} antes de tu casa`
         : `Hora estimada ${hora(R.t + p.eta)} · tu casa es la próxima parada`;
     }
@@ -603,12 +658,13 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <div class="asa"></div>
         <span class="eta-grande">${titulo}</span>
         <span class="muted" style="font-size:14px">${detalle}</span>
-        <div class="pasos">${paso(true, false, "Salió del colegio")}${paso(p.avisoT !== null, p.avisoT === null && p.estado === "pendiente", "Aviso")}${paso(p.estado === "entregado", exacta, "En casa")}</div>
-        ${exacta && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
+        <div class="pasos">${paso(p.aBordoT != null, false, "Subió")}${paso(true, false, "Salió del colegio")}${paso(p.avisoT !== null, p.avisoT === null && p.estado === "pendiente", "Aviso")}${paso(p.estado === "entregado", p.avisoT !== null && p.estado === "pendiente", "En su hogar")}</div>
+        ${p.estado === "pendiente" && !aBordo && !R.fin ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
+        ${p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
         <div class="conductora"><div class="avatar chico">M</div>
           <div style="flex:1; min-width:0"><b>${TIA.nombre}</b><br><span class="muted" style="font-size:13px">Hyundai H1 blanca · lleva a ${esc(h.nombre)}</span></div>
           <span class="patente">DEMO-11</span></div>
-        <span class="muted" style="font-size:12px">🔒 Antes del aviso ves una zona aproximada (~1 km). Desde el aviso hasta la entrega, el furgón exacto. Así nadie puede saber dónde viven los otros niños.</span>
+        <span class="muted" style="font-size:12px">🔒 Ves el furgón exacto mientras ${esc(h.nombre)} va a bordo (desde que tocas «Ya subió») o desde tu aviso. Si no, una zona aproximada (~1 km).</span>
       </div>
     </div>`;
   }
@@ -624,7 +680,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
     const d = !app.internet && R.dCongelado != null ? R.dCongelado : dSuave(), van = puntoEn(d);
-    const exacta = p.avisoT !== null && p.estado === "pendiente";
+    const exacta = p.estado === "pendiente" && (p.avisoT !== null || p.aBordoT != null);
     const casa = aMundo(p);
     const foco = p.estado === "pendiente" ? (exacta ? aMundo(van) : aMundo(zonaDe(van))) : casa;
     const margen = p.estado !== "pendiente" ? 400 : exacta ? 180 : 1050;
@@ -647,7 +703,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
 
     let capa = "";
     if (exacta) {
-      const hecho = tramo(p.dAviso ?? d, d).map(PG), falta = tramo(d, p.dRuta).map(PG);
+      const hecho = tramo(Math.min(p.dBordo ?? Infinity, p.dAviso ?? Infinity, d), d).map(PG), falta = tramo(d, p.dRuta).map(PG);
       const linea = (pts) => pts.map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ");
       capa += `<polyline points="${linea(hecho)}" fill="none" stroke="var(--muted)" stroke-width="5" stroke-dasharray="2 8" stroke-linecap="round"/>`;
       capa += `<polyline points="${linea(falta)}" fill="none" stroke="var(--surface)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -681,6 +737,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (app.sub === "ficha") cuerpo = vFicha();
     else if (app.sub === "agregar") cuerpo = vAgregar();
     else if (app.sub === "seguir") cuerpo = vSeguir();
+    else if (app.sub === "conectar") cuerpo = vConectar();
     else cuerpo = { inicio: vInicio, historial: vHistorial, perfil: vPerfil }[app.tab]();
     const b = app.banner && app.banner.hasta > performance.now() ? app.banner : null;
     const banner = b && !(R && R.llamada && R.llamada.fase === "sonando") ? `<div class="banner ${b.tipo === "aviso" ? "vibra" : "ok"}" data-a="banner" role="status">
@@ -707,10 +764,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     const t2 = (f.c2t || "").trim() ? normalizarTelefono(f.c2t) : null;
     if ((f.c2t || "").trim() && !t2) e.c2t = "Revisa el número.";
     if (!f.pin) e.pin = "Marca tu casa en el mapa: así el aviso llega a tiempo.";
+    if (tiasConectadas().length > 1 && !f.tia) e.tia = "Elige con quién va.";
     app.errores = e;
     if (Object.keys(e).length) return;
     HIJOS.push({ id: "h" + Date.now(), nombre: f.nombre.trim(), apellido: f.apellido.trim(), curso: f.curso || "—", colegio: f.colegio || "—",
-      direccion: f.direccion, indic: f.indic || "—", pin: f.pin, minutos: 5, noViaja: { ida: false, vuelta: false }, asignado: false,
+      direccion: f.direccion, indic: f.indic || "—", pin: f.pin, minutos: 5, tia: f.tia ?? "marcela", noViaja: { ida: false, vuelta: false }, asignado: false,
       contactos: [{ nombre: f.c1n, tel: formatear(t1) }, ...(t2 ? [{ nombre: f.c2n || "Secundario", tel: formatear(t2) }] : [])] });
     app.sub = null; app.form = null;
   }
@@ -718,6 +776,13 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   // Lo escrito ya está en el campo: se guarda en el estado y se marca como dibujado, sin redibujar.
   document.addEventListener("input", (e) => {
     const k = e.target.dataset && e.target.dataset.f;
+    if (k === "buscar") {
+      // La búsqueda redibuja los resultados y devuelve el foco al campo.
+      app.busqueda = e.target.value; app.eligiendo = null;
+      previo = ""; render(true);
+      const inp = $tel.querySelector("#buscar"); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+      return;
+    }
     if (k && app.form) { app.form[k] = e.target.value; previo = construir(); }
   });
   document.addEventListener("change", (e) => {
@@ -754,8 +819,38 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (a === "vel") app.vel = Number(el.dataset.v);
     else if (a === "ficha") { app.sub = "ficha"; app.hijoId = el.dataset.id; app.editPin = false; }
     else if (a === "agregar") { app.sub = "agregar"; app.form = { pin: null }; app.errores = {}; }
-    else if (a === "atras") { app.sub = null; app.form = null; }
+    else if (a === "atras") { app.sub = null; app.form = null; app.busqueda = ""; app.eligiendo = null; }
     else if (a === "seguir") { app.sub = "seguir"; app.hijoId = el.dataset.id; cam.s = null; }
+    else if (a === "yaSubio") {
+      const h = HIJOS.find((x) => x.id === el.dataset.id), p = parDe(h);
+      if (p && p.estado === "pendiente" && p.aBordoT == null) {
+        p.aBordoT = R.t; p.dBordo = R.d;
+        linea(`🙋 Confirmaste que ${h.nombre} subió al furgón: la sigues en vivo`);
+        app.banner = { tipo: "ok", titulo: `🚐 ${h.nombre} va a bordo`, cuerpo: `Ahora ves el furgón de la tía Marcela en vivo hasta que ${h.nombre} llegue a su hogar.`, hasta: performance.now() + 4000 };
+      }
+      app.sub = "seguir"; app.hijoId = h.id; cam.s = null;
+    }
+    else if (a === "conectar") { app.sub = "conectar"; app.msgCon = null; app.eligiendo = null; app.form = {}; }
+    else if (a === "elegirCon") { app.eligiendo = el.dataset.id; app.form = { msgCon: "" }; }
+    else if (a === "cancelarElegir") app.eligiendo = null;
+    else if (a === "enviarCon") {
+      const t = TIAS.find((x) => x.id === el.dataset.id);
+      Object.assign(t, { estado: "pendiente", inicio: "yo", mensaje: (app.form?.msgCon ?? "").trim() || null });
+      app.eligiendo = null; app.msgCon = { ok: true, txt: `Solicitud enviada a ${t.nombre}. Te avisaremos cuando responda.` };
+      // Demostración: la tía acepta a los pocos segundos.
+      setTimeout(() => {
+        if (t.estado !== "pendiente" || t.inicio !== "yo") return;
+        t.estado = "aceptada";
+        app.notifs.unshift({ tipo: "ok", titulo: `🤝 ${t.nombre} aceptó tu solicitud`, cuerpo: "Ya puedes agregar a tu hijo/a con este furgón.", t: R ? R.t : 0 });
+        app.banner = { tipo: "ok", titulo: `🤝 ${t.nombre} aceptó tu solicitud`, cuerpo: "Ya puedes agregar a tu hijo/a con este furgón.", hasta: performance.now() + 5000 };
+        if (app.sub === "conectar") app.msgCon = { ok: true, txt: `${t.nombre} aceptó: ya están conectados.` };
+        previo = ""; render(true);
+      }, 4000);
+    }
+    else if (a === "retirarCon") { const t = TIAS.find((x) => x.id === el.dataset.id); t.estado = null; t.inicio = null; app.msgCon = { ok: true, txt: "Solicitud retirada." }; }
+    else if (a === "aceptarCon") { const t = TIAS.find((x) => x.id === el.dataset.id); t.estado = "aceptada"; app.msgCon = { ok: true, txt: `Listo: ya estás conectada con ${t.nombre}. Agrega a tu hijo/a y elige que va con este furgón.` }; }
+    else if (a === "rechazarCon") { const t = TIAS.find((x) => x.id === el.dataset.id); t.estado = null; t.inicio = null; app.msgCon = { ok: true, txt: "Invitación rechazada." }; }
+    else if (a === "tiaHijo") { app.form.tia = el.dataset.id; delete app.errores.tia; }
     else if (a === "editPin") app.editPin = !app.editPin;
     else if (a === "pin") {
       const r = el.getBoundingClientRect();

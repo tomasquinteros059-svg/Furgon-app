@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../../componentes/ui";
+import { type Conexion, misConexiones } from "../../lib/conexiones";
 import { normalizarTelefono } from "../../lib/core";
 import { mensajeError, supabase } from "../../lib/supabase";
 
@@ -21,6 +22,17 @@ export default function NuevoAlumno() {
   const [contacto2, setContacto2] = useState({ nombre: "", telefono: "" });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Con más de una tía conectada (hermanos en furgones distintos), se elige con quién va.
+  const [tias, setTias] = useState<Conexion[]>([]);
+  const [tia, setTia] = useState<string | null>(null);
+
+  useEffect(() => {
+    misConexiones().then((c) => {
+      const aceptadas = c.filter((x) => x.estado === "aceptada");
+      setTias(aceptadas);
+      if (aceptadas.length === 1) setTia(aceptadas[0].otro_id);
+    }).catch(() => {});
+  }, []);
 
   // Centra el mapa en la ubicación actual (útil si se registra desde la casa).
   useEffect(() => {
@@ -47,6 +59,7 @@ export default function NuevoAlumno() {
 
   async function guardar() {
     setError(null);
+    if (tias.length > 1 && !tia) return setError("Elige con qué tía o tío va al colegio.");
     if (!pin) return setError("Marca en el mapa la puerta de tu casa: así el aviso será exacto.");
     const tel1 = normalizarTelefono(contacto1.telefono);
     if (!tel1) return setError("Revisa el teléfono del contacto principal.");
@@ -56,7 +69,7 @@ export default function NuevoAlumno() {
     setGuardando(true);
     const { error } = await supabase.rpc("registrar_alumno", {
       p_datos: {
-        nombre, colegio, curso, minutos_aviso: 5,
+        nombre, colegio, curso, minutos_aviso: 5, conductor_id: tia,
         domicilio: { direccion, lat: pin.latitude, lng: pin.longitude, indicaciones },
         contactos: [
           { nombre: contacto1.nombre || "Contacto principal", telefono: tel1, prioridad: 1 },
@@ -72,6 +85,15 @@ export default function NuevoAlumno() {
   return (
     <Pantalla titulo="Registrar alumno">
       {error ? <Aviso texto={error} tipo="error" /> : null}
+      {tias.length > 1 ? (
+        <View style={{ marginBottom: 14, gap: 6 }}>
+          <Text style={estilos.etiqueta}>¿Con qué tía o tío va?</Text>
+          {tias.map((t) => (
+            <Boton key={t.otro_id} titulo={`${tia === t.otro_id ? "✓ " : ""}${t.otro_nombre}${t.empresa ? ` · ${t.empresa}` : ""}`}
+              variante={tia === t.otro_id ? "primario" : "secundario"} onPress={() => setTia(t.otro_id)} />
+          ))}
+        </View>
+      ) : null}
       <Campo etiqueta="Nombre del alumno" value={nombre} onChangeText={setNombre} />
       <Campo etiqueta="Colegio" value={colegio} onChangeText={setColegio} />
       <Campo etiqueta="Curso" value={curso} onChangeText={setCurso} placeholder="Ej: 3° Básico" />

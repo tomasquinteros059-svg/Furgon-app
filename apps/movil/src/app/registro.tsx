@@ -9,6 +9,8 @@ const NOMBRE_ROL = { apoderado: "apoderado", conductor: "conductor", admin: "adm
 
 export default function Registro() {
   const [codigo, setCodigo] = useState("");
+  // Familias sin código: crean su cuenta y después se conectan con su tía o tío desde la búsqueda.
+  const [sinCodigo, setSinCodigo] = useState(false);
   const [invitacion, setInvitacion] = useState<{ rol: keyof typeof NOMBRE_ROL; empresa: string } | null>(null);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -37,7 +39,11 @@ export default function Registro() {
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { codigo_invitacion: codigo.trim().toUpperCase(), nombre: nombre.trim(), telefono: tel } },
+      options: {
+        data: sinCodigo
+          ? { sin_codigo: "familia", nombre: nombre.trim(), telefono: tel }
+          : { codigo_invitacion: codigo.trim().toUpperCase(), nombre: nombre.trim(), telefono: tel },
+      },
     });
     setCargando(false);
     if (error) return setError(mensajeError(error));
@@ -47,12 +53,20 @@ export default function Registro() {
   return (
     <Pantalla titulo="Crear cuenta">
       <Text style={[estilos.textoSuave, { marginBottom: 16 }]}>
-        El administrador del furgón te entrega un código de invitación. El código define si te registras como
-        apoderado o conductor.
+        {sinCodigo
+          ? "Creas tu cuenta como familia. Después buscas a tu tía o tío del furgón y te conectas con un toque."
+          : "Si el furgón te dio un código de invitación, escríbelo: define si te registras como apoderado o conductor."}
       </Text>
       {error ? <Aviso texto={error} tipo="error" /> : null}
-      <Campo etiqueta="Código de invitación" value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />
-      {invitacion ? (
+      {sinCodigo ? (
+        <Boton titulo="Tengo un código de invitación" variante="texto" onPress={() => setSinCodigo(false)} />
+      ) : (
+        <>
+          <Campo etiqueta="Código de invitación" value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />
+          <Boton titulo="Soy familia y no tengo código" variante="texto" onPress={() => { setSinCodigo(true); setCodigo(""); }} />
+        </>
+      )}
+      {sinCodigo ? null : invitacion ? (
         <Aviso tipo="exito" texto={`Te unirás a "${invitacion.empresa}" como ${NOMBRE_ROL[invitacion.rol]}.`} />
       ) : codigo.trim().length >= 6 ? (
         <Aviso tipo="error" texto="Código no válido o vencido." />
@@ -65,7 +79,7 @@ export default function Registro() {
         titulo="Crear cuenta"
         onPress={registrar}
         cargando={cargando}
-        deshabilitado={!invitacion || !nombre || !email || !password}
+        deshabilitado={(!sinCodigo && !invitacion) || !nombre || !email || !password}
       />
       <Boton titulo="Ya tengo cuenta" variante="texto" onPress={() => router.back()} />
     </Pantalla>

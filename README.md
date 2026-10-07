@@ -275,8 +275,8 @@ npx expo start --dev-client
 
 | Rol | Puede |
 |---|---|
-| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Entregado" o "Ausente" con un toque (botones grandes). Comparte el GPS solo mientras hay un recorrido activo. |
-| **Apoderado** | Se registra con un código de invitación y registra a sus hijos con un pin exacto en el mapa y dos teléfonos. Recibe la alarma, sigue al furgón en un **mapa en vivo** (pantalla `apoderado/seguir/[id]`), confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
+| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Subió" / "En su hogar" o "Ausente" con un toque (botones grandes) y ve cuando una familia confirmó que su hijo subió. Comparte el GPS solo mientras hay un recorrido activo. En **Conexiones** (`conductor/conexiones`) decide si aparece en la búsqueda de las familias, busca a una familia por correo o teléfono exactos para invitarla y acepta o rechaza solicitudes. |
+| **Apoderado** | Se registra con un código de invitación **o sin código** ("Soy familia y no tengo código") y luego se conecta con su tía o tío desde la búsqueda (`apoderado/conectar`: nombre, furgón o comuna). Puede estar conectado con varias tías (hermanos en furgones distintos) y elige con quién va cada hijo al registrarlo. Recibe la alarma, toca **"Ya subió"** para seguir a su hijo en vivo mientras va a bordo, sigue al furgón en un **mapa en vivo** (`apoderado/seguir/[id]`), confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
 | **Administrador** | Asigna alumnos a rutas, genera invitaciones y ve los recorridos del día. |
 
 Los usuarios se registran con un **código de invitación** que entrega el administrador. El código
@@ -304,6 +304,11 @@ npm run typecheck
 - `tests/recomendar-ruta.test.ts`: la ruta recomendada (ida termina en el colegio, vuelta parte
   de él, óptimo exacto hasta 8 casas comparado con fuerza bruta, heurística con 12 casas, no
   cambia el orden por menos de 50 m).
+- `tests/sql/a-bordo-y-conexiones.test.ts`: «Ya subió» (en la vuelta, seguimiento exacto solo
+  desde que subió y hasta su hogar; en la ida, solo con el furgón a menos de 300 m de la casa o
+  marcado por la tía) y las conexiones (registro sin código, búsqueda solo de tías visibles,
+  búsqueda de familias solo por correo o teléfono exactos, aceptar/rechazar, no insistir tras un
+  rechazo, familias con dos furgones).
 - `tests/sql/rutas-y-precios.test.ts`: aplicar el orden recomendado, «hoy no va» marcado por la
   tía (el recorrido en curso se lo salta), precios y montos editables.
 - `tests/sql/administracion.test.ts`: cubre la administración:
