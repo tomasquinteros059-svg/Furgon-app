@@ -1,0 +1,22 @@
+{
+  "name": "furgon-app",
+  "private": true,
+  "description": "Avisos automáticos de llegada para furgones escolares",
+  "workspaces": [
+    "apps/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "demo:preparar": "npm run preparar --workspace=tools/simulador --",
+    "simular": "npm run simular --workspace=tools/simulador --"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.16",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

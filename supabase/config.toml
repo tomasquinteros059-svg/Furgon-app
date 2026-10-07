@@ -1,0 +1,22 @@
+# Configuración mínima del proyecto Supabase (ver `supabase init` para todas las opciones).
+project_id = "furgon-app"
+
+[api]
+schemas = ["public"]
+
+[auth]
+site_url = "furgonapp://"
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+# Para el prototipo no se exige confirmar el correo. Actívalo en producción.
+enable_confirmations = false
+
+# Twilio llama a este webhook sin JWT: se protege validando X-Twilio-Signature.
+[functions.twilio-webhook]
+verify_jwt = false
+
+# Pensada para pg_cron / un scheduler externo: se protege con CRON_SECRET.
+[functions.procesar-llamadas]
+verify_jwt = false

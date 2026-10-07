@@ -1,0 +1,16 @@
+{
+  "name": "simulador",
+  "private": true,
+  "type": "module",
+  "description": "Simulador de recorridos con GPS falso y preparación de datos de demo",
+  "scripts": {
+    "preparar": "tsx src/preparar-demo.ts",
+    "simular": "tsx src/simular.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
+  }
+}

@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+dist/
+# Expo
+apps/movil/.expo/
+apps/movil/android/
+apps/movil/ios/
+apps/movil/web-build/
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+supabase/functions/.env
+supabase/functions/deno.lock
