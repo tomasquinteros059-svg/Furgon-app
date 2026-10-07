@@ -11,6 +11,8 @@ export interface Perfil {
   rol: Rol;
   nombre: string;
   empresa_id: string | null;
+  /** Conductora que también administra (dueña del furgón). */
+  puede_administrar: boolean;
 }
 
 interface EstadoSesion {
@@ -35,7 +37,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from("perfiles")
-      .select("id, rol, nombre, empresa_id")
+      .select("id, rol, nombre, empresa_id, puede_administrar")
       .eq("id", s.user.id)
       .maybeSingle();
     setPerfil((data as Perfil | null) ?? null);

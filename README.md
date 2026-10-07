@@ -35,7 +35,16 @@ El sistema tiene dos aplicaciones:
   - costos de llamadas.
 
 La tía solo instala la app y entra con su código: sus alumnos y el orden de su ruta los carga el
-administrador. La ubicación del furgón es la del **celular de la tía**, así que no se necesita un
+administrador. Si la tía es además la **dueña del furgón**, le das el permiso **"Administra"**
+(*Conductoras*). Con él, desde su propia app:
+
+- agrega alumnos (pin en el mapa y código para la familia);
+- ordena sus rutas;
+- registra pagos;
+- responde las solicitudes, incluidas las cancelaciones.
+
+También puede entrar al panel web con su cuenta. Esa sección **se bloquea mientras tiene un
+recorrido en curso**, y el permiso solo lo da o lo quita el administrador principal. La ubicación del furgón es la del **celular de la tía**, así que no se necesita un
 GPS aparte.
 
 ## Contenido
@@ -217,7 +226,7 @@ genera `apps/admin/dist`, un sitio estático que se puede publicar en Vercel, Ne
 | Panel | Pendientes del día (solicitudes, alumnos sin ruta, familias sin app, morosos), recorridos de hoy, cobranza y llamadas del mes. |
 | Alumnos | Alta completa con pin en el mapa, ficha editable, código para la familia y baja. |
 | Rutas | Conductora asignada, orden de paradas, agregar y quitar alumnos. |
-| Conductoras | Invitación con código; la tía solo instala la app. |
+| Conductoras | Invitación con código; la tía solo instala la app. Permiso **Administra** para la tía dueña del furgón. |
 | Cobros | Genera las mensualidades del mes (idempotente), registra pagos (medio y nota), anula cobros y muestra los vencidos. |
 | Solicitudes | Bandeja de preguntas, reclamos, cambios y **cancelaciones**. Al aprobar una cancelación, el alumno se da de baja: sale de las rutas y se anulan sus cobros futuros. |
 | Preguntas frecuentes | Las familias las ven en *Ayuda* de la app. |

@@ -79,6 +79,8 @@ export interface Conductora {
   id: string;
   nombre: string;
   telefono: string | null;
+  /** Puede administrar (alumnos, rutas, cobros, solicitudes) desde su app. */
+  puede_administrar: boolean;
 }
 
 export interface RecorridoHoy {
@@ -159,7 +161,8 @@ export interface Empresa {
 
 export interface Datos {
   modo: "demo" | "real";
-  sesion(): Promise<{ nombre: string } | null>;
+  /** principal = administrador principal (puede dar permisos); conductora = tía con permiso de administrar. */
+  sesion(): Promise<{ nombre: string; tipo: "principal" | "conductora" } | null>;
   ingresar(email: string, password: string): Promise<void>;
   salir(): Promise<void>;
 
@@ -182,6 +185,7 @@ export interface Datos {
 
   conductoras(): Promise<Conductora[]>;
   invitarConductora(): Promise<string>;
+  permitirAdministrar(conductoraId: string, valor: boolean): Promise<void>;
 
   cobros(periodo: string): Promise<Cobro[]>; // periodo: YYYY-MM
   generarCobros(periodo: string): Promise<number>;

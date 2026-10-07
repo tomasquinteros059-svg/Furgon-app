@@ -56,7 +56,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .muted { color: var(--muted); }
 .estado-sis { display: flex; justify-content: space-between; padding: 8px 18px 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 .vista { flex: 1; overflow-y: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
 .tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .tabs button span { font-size: 20px; line-height: 1; }
 .tabs button[aria-current="page"] { color: var(--ink); }
@@ -132,6 +132,7 @@ details.hist summary::-webkit-details-marker { display: none; }
 table.det { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 table.det th, table.det td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); }
 table.det td.mono { font-size: 12px; }
+.volver-adm { border: 0; background: transparent; font-weight: 700; color: var(--navy); padding: 2px 0; align-self: flex-start; cursor: pointer; }
 .ejemplo { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
 </style>
 </head>
@@ -151,9 +152,11 @@ table.det td.mono { font-size: 12px; }
     { id: "matias", nombre: "Matías Soto", curso: "5° Básico", apoderado: "Luis (papá)", direccion: "Av. Tomás Moro 300, Las Condes", indic: "Depto 302, conserjería", lat: -33.4180, lng: -70.5540, respuesta: "sininternet" },
     { id: "isidora", nombre: "Isidora Rojas", curso: "1° Básico", apoderado: "Ana (mamá)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina", lat: -33.4260, lng: -70.6100, respuesta: "recibido" },
   ];
+  ALUMNOS.forEach((a) => { a.activo = true; a.familiaApp = true; a.mensualidad = 60000; });
+  const alumnosDeRuta = (r) => r.orden.map((id) => ALUMNOS.find((a) => a.id === id)).filter((a) => a && a.activo);
   const RUTAS = [
-    { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"] },
-    { id: "vuelta", nombre: "Vuelta tarde", tipo: "vuelta", hora: "16:30", inicio: 16 * 3600 + 30 * 60, noViaja: [] },
+    { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"], orden: ["isidora", "matias", "sofia"] },
+    { id: "vuelta", nombre: "Vuelta tarde", tipo: "vuelta", hora: "16:30", inicio: 16 * 3600 + 30 * 60, noViaja: [], orden: ["sofia", "matias", "isidora"] },
   ];
   const HISTORIAL = [
     { fecha: "Lun 6 oct", ruta: "Vuelta tarde", inicio: "16:31", fin: "17:02", km: 14.4, ejemplo: true,
@@ -218,7 +221,7 @@ table.det td.mono { font-size: 12px; }
     { featureType: "landscape", stylers: [{ color: "#F1F3F5" }] },
     { featureType: "water", stylers: [{ color: "#C9E3F2" }] },
   ];
-  const GM = { estado: "sin_clave", error: null, avisoRuta: null, mapa: null, div: null, rutas: {}, objetos: null, rid: null, seguir: true, ultimo: 0, izq: false, prev: null };
+  const GM = { estado: "sin_clave", error: null, avisoRuta: null, mapa: null, div: null, rutas: {}, claves: {}, objetos: null, rid: null, seguir: true, ultimo: 0, izq: false, prev: null };
   const ll = (p) => ({ lat: p.lat, lng: p.lng });
   function claveGoogle() {
     try { return new URLSearchParams(location.search).get("gmaps") || localStorage.getItem("gmaps_key") || ""; } catch { return ""; }
@@ -245,7 +248,7 @@ table.det td.mono { font-size: 12px; }
   async function prepararRutasGoogle() {
     const svc = new google.maps.DirectionsService();
     for (const r of RUTAS) {
-      const orden = r.tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
+      const orden = alumnosDeRuta(r);
       const pts = r.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden];
       try {
         const res = await svc.route({
@@ -254,7 +257,7 @@ table.det td.mono { font-size: 12px; }
           travelMode: google.maps.TravelMode.DRIVING,
         });
         const camino = res.routes[0].overview_path.map((q) => ({ lat: q.lat(), lng: q.lng() }));
-        if (camino.length > 1) GM.rutas[r.tipo] = camino;
+        if (camino.length > 1) { GM.rutas[r.tipo] = camino; GM.claves[r.tipo] = orden.map((a) => a.id).join(); }
       } catch (e) {
         GM.avisoRuta = "Google no entregó la ruta por calles (¿«Directions API» habilitada?). Se muestra una ruta aproximada.";
       }
@@ -333,15 +336,135 @@ table.det td.mono { font-size: 12px; }
     }
   }
 
+  // ---------- Administración (la tía dueña del furgón) ----------
+  const mesTxt = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(new Date());
+  const ADM = {
+    vista: "menu", form: null, msg: null, solSel: null, agregarEn: null, codigo: null,
+    cobros: [
+      { id: "k1", alumno: "sofia", monto: 60000, estado: "pagado", medio: "transferencia" },
+      { id: "k2", alumno: "matias", monto: 60000, estado: "pendiente", vencido: true },
+      { id: "k3", alumno: "isidora", monto: 60000, estado: "pendiente" },
+    ],
+    solicitudes: [
+      { id: "s1", tipo: "cancelacion_servicio", asunto: "Nos cambiamos de casa", autor: "Luis (papá)", alumno: "matias", estado: "abierta",
+        mensajes: [{ yo: false, txt: "Hola tía, desde el próximo mes Matías se cambia de colegio. ¿Cómo hacemos la baja?" }] },
+      { id: "s2", tipo: "pregunta", asunto: "¿Pueden pasar 10 minutos más tarde el viernes?", autor: "Ana (mamá)", alumno: "sofia", estado: "abierta",
+        mensajes: [{ yo: false, txt: "El viernes Sofía tiene taller hasta las 16:40. ¿Se puede?" }] },
+    ],
+  };
+  const nombreDe = (id) => ALUMNOS.find((a) => a.id === id)?.nombre ?? "—";
+  const pesosTxt = (n) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+  const nuevoCodigo = () => Math.random().toString(16).slice(2, 10).toUpperCase().padEnd(8, "0");
+  const mensajeFamilia = (nombre, codigo) => `Hola 👋 Para recibir los avisos del furgón de ${nombre}: 1) Descarga la app «Furgón Escolar». 2) Toca «Crear cuenta» y escribe este código: ${codigo}. ¡Listo! Te avisaremos unos 5 minutos antes de que llegue el furgón.`;
+
+  function vAdmin() {
+    if (R && !R.fin) {
+      return `<div class="vista"><h1>Administrar</h1><p class="nota">Tienes un recorrido en curso. La administración se abre cuando lo termines: no se administra manejando.</p></div>`;
+    }
+    const volver = `<button class="volver-adm" data-a="adm" data-v="menu">‹ Administrar</button>`;
+    const msg = ADM.msg ? `<p class="nota" style="color:${ADM.msg.ok ? "var(--ok)" : "var(--alert)"};margin:0">${esc(ADM.msg.txt)}</p>` : "";
+    const activos = ALUMNOS.filter((a) => a.activo);
+    if (ADM.vista === "alumnos") {
+      return `<div class="vista">${volver}<div class="fila"><h1>Mis alumnos</h1></div>${msg}
+        <button class="btn bus" data-a="adm" data-v="nuevo">+ Agregar alumno</button>
+        ${activos.map((a) => `<div class="card"><b style="font-size:17px">${esc(a.nombre)}</b>
+          <span class="muted" style="font-size:13px">${esc(a.curso ?? "")} · ${esc(a.direccion)}</span>
+          <div class="chips">${RUTAS.filter((r) => r.orden.includes(a.id)).map((r) => `<span class="chip">${r.nombre}</span>`).join("") || '<span class="chip alerta">Sin ruta</span>'}
+          ${a.familiaApp ? '<span class="chip ok">✓ Familia usa la app</span>' : '<span class="chip bus">Familia sin la app</span>'}</div>
+          ${a.familiaApp ? "" : `<button class="btn sec" data-a="codigoFam" data-id="${a.id}">Enviar código a la familia</button>`}
+        </div>`).join("")}
+      </div>`;
+    }
+    if (ADM.vista === "codigo") {
+      const c = ADM.codigo;
+      return `<div class="vista">${volver}<h1>${esc(c.nombre)}</h1>
+        <p class="nota" style="color:var(--ok);margin:0">${c.nuevo ? "Quedó en tu ruta. " : ""}Envía este código a la familia para que reciba los avisos.</p>
+        <div style="font-family:var(--font-mono);font-size:30px;letter-spacing:.12em;text-align:center;background:var(--bus-soft);border:2px dashed var(--bus);border-radius:12px;padding:12px">${c.codigo}</div>
+        <p class="nota">${esc(mensajeFamilia(c.nombre, c.codigo))}</p>
+        <a class="btn-nav" href="https://wa.me/?text=${encodeURIComponent(mensajeFamilia(c.nombre, c.codigo))}" target="_blank" rel="noopener">Compartir por <b style="color:#1D7F45">WhatsApp</b></a>
+        <button class="btn" data-a="adm" data-v="alumnos">Listo</button></div>`;
+    }
+    if (ADM.vista === "nuevo") {
+      const f = ADM.form ?? (ADM.form = { nombre: "", curso: "", direccion: "", tel: "", pin: null, rutas: RUTAS.map((r) => r.id) });
+      const casas = activos.map((a) => { const c = px(a); return `<circle cx="${c.x}" cy="${c.y}" r="5" fill="var(--muted)" opacity=".6"/>`; }).join("");
+      const pin = f.pin ? (() => { const c = px(f.pin); return `<svg x="${c.x - 13}" y="${c.y - 35}" width="26" height="35" viewBox="0 0 30 40">${pinSVG("🏠", "#C4281C").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`; })() : "";
+      const campo = (k, etq, extra = "") => `<div class="campo"><label for="adm-${k}">${etq}</label><input id="adm-${k}" data-f="${k}" value="${esc(f[k])}" ${extra}></div>`;
+      return `<div class="vista">${volver}<h1>Agregar alumno</h1>${msg}
+        ${campo("nombre", "Nombre y apellido", 'placeholder="Ej: Tomás Fuentes"')}
+        ${campo("curso", "Curso", 'placeholder="Ej: 2° Básico"')}
+        ${campo("direccion", "Dirección", 'placeholder="Calle, número, comuna"')}
+        <div class="mapa"><svg viewBox="0 0 ${W} ${H}" data-a="pinAdm" role="img" aria-label="Toca para ubicar la casa" style="cursor:crosshair">${FONDO_MAPA}${casas}${pin}</svg>
+          <span class="sello">${f.pin ? "📍 Casa ubicada" : "Toca la puerta de la casa"}</span></div>
+        ${campo("tel", "Teléfono del apoderado", 'inputmode="tel" placeholder="9 1234 5678"')}
+        <div class="chips">${RUTAS.map((r) => `<button class="chip ${f.rutas.includes(r.id) ? "ok" : ""}" data-a="rutaAdm" data-id="${r.id}" style="border:0;cursor:pointer">${f.rutas.includes(r.id) ? "✓ " : ""}${r.nombre}</button>`).join("")}</div>
+        <button class="btn xl" data-a="guardarAlumno">Guardar alumno</button></div>`;
+    }
+    if (ADM.vista === "rutas") {
+      return `<div class="vista">${volver}<h1>Rutas</h1>${msg}
+        <span class="muted" style="font-size:14px">El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo.</span>
+        ${RUTAS.map((r) => {
+          const lista = alumnosDeRuta(r);
+          const fuera = activos.filter((a) => !r.orden.includes(a.id));
+          return `<div class="card"><h3>${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}</h3>
+            ${lista.map((a, i) => `<div class="fila" style="border-bottom:1px solid var(--line);padding:6px 0"><span>${i + 1}. ${esc(a.nombre)}</span>
+              <span style="display:flex;gap:4px"><button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="1" ${i === lista.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button>
+              <button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="quitarAdm" data-id="${r.id}" data-al="${a.id}" aria-label="Quitar">✕</button></span></div>`).join("")}
+            ${fuera.length ? (ADM.agregarEn === r.id ? fuera.map((a) => `<button class="btn sec" data-a="agregarAdm" data-id="${r.id}" data-al="${a.id}">+ ${esc(a.nombre)}</button>`).join("")
+              : `<button class="btn sec" data-a="abrirAgregar" data-id="${r.id}">+ Agregar alumno a esta ruta</button>`) : ""}
+          </div>`;
+        }).join("")}</div>`;
+    }
+    if (ADM.vista === "cobros") {
+      const lista = ADM.cobros.filter((c) => c.estado !== "anulado");
+      const total = (e) => lista.filter((c) => c.estado === e).reduce((t, c) => t + c.monto, 0);
+      return `<div class="vista">${volver}<h1>Cobros de ${mesTxt}</h1>${msg}
+        <div class="cifras"><div class="cifra"><b>${pesosTxt(total("pagado"))}</b><span>Cobrado</span></div><div class="cifra"><b>${pesosTxt(total("pendiente"))}</b><span>Por cobrar</span></div></div>
+        ${lista.map((c) => `<div class="card"><div class="fila"><b>${esc(nombreDe(c.alumno))}</b><b class="mono">${pesosTxt(c.monto)}</b></div>
+          ${c.estado === "pagado" ? `<span class="chip ok">✓ Pagado · ${c.medio}</span>` : `<span class="chip ${c.vencido ? "alerta" : "bus"}">${c.vencido ? "Vencido" : "Pendiente"}</span>
+          <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="pagarAdm" data-id="${c.id}" data-m="efectivo">Pagó en efectivo</button><button class="ok" style="min-height:52px;font-size:16px;background:var(--navy);color:var(--navy-ink)" data-a="pagarAdm" data-id="${c.id}" data-m="transferencia">Transferencia</button></div>`}
+        </div>`).join("")}</div>`;
+    }
+    if (ADM.vista === "solicitud") {
+      const sol = ADM.solicitudes.find((x) => x.id === ADM.solSel);
+      return `<div class="vista"><button class="volver-adm" data-a="adm" data-v="solicitudes">‹ Solicitudes</button><h1>${esc(sol.asunto)}</h1>
+        <span class="muted">${esc(sol.autor)} · ${esc(nombreDe(sol.alumno))}</span>${msg}
+        ${sol.mensajes.map((m) => `<div class="card" style="${m.yo ? "align-self:flex-end;background:var(--bus-soft)" : "align-self:flex-start"};max-width:85%;padding:10px">${esc(m.txt)}</div>`).join("")}
+        ${sol.estado === "cerrada" ? `<p class="nota">Cerrada${sol.resolucion ? ` · cancelación ${sol.resolucion}` : ""}.</p>` : `
+          <div class="campo"><label for="adm-resp">Respuesta</label><input id="adm-resp" data-f="resp" placeholder="Escribe tu respuesta" value="${esc(ADM.form?.resp ?? "")}"></div>
+          ${sol.tipo === "cancelacion_servicio" ? `<button class="btn peligro" data-a="resolverAdm" data-v="si">Aprobar cancelación y dar de baja</button><button class="btn sec" data-a="resolverAdm" data-v="no">Rechazar</button>`
+            : `<button class="btn" data-a="responderAdm">Responder</button>`}`}</div>`;
+    }
+    if (ADM.vista === "solicitudes") {
+      const abiertas = ADM.solicitudes.filter((x) => x.estado !== "cerrada");
+      return `<div class="vista">${volver}<h1>Solicitudes</h1>${msg}
+        ${abiertas.length ? abiertas.map((x) => `<button class="card" style="text-align:left;cursor:pointer;${x.estado === "abierta" ? "border:2px solid var(--alert)" : ""}" data-a="verSol" data-id="${x.id}">
+          <span class="muted" style="font-size:13px">${x.tipo === "cancelacion_servicio" ? "Cancelación" : "Pregunta"} · ${x.estado === "abierta" ? "Sin responder" : "Respondida"}</span>
+          <b>${esc(x.asunto)}</b><span class="muted" style="font-size:13px">${esc(x.autor)} · ${esc(nombreDe(x.alumno))}</span></button>`).join("") : '<p class="nota">No hay solicitudes por atender. 🎉</p>'}</div>`;
+    }
+    const porCobrar = ADM.cobros.filter((c) => c.estado === "pendiente").reduce((t, c) => t + c.monto, 0);
+    const sinResp = ADM.solicitudes.filter((x) => x.estado === "abierta").length;
+    const sinApp = activos.filter((a) => !a.familiaApp).length;
+    const opcion = (v, t, d, alerta) => `<button class="card" style="text-align:left;cursor:pointer;${alerta ? "border:2px solid var(--alert)" : ""}" data-a="adm" data-v="${v}"><h3>${t}</h3><span class="muted" style="font-size:14px">${d}</span></button>`;
+    return `<div class="vista"><h1>Administrar</h1>
+      <span class="muted" style="font-size:14px">Eres la dueña del furgón: tú agregas a tus alumnos, ordenas la ruta y llevas los pagos. Se bloquea mientras manejas.</span>
+      ${opcion("alumnos", "👧 Mis alumnos", `${activos.length} activos${sinApp ? ` · ${sinApp} familia(s) sin la app` : ""}`, false)}
+      ${opcion("rutas", "🗺️ Rutas", "Orden de las paradas, agregar y quitar", false)}
+      ${opcion("cobros", "💳 Cobros", `${pesosTxt(porCobrar)} por cobrar en ${mesTxt}`, ADM.cobros.some((c) => c.estado === "pendiente" && c.vencido))}
+      ${opcion("solicitudes", "💬 Solicitudes de las familias", sinResp ? `${sinResp} sin responder` : "Todo respondido", sinResp > 0)}
+      <p class="nota">También puedes entrar al panel web de administración con esta misma cuenta.</p></div>`;
+  }
+
   // ---------- Estado de la app ----------
   const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [], modoGps: "pie", errorGps: null, buscandoGps: false };
   let R = null; // recorrido activo
 
   function iniciarRecorrido(rutaId) {
     const ruta = RUTAS.find((r) => r.id === rutaId);
-    const orden = ruta.tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
+    const orden = alumnosDeRuta(ruta);
     // Con Google Maps conectado, el furgón recorre la ruta real por calles.
-    const puntos = GM.rutas[ruta.tipo] ?? trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
+    const vigente = GM.claves[ruta.tipo] === orden.map((a) => a.id).join();
+    const puntos = (vigente && GM.rutas[ruta.tipo]) || trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
     const acum = [0];
     for (let i = 1; i < puntos.length; i++) acum.push(acum[i - 1] + dist(puntos[i - 1], puntos[i]));
     // Cada casa queda en el punto de la ruta más cercano, avanzando en orden.
@@ -449,7 +572,7 @@ table.det td.mono { font-size: 12px; }
       R = {
         gps: true, modo, ruta: { nombre: "Prueba con GPS real", tipo: "vuelta", inicio: ahora.getHours() * 3600 + ahora.getMinutes() * 60 + ahora.getSeconds() },
         inicioMs: Date.now(), t: 0, d: 0, largo: 0, yo, trazo: [yo], cola: 0, enviadas: 0, detenido: null, fin: false, ultimaEval: 0,
-        paradas: ALUMNOS.map((a, j) => ({ ...a, ...desplazar(yo, modo.casas[j][0], modo.casas[j][1]), direccion: `Casa de prueba ${j + 1}`, indic: "Toca el mapa para moverla",
+        paradas: ALUMNOS.filter((a) => a.activo !== false).slice(0, 3).map((a, j) => ({ ...a, ...desplazar(yo, modo.casas[j][0], modo.casas[j][1]), direccion: `Casa de prueba ${j + 1}`, indic: "Toca el mapa para moverla",
           estado: "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
         llamadas: [], ev: [], gratis: 0, pagadas: 0, mover: 0,
       };
@@ -614,7 +737,7 @@ table.det td.mono { font-size: 12px; }
   function vHoy() {
     const rutas = RUTAS.map((r) => {
       const hecha = app.terminados.find((x) => x.ruta === r.nombre);
-      const n = ALUMNOS.length - r.noViaja.length;
+      const n = alumnosDeRuta(r).filter((a) => !r.noViaja.includes(a.id)).length;
       return `<div class="card">
         <div class="fila"><h2>${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}</h2><span class="mono muted">${r.hora}</span></div>
         <span class="muted">${r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"} · ${n} alumno${n === 1 ? "" : "s"}${r.noViaja.length ? ` · ${r.noViaja.length} no viaja hoy` : ""}</span>
@@ -783,7 +906,7 @@ table.det td.mono { font-size: 12px; }
         <div class="dato"><span>Patente</span><span class="mono">${FURGON.patente}</span></div>
         <div class="dato"><span>Vehículo</span><span>${FURGON.modelo}</span></div>
         <div class="dato"><span>Rutas</span><span>Ida 07:00 · Vuelta 16:30</span></div>
-        <div class="dato"><span>Alumnos</span><span>${ALUMNOS.length}</span></div>
+        <div class="dato"><span>Alumnos</span><span>${ALUMNOS.filter((a) => a.activo).length}</span></div>
       </div>
       <div class="card"><h3>Permisos del teléfono</h3>
         <div class="dato"><span>Ubicación</span><span style="color:var(--ok)">Siempre ✓</span></div>
@@ -803,24 +926,12 @@ table.det td.mono { font-size: 12px; }
   }
 
   function tabs() {
-    const t = [["hoy", "🚐", "Hoy"], ["historial", "🕘", "Historial"], ["perfil", "👤", "Perfil"]];
+    const t = [["hoy", "🚐", "Hoy"], ["admin", "🧑‍💼", "Administrar"], ["historial", "🕘", "Historial"], ["perfil", "👤", "Perfil"]];
     return `<nav class="tabs" aria-label="Secciones">${t.map(([id, ic, n]) => `<button data-a="tab" data-id="${id}" aria-current="${app.tab === id ? "page" : "false"}"><span>${ic}</span>${n}</button>`).join("")}</nav>`;
   }
 
   function render(forzar = false) {
-    let cuerpo;
-    if (app.vista === "login") cuerpo = vLogin();
-    else if (app.vista === "recorrido") cuerpo = vRecorrido();
-    else if (app.vista === "resumen") cuerpo = vResumen();
-    else cuerpo = { hoy: vHoy, historial: vHistorial, perfil: vPerfil }[app.tab]();
-    const conTabs = app.vista === "hoy";
-    const toast = app.toast && app.toast.hasta > performance.now() ? `<div class="toast" role="status">${esc(app.toast.txt)}</div>` : "";
-    const hoja = app.hoja === "fin" ? `<div class="hoja-fondo" data-a="cerrarHoja"><div class="hoja" role="dialog" aria-label="Finalizar recorrido">
-        <h2>¿Finalizar recorrido?</h2>
-        <span class="muted">${R.paradas.filter((p) => p.estado === "pendiente").length ? `Quedan ${R.paradas.filter((p) => p.estado === "pendiente").length} alumno(s) sin marcar.` : "Todos los alumnos están marcados."} Se dejará de compartir tu ubicación.</span>
-        <button class="btn peligro xl" data-a="finalizar">Finalizar</button><button class="btn sec" data-a="cerrarHoja">Seguir en el recorrido</button>
-      </div></div>` : "";
-    const html = barraSis() + cuerpo + (conTabs ? tabs() : "") + toast + hoja;
+    const html = construirHtml();
     if (html !== previo && (forzar || !presionando)) {
       const scroll = $tel.querySelector(".vista")?.scrollTop ?? 0;
       previo = html; $tel.innerHTML = html;
@@ -829,13 +940,76 @@ table.det td.mono { font-size: 12px; }
     montarGoogle();
   }
 
+  function construirHtml() {
+    let cuerpo;
+    if (app.vista === "login") cuerpo = vLogin();
+    else if (app.vista === "recorrido") cuerpo = vRecorrido();
+    else if (app.vista === "resumen") cuerpo = vResumen();
+    else cuerpo = { hoy: vHoy, admin: vAdmin, historial: vHistorial, perfil: vPerfil }[app.tab]();
+    const conTabs = app.vista === "hoy";
+    const toast = app.toast && app.toast.hasta > performance.now() ? `<div class="toast" role="status">${esc(app.toast.txt)}</div>` : "";
+    const hoja = app.hoja === "fin" ? `<div class="hoja-fondo" data-a="cerrarHoja"><div class="hoja" role="dialog" aria-label="Finalizar recorrido">
+        <h2>¿Finalizar recorrido?</h2>
+        <span class="muted">${R.paradas.filter((p) => p.estado === "pendiente").length ? `Quedan ${R.paradas.filter((p) => p.estado === "pendiente").length} alumno(s) sin marcar.` : "Todos los alumnos están marcados."} Se dejará de compartir tu ubicación.</span>
+        <button class="btn peligro xl" data-a="finalizar">Finalizar</button><button class="btn sec" data-a="cerrarHoja">Seguir en el recorrido</button>
+      </div></div>` : "";
+    return barraSis() + cuerpo + (conTabs ? tabs() : "") + toast + hoja;
+  }
+
   // ---------- Eventos ----------
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-a]"); if (!el) return;
     const a = el.dataset.a;
     if (a === "cerrarHoja" && el !== e.target && el.classList.contains("hoja-fondo")) return;
     if (a === "entrar") { app.vista = "hoy"; app.tab = "hoy"; }
-    else if (a === "tab") { app.tab = el.dataset.id; }
+    else if (a === "tab") { app.tab = el.dataset.id; if (el.dataset.id === "admin") { ADM.vista = "menu"; ADM.msg = null; } }
+    else if (a === "adm") { ADM.vista = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.agregarEn = null; }
+    else if (a === "codigoFam") { const al = ALUMNOS.find((x) => x.id === el.dataset.id); al.codigo ??= nuevoCodigo(); ADM.codigo = { nombre: al.nombre, codigo: al.codigo }; ADM.vista = "codigo"; }
+    else if (a === "pinAdm") {
+      const r = el.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
+      ADM.form.pin = { lat: latMax - (y - oy) / (mLat * k), lng: lngMin + (x - ox) / (mLng * k) };
+    }
+    else if (a === "rutaAdm") { const f = ADM.form; f.rutas = f.rutas.includes(el.dataset.id) ? f.rutas.filter((x) => x !== el.dataset.id) : [...f.rutas, el.dataset.id]; }
+    else if (a === "guardarAlumno") {
+      const f = ADM.form, tel = f.tel.replace(/\D/g, "");
+      if (!f.nombre.trim() || !f.direccion.trim()) ADM.msg = { ok: false, txt: "Falta el nombre o la dirección." };
+      else if (!f.pin) ADM.msg = { ok: false, txt: "Toca el mapa para ubicar la casa: así el aviso llega a tiempo." };
+      else if (tel.length < 8) ADM.msg = { ok: false, txt: "Revisa el teléfono (ej: 9 1234 5678)." };
+      else {
+        const id = "a" + Date.now();
+        ALUMNOS.push({ id, nombre: f.nombre.trim(), curso: f.curso.trim(), apoderado: "Apoderado/a", direccion: f.direccion.trim(), indic: "—",
+          lat: f.pin.lat, lng: f.pin.lng, respuesta: "app", activo: true, familiaApp: false, mensualidad: 60000, codigo: nuevoCodigo() });
+        f.rutas.forEach((rid) => RUTAS.find((r) => r.id === rid).orden.push(id));
+        ADM.cobros.push({ id: "k" + Date.now(), alumno: id, monto: 60000, estado: "pendiente" });
+        ADM.codigo = { nombre: f.nombre.trim(), codigo: ALUMNOS.at(-1).codigo, nuevo: true };
+        ADM.vista = "codigo"; ADM.form = null; ADM.msg = null;
+      }
+    }
+    else if (a === "moverAdm") {
+      const r = RUTAS.find((x) => x.id === el.dataset.id), vis = alumnosDeRuta(r).map((x) => x.id);
+      const i = vis.indexOf(el.dataset.al), j = i + Number(el.dataset.d);
+      if (j >= 0 && j < vis.length) { [vis[i], vis[j]] = [vis[j], vis[i]]; r.orden = [...vis, ...r.orden.filter((x) => !vis.includes(x))]; ADM.msg = { ok: true, txt: "Orden actualizado: el próximo recorrido lo usará." }; }
+    }
+    else if (a === "quitarAdm") { const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden = r.orden.filter((x) => x !== el.dataset.al); ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} salió de ${r.nombre}.` }; }
+    else if (a === "abrirAgregar") ADM.agregarEn = el.dataset.id;
+    if (/^(moverAdm|quitarAdm|agregarAdm|guardarAlumno|resolverAdm)$/.test(a) && GM.estado === "listo") prepararRutasGoogle();
+    else if (a === "agregarAdm") { const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden.push(el.dataset.al); ADM.agregarEn = null; ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} quedó al final de ${r.nombre}.` }; }
+    else if (a === "pagarAdm") { const c = ADM.cobros.find((x) => x.id === el.dataset.id); Object.assign(c, { estado: "pagado", medio: el.dataset.m, vencido: false }); ADM.msg = { ok: true, txt: `Pago de ${nombreDe(c.alumno)} registrado.` }; }
+    else if (a === "verSol") { ADM.solSel = el.dataset.id; ADM.vista = "solicitud"; ADM.form = { resp: "" }; ADM.msg = null; }
+    else if (a === "responderAdm" || a === "resolverAdm") {
+      const sol = ADM.solicitudes.find((x) => x.id === ADM.solSel), txt = (ADM.form?.resp ?? "").trim();
+      if (txt) sol.mensajes.push({ yo: true, txt });
+      if (a === "responderAdm") {
+        if (!txt) ADM.msg = { ok: false, txt: "Escribe tu respuesta." }; else { sol.estado = "respondida"; ADM.msg = { ok: true, txt: "Respuesta enviada a la familia." }; }
+      } else if (el.dataset.v === "si") {
+        const al = ALUMNOS.find((x) => x.id === sol.alumno); al.activo = false;
+        RUTAS.forEach((r) => { r.orden = r.orden.filter((x) => x !== al.id); });
+        ADM.cobros.filter((c) => c.alumno === al.id && c.estado === "pendiente").forEach((c) => { c.estado = "anulado"; });
+        Object.assign(sol, { estado: "cerrada", resolucion: "aprobada" });
+        ADM.msg = { ok: true, txt: `${al.nombre} quedó dado de baja: salió de tus rutas y no se le cobrará más.` };
+      } else { Object.assign(sol, { estado: "cerrada", resolucion: "rechazada" }); ADM.msg = { ok: true, txt: "Solicitud rechazada." }; }
+      ADM.form = { resp: "" };
+    }
     else if (a === "iniciar") iniciarRecorrido(el.dataset.id);
     else if (a === "marcar") marcar(el.dataset.id, el.dataset.e);
     else if (a === "pedirFin") app.hoja = "fin";
@@ -855,6 +1029,10 @@ table.det td.mono { font-size: 12px; }
     else if (a === "moverCasa" && R && R.gps) moverCasa(e, el);
     else if (a === "salir") { app.vista = "login"; }
     previo = ""; render(true);
+  });
+  document.addEventListener("input", (e) => {
+    const k = e.target.dataset && e.target.dataset.f;
+    if (k && ADM.form) { ADM.form[k] = e.target.value; previo = construirHtml(); }
   });
   document.addEventListener("change", (e) => {
     if (e.target.id === "chkSenal") {

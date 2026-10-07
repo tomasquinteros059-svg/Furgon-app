@@ -42,7 +42,7 @@ export function irA(ruta: string) {
 }
 
 export function App() {
-  const [usuario, setUsuario] = useState<{ nombre: string } | null | undefined>(undefined);
+  const [usuario, setUsuario] = useState<{ nombre: string; tipo: "principal" | "conductora" } | null | undefined>(undefined);
   const [errorSesion, setErrorSesion] = useState<string | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const partes = useRuta();
@@ -65,7 +65,7 @@ export function App() {
   switch (seccion) {
     case "alumnos": pagina = id === "nuevo" ? <NuevoAlumno /> : id ? <FichaAlumno id={id} /> : <Alumnos />; break;
     case "rutas": pagina = <Rutas />; break;
-    case "conductoras": pagina = <Conductoras />; break;
+    case "conductoras": pagina = <Conductoras principal={usuario.tipo === "principal"} />; break;
     case "cobros": pagina = <Cobros />; break;
     case "solicitudes": pagina = <Solicitudes seleccion={id ?? null} />; break;
     case "preguntas": pagina = <Preguntas />; break;
@@ -88,7 +88,7 @@ export function App() {
           ))}
         </nav>
         <div className="pie-lateral">
-          <span>{usuario.nombre}</span>
+          <span>{usuario.nombre}{usuario.tipo === "conductora" ? " · conductora" : ""}</span>
           <button className="btn-link" onClick={async () => { await datos.salir(); setUsuario(null); }}>Cerrar sesión</button>
         </div>
       </aside>

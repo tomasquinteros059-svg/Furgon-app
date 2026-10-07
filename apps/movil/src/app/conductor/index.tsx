@@ -23,12 +23,13 @@ export default function RutasConductor() {
 
   const cargar = useCallback(async () => {
     const [{ data: r }, { data: rec }] = await Promise.all([
-      supabase.from("rutas").select("id, nombre, tipo, hora_salida, colegio_nombre").eq("activa", true).order("hora_salida"),
-      supabase.from("recorridos").select("id, ruta_id").eq("estado", "activo"),
+      // Solo sus rutas (con permiso de administrar vería también las de otras conductoras).
+      supabase.from("rutas").select("id, nombre, tipo, hora_salida, colegio_nombre").eq("activa", true).eq("conductor_id", perfil?.id ?? "").order("hora_salida"),
+      supabase.from("recorridos").select("id, ruta_id").eq("estado", "activo").eq("conductor_id", perfil?.id ?? ""),
     ]);
     setRutas((r as Ruta[]) ?? []);
     setActivos(Object.fromEntries((rec ?? []).map((x) => [x.ruta_id, x.id])));
-  }, []);
+  }, [perfil?.id]);
 
   useFocusEffect(useCallback(() => {
     cargar();
@@ -58,6 +59,17 @@ export default function RutasConductor() {
       <Aviso texto="Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas." />
       <Aviso texto="📡 Tu celular es el GPS del furgón: mantenlo con batería, con la ubicación activada y en su soporte." />
       {error ? <Aviso texto={error} tipo="error" /> : null}
+      {perfil?.puede_administrar ? (
+        <Tarjeta>
+          <Text style={estilos.subtitulo}>🧑‍💼 Administrar</Text>
+          <Text style={estilos.textoSuave}>Tus alumnos, el orden de la ruta, los pagos y las consultas de las familias.</Text>
+          {Object.keys(activos).length ? (
+            <Aviso texto="Disponible cuando termines el recorrido: no se administra manejando." />
+          ) : (
+            <Boton titulo="Abrir administración" variante="secundario" onPress={() => router.push("/conductor/administrar")} />
+          )}
+        </Tarjeta>
+      ) : null}
       {rutas.length === 0 ? <Text style={estilos.textoSuave}>No tienes rutas asignadas.</Text> : null}
       {rutas.map((ruta) => {
         const activo = activos[ruta.id];

@@ -27,14 +27,15 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     async sesion() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return null;
-      const perfil = ok(await sb.from("perfiles").select("id, nombre, rol, empresa_id").eq("id", data.session.user.id).maybeSingle());
-      if (!perfil || perfil.rol !== "admin") {
+      const perfil = ok(await sb.from("perfiles").select("id, nombre, rol, empresa_id, puede_administrar").eq("id", data.session.user.id).maybeSingle());
+      const administra = perfil && (perfil.rol === "admin" || (perfil.rol === "conductor" && perfil.puede_administrar));
+      if (!perfil || !administra) {
         await sb.auth.signOut();
-        throw new Error("Esta cuenta no es de administrador. Usa la app móvil para conductoras y apoderados.");
+        throw new Error("Esta cuenta no tiene permiso de administración. Pídeselo al administrador principal.");
       }
       empresaId = perfil.empresa_id;
       miId = perfil.id;
-      return { nombre: perfil.nombre };
+      return { nombre: perfil.nombre, tipo: perfil.rol === "admin" ? "principal" : "conductora" };
     },
     async ingresar(email, password) {
       const { error } = await sb.auth.signInWithPassword({ email, password });
@@ -138,7 +139,10 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     },
 
     async conductoras() {
-      return (ok(await sb.from("perfiles").select("id, nombre, telefono").eq("rol", "conductor").order("nombre")) ?? []) as Conductora[];
+      return (ok(await sb.from("perfiles").select("id, nombre, telefono, puede_administrar").eq("rol", "conductor").order("nombre")) ?? []) as Conductora[];
+    },
+    async permitirAdministrar(conductoraId, valor) {
+      ok(await sb.rpc("permitir_administrar", { p_perfil: conductoraId, p_valor: valor }));
     },
     async invitarConductora() {
       return ok(await sb.rpc("crear_invitacion", { p_rol: "conductor", p_usos: 1 })) as string;

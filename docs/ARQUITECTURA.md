@@ -114,7 +114,10 @@ empresas (mensualidad_defecto, dia_vencimiento) ─┬─ cobros (alumno, period
 invitaciones.alumno_id → el apoderado que se registra con ese código queda ligado al alumno
 ```
 
-Las operaciones del administrador son RPC que exigen `rol = admin` (`requiere_admin()`):
+Las operaciones del administrador son RPC que exigen `requiere_admin()`. Las puede ejecutar el
+`rol = admin` o una **conductora con `puede_administrar`** (la tía dueña del furgón). Ese permiso
+solo lo cambia un administrador principal con `permitir_administrar`; la columna no es editable
+desde la app. Las RPC son:
 
 - `admin_crear_alumno`, `codigo_familia`, `mover_parada`;
 - `generar_cobros`, `registrar_pago`, `anular_cobro`;

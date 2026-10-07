@@ -15,8 +15,8 @@ const esperar = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 export function crearDatosDemo(): Datos {
   const empresa: Empresa = { id: "e1", nombre: "Furgones Tía Marcela", mensualidad_defecto: 60000, dia_vencimiento: 5, telefono_contacto: "+56 9 5555 1234" };
   const conductoras: Conductora[] = [
-    { id: "c1", nombre: "Marcela Fuentes (tía Marcela)", telefono: "+56 9 5555 1234" },
-    { id: "c2", nombre: "Jorge Díaz", telefono: "+56 9 5555 9876" },
+    { id: "c1", nombre: "Marcela Fuentes (tía Marcela)", telefono: "+56 9 5555 1234", puede_administrar: true },
+    { id: "c2", nombre: "Jorge Díaz", telefono: "+56 9 5555 9876", puede_administrar: false },
   ];
   const base = [
     ["Sofía Pérez", "3° Básico", -33.4495, -70.5560, "Av. Ossa 1200, La Reina", "Ana Pérez", "+56 9 1111 1111", null],
@@ -107,7 +107,7 @@ export function crearDatosDemo(): Datos {
   const enMes = (f: string, mes: string) => f.slice(0, 7) === mes;
   return {
     modo: "demo",
-    async sesion() { return sesionActiva ? { nombre: "Administración" } : null; },
+    async sesion() { return sesionActiva ? { nombre: "Administración", tipo: "principal" as const } : null; },
     async ingresar() { await esperar(300); sesionActiva = true; },
     async salir() { sesionActiva = false; },
 
@@ -196,6 +196,7 @@ export function crearDatosDemo(): Datos {
 
     async conductoras() { await esperar(); return structuredClone(conductoras); },
     async invitarConductora() { await esperar(); return codigo(); },
+    async permitirAdministrar(id, valor) { await esperar(); conductoras.find((c) => c.id === id)!.puede_administrar = valor; },
 
     async cobros(periodo) { await esperar(); return structuredClone(cobros.filter((c) => c.periodo === `${periodo}-01`)).sort((a, b) => a.alumno.localeCompare(b.alumno)); },
     async generarCobros(periodo) { await esperar(); return generar(periodo); },
