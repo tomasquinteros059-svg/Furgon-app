@@ -1,5 +1,6 @@
 // Implementación en memoria con datos de ejemplo, para la demostración (sin backend).
 // Reproduce las mismas reglas que las RPC del servidor (cobros idempotentes, bajas, etc.).
+import { extremosDeRuta, recomendarRuta } from "../../../../supabase/functions/_shared/core/recomendar-ruta.ts";
 import type {
   Alumno, Cobro, Conductora, Datos, Empresa, LlamadaReporte, Mensaje, MedioPago, Pregunta, Ruta, Solicitud,
 } from "./tipos";
@@ -36,16 +37,19 @@ export function crearDatosDemo(): Datos {
     rutas: [],
   }));
   // Josefa recién agregada: aún sin ruta y su familia sin la app.
+  const colegio = { nombre: "Colegio Demo (Plaza Ñuñoa)", lat: -33.4565, lng: -70.5978 };
   const rutas: Ruta[] = [
-    { id: "r1", nombre: "Ida mañana", tipo: "ida", hora_salida: "07:00:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", paradas: [] },
-    { id: "r2", nombre: "Vuelta tarde", tipo: "vuelta", hora_salida: "16:30:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", paradas: [] },
+    { id: "r1", nombre: "Ida mañana", tipo: "ida", hora_salida: "07:00:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", colegio, paradas: [] },
+    { id: "r2", nombre: "Vuelta tarde", tipo: "vuelta", hora_salida: "16:30:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", colegio, paradas: [] },
   ];
   const ponerEnRuta = (r: Ruta, a: Alumno) => {
-    r.paradas.push({ alumno_id: a.id, nombre: a.nombre, orden: r.paradas.length + 1, direccion: a.domicilio?.direccion ?? "" });
+    r.paradas.push({ alumno_id: a.id, nombre: a.nombre, orden: r.paradas.length + 1, direccion: a.domicilio?.direccion ?? "",
+      lat: a.domicilio?.lat ?? null, lng: a.domicilio?.lng ?? null, hoy_no_va: false });
     a.rutas.push({ id: r.id, nombre: r.nombre });
   };
   [5, 4, 2, 1, 0, 3].forEach((i) => ponerEnRuta(rutas[0], alumnos[i]));
   [3, 0, 2, 1, 4, 5].forEach((i) => ponerEnRuta(rutas[1], alumnos[i]));
+  rutas[1].paradas.find((p) => p.alumno_id === "a3")!.hoy_no_va = true; // la familia de Matías avisó que hoy no va
 
   const codigos = new Map<string, string>();
   const cobros: Cobro[] = [];
@@ -160,7 +164,7 @@ export function crearDatosDemo(): Datos {
     },
     async actualizarDomicilio(alumnoId, d) {
       await esperar(); const a = alumnos.find((x) => x.id === alumnoId)!; a.domicilio = { ...d, id: d.id ?? uid() };
-      rutas.forEach((r) => r.paradas.forEach((p) => { if (p.alumno_id === alumnoId) p.direccion = d.direccion; }));
+      rutas.forEach((r) => r.paradas.forEach((p) => { if (p.alumno_id === alumnoId) Object.assign(p, { direccion: d.direccion, lat: d.lat, lng: d.lng }); }));
     },
     async guardarContactos(alumnoId, contactos) { await esperar(); alumnos.find((x) => x.id === alumnoId)!.contactos = contactos; },
     async codigoFamilia(alumnoId) { await esperar(); if (!codigos.has(alumnoId)) codigos.set(alumnoId, codigo()); return codigos.get(alumnoId)!; },
@@ -194,6 +198,25 @@ export function crearDatosDemo(): Datos {
       r.conductor_id = conductoraId; r.conductor_nombre = conductoras.find((c) => c.id === conductoraId)?.nombre ?? null;
     },
 
+    async recomendarRuta(rutaId) {
+      await esperar(400);
+      const r = rutas.find((x) => x.id === rutaId)!;
+      const conCasa = r.paradas.filter((p) => p.lat != null && p.lng != null).map((p) => ({ id: p.alumno_id, lat: p.lat!, lng: p.lng! }));
+      return { ...recomendarRuta(conCasa, extremosDeRuta(r.tipo, r.colegio)), fuente: "estimada" as const };
+    },
+    async aplicarOrden(rutaId, orden) {
+      await esperar();
+      const r = rutas.find((x) => x.id === rutaId)!;
+      if (orden.length !== r.paradas.length || !r.paradas.every((p) => orden.includes(p.alumno_id))) {
+        throw new Error("La ruta cambió mientras la revisabas: vuelve a pedir la recomendación");
+      }
+      r.paradas.sort((a, b) => orden.indexOf(a.alumno_id) - orden.indexOf(b.alumno_id)).forEach((p, i) => { p.orden = i + 1; });
+    },
+    async hoyNoVa(alumnoId, tipo, valor) {
+      await esperar(80);
+      rutas.filter((r) => r.tipo === tipo).forEach((r) => r.paradas.forEach((p) => { if (p.alumno_id === alumnoId) p.hoy_no_va = valor; }));
+    },
+
     async conductoras() { await esperar(); return structuredClone(conductoras); },
     async invitarConductora() { await esperar(); return codigo(); },
     async permitirAdministrar(id, valor) { await esperar(); conductoras.find((c) => c.id === id)!.puede_administrar = valor; },
@@ -208,6 +231,21 @@ export function crearDatosDemo(): Datos {
     async anularCobro(cobroId, nota) {
       await esperar(); const c = cobros.find((x) => x.id === cobroId)!;
       Object.assign(c, { estado: "anulado", nota: nota || c.nota });
+    },
+    async cambiarMontoCobro(cobroId, monto, nota) {
+      await esperar(); const c = cobros.find((x) => x.id === cobroId)!;
+      if (monto < 0) throw new Error("El monto no puede ser negativo");
+      if (c.estado !== "pendiente") throw new Error("Solo se puede cambiar el monto de un cobro pendiente");
+      Object.assign(c, { monto, nota: nota.trim() || c.nota });
+    },
+    async fijarMensualidad(alumnoId, monto, desde) {
+      await esperar();
+      if (monto < 0) throw new Error("El precio no puede ser negativo");
+      alumnos.find((x) => x.id === alumnoId)!.mensualidad = monto;
+      if (!desde) return 0;
+      const afectados = cobros.filter((c) => c.alumno_id === alumnoId && c.estado === "pendiente" && c.periodo >= `${desde}-01`);
+      afectados.forEach((c) => { c.monto = monto; });
+      return afectados.length;
     },
 
     async solicitudes() { await esperar(); return structuredClone(solicitudes.map(({ mensajes: _m, ...s }) => s)).sort((a, b) => b.actualizado_en.localeCompare(a.actualizado_en)); },

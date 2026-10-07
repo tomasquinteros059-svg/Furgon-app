@@ -105,6 +105,7 @@ supabase/
     marcar-parada/               "Entregado"/"Ausente" + push de confirmación
     llamada-app/                 Acuse, confirmación o rechazo de la llamada gratis por la app
     trazado-ruta/                Ruta por calles (Google Routes) para el mapa de la conductora
+    recomendar-ruta/             Orden recomendado de las paradas (distancia + Google Routes)
     twilio-webhook/              TwiML de la llamada, confirmación y estado
     procesar-llamadas/           Respaldo para despachar reintentos (cron)
 tools/simulador/                 Demo de datos y recorrido con GPS falso
@@ -193,12 +194,10 @@ un túnel (`ngrok http 54321` o `cloudflared`) y define `FUNCTIONS_PUBLIC_URL=ht
   - la ruta por calles, calculada en el servidor por `trazado-ruta` con Routes API y la misma
     `GOOGLE_MAPS_API_KEY` del ETA.
   El botón **"Navegar con Google Maps"** abre la navegación paso a paso hacia la próxima casa.
-- **Maqueta `docs/perfil-tia-del-furgon.html`:**
-  - Si pegas tu clave en *Perfil → Google Maps* (o abres el archivo con `?gmaps=TU_CLAVE`),
-    muestra Google Maps con tráfico y el furgón recorre la ruta real por calles. La clave
-    necesita *Maps JavaScript API* y *Directions API*.
-  - Sin clave, o si Google la rechaza, se muestra el mapa dibujado con el mismo furgón.
-  - Restringe la clave por sitio web (HTTP referrer) en Google Cloud.
+- **Maqueta `docs/perfil-tia-del-furgon.html`:** la tía no ingresa ninguna clave: Google Maps lo
+  conecta la empresa. Para probar la maqueta con Google se abre con `?gmaps=CLAVE` (necesita
+  *Maps JavaScript API* y *Directions API*, restringida por sitio web); sin eso se muestra el
+  mapa dibujado con el mismo furgón.
 
 ## App web de administración
 
@@ -225,9 +224,9 @@ genera `apps/admin/dist`, un sitio estático que se puede publicar en Vercel, Ne
 |---|---|
 | Panel | Pendientes del día (solicitudes, alumnos sin ruta, familias sin app, morosos), recorridos de hoy, cobranza y llamadas del mes. |
 | Alumnos | Alta completa con pin en el mapa, ficha editable, código para la familia y baja. |
-| Rutas | Conductora asignada, orden de paradas, agregar y quitar alumnos. |
+| Rutas | Conductora asignada, orden de paradas, agregar y quitar alumnos. **✨ Recomendar ruta** calcula el orden más corto con las direcciones de los alumnos (mapa, km ahorrados y "antes N°"); se aplica con un toque. **Hoy no va** saca a un alumno solo de la ruta de hoy. |
 | Conductoras | Invitación con código; la tía solo instala la app. Permiso **Administra** para la tía dueña del furgón. |
-| Cobros | Genera las mensualidades del mes (idempotente), registra pagos (medio y nota), anula cobros y muestra los vencidos. |
+| Cobros | La contabilidad de la tía. Genera las mensualidades del mes (idempotente), registra pagos (medio y nota), **cambia el monto** de un cobro pendiente, anula cobros y muestra los vencidos. En **Precios** se edita el precio mensual de cada alumno (también ajusta sus cobros pendientes). |
 | Solicitudes | Bandeja de preguntas, reclamos, cambios y **cancelaciones**. Al aprobar una cancelación, el alumno se da de baja: sale de las rutas y se anulan sus cobros futuros. |
 | Preguntas frecuentes | Las familias las ven en *Ayuda* de la app. |
 | Llamadas y costos | Llamadas por la app (gratis) y telefónicas (con costo), con minutos y costo estimado. |
@@ -302,6 +301,11 @@ npm run typecheck
 - `tests/llamadas.test.ts`: la escalera de reintentos. Principal → reintento a los 30 s →
   secundario; un buzón de voz no cuenta como contestada; los números inválidos no se reintentan.
 - `tests/utilidades.test.ts`: teléfonos E.164, firma de Twilio, TwiML, mensajes y la cola sin señal.
+- `tests/recomendar-ruta.test.ts`: la ruta recomendada (ida termina en el colegio, vuelta parte
+  de él, óptimo exacto hasta 8 casas comparado con fuerza bruta, heurística con 12 casas, no
+  cambia el orden por menos de 50 m).
+- `tests/sql/rutas-y-precios.test.ts`: aplicar el orden recomendado, «hoy no va» marcado por la
+  tía (el recorrido en curso se lo salta), precios y montos editables.
 - `tests/sql/administracion.test.ts`: cubre la administración:
   - alta de alumnos con código para la familia;
   - vínculo automático del apoderado;
@@ -325,7 +329,7 @@ Para revisar los tipos de las Edge Functions: `cd supabase/functions && deno che
 supabase link --project-ref <ref>
 supabase db push
 supabase secrets set --env-file supabase/functions/.env
-supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta twilio-webhook procesar-llamadas
+supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta recomendar-ruta twilio-webhook procesar-llamadas
 ```
 
 `twilio-webhook` y `procesar-llamadas` se despliegan sin verificación de JWT (ver `supabase/config.toml`):

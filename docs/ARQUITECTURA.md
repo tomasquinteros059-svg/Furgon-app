@@ -15,6 +15,9 @@
 | País | Chile: teléfonos +56, zona `America/Santiago`, voz en español. |
 | Alarma en iOS | `time-sensitive`. Las *Critical Alerts* requieren un permiso especial que se pide a Apple. |
 | Login | Correo y contraseña en el prototipo. El OTP por SMS queda pendiente. |
+| Ruta recomendada | `core/recomendar-ruta.ts`: camino abierto (la ida termina en el colegio, la vuelta parte de él). Hasta 8 casas, búsqueda exhaustiva con poda (óptimo); con más, vecino más cercano + 2-opt + reubicación de tramos. No cambia el orden por menos de 50 m. La función `recomendar-ruta` lo afina con Routes API (`optimizeWaypointOrder`) cuando hay clave de Google. Solo propone: se guarda con `aplicar_orden_ruta`. |
+| Hoy no va | `marcar_no_viaja` acepta al apoderado, a quien administra y a la tía que lleva al alumno. Si el recorrido de hoy ya partió, la parada pasa a `no_viaja` y se cancelan sus llamadas; el trazado y los avisos solo usan paradas pendientes. |
+| Precios | `fijar_mensualidad` (precio del alumno + cobros pendientes desde un mes) y `cambiar_monto_cobro` (un cobro pendiente). Los pagados no se tocan. |
 
 ## Flujo del disparo
 

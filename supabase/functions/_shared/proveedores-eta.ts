@@ -105,3 +105,42 @@ export async function trazadoGoogle(origen: LatLng, destinos: LatLng[]): Promise
   const datos = await resp.json() as { routes?: { polyline?: { encodedPolyline?: string } }[] };
   return datos.routes?.[0]?.polyline?.encodedPolyline ?? null;
 }
+
+/**
+ * Largo por calles (Routes API) de puntos[0] → intermedios → último punto. Con `optimizar`,
+ * Google reordena los intermedios (origen y destino quedan fijos) y devuelve el nuevo orden.
+ * Sin clave de Google, o con más de 25 intermedios, devuelve null.
+ */
+export async function rutaGoogle(
+  puntos: LatLng[],
+  optimizar: boolean,
+): Promise<{ metros: number; ordenIntermedios: number[] } | null> {
+  const key = entorno.googleMapsKey();
+  if (!key || puntos.length < 2 || puntos.length - 2 > 25) return null;
+  const wp = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
+  const intermedios = puntos.slice(1, -1);
+  const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask": "routes.distanceMeters,routes.optimizedIntermediateWaypointIndex",
+    },
+    body: JSON.stringify({
+      origin: wp(puntos[0]),
+      destination: wp(puntos[puntos.length - 1]),
+      intermediates: intermedios.map(wp),
+      travelMode: "DRIVE",
+      // La optimización del orden no admite TRAFFIC_AWARE_OPTIMAL; para planificar basta sin tráfico.
+      routingPreference: "TRAFFIC_UNAWARE",
+      optimizeWaypointOrder: optimizar && intermedios.length > 1,
+    }),
+  });
+  if (!resp.ok) throw new Error(`Routes API HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+  const datos = await resp.json() as { routes?: { distanceMeters?: number; optimizedIntermediateWaypointIndex?: number[] }[] };
+  const r = datos.routes?.[0];
+  if (!r || typeof r.distanceMeters !== "number") return null;
+  const indices = r.optimizedIntermediateWaypointIndex;
+  const valido = Array.isArray(indices) && indices.length === intermedios.length && indices.every((i) => i >= 0);
+  return { metros: r.distanceMeters, ordenIntermedios: valido ? indices : intermedios.map((_, i) => i) };
+}

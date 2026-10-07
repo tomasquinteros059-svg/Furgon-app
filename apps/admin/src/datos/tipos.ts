@@ -62,6 +62,21 @@ export interface Parada {
   nombre: string;
   orden: number;
   direccion: string;
+  lat: number | null;
+  lng: number | null;
+  /** Marcado «hoy no va» para esta ruta (por la familia o por la tía). */
+  hoy_no_va: boolean;
+}
+
+/** Orden recomendado para una ruta (ver supabase/functions/_shared/core/recomendar-ruta.ts). */
+export interface RecomendacionRuta {
+  orden: string[];
+  metros: number;
+  metrosActual: number;
+  ahorroM: number;
+  cambia: boolean;
+  /** google = calculado por calles con Google Maps; estimada = por distancia. */
+  fuente: "google" | "estimada";
 }
 
 export interface Ruta {
@@ -72,6 +87,7 @@ export interface Ruta {
   conductor_id: string | null;
   conductor_nombre: string | null;
   furgon: string | null;
+  colegio: { nombre: string | null; lat: number; lng: number } | null;
   paradas: Parada[];
 }
 
@@ -182,6 +198,10 @@ export interface Datos {
   asignarARuta(alumnoId: string, rutaId: string): Promise<void>;
   quitarDeRuta(rutaId: string, alumnoId: string): Promise<void>;
   asignarConductora(rutaId: string, conductoraId: string | null): Promise<void>;
+  recomendarRuta(rutaId: string): Promise<RecomendacionRuta>;
+  aplicarOrden(rutaId: string, orden: string[]): Promise<void>;
+  /** «Hoy no va» (o deshacerlo) para la ida o la vuelta de hoy. */
+  hoyNoVa(alumnoId: string, tipo: "ida" | "vuelta", valor: boolean): Promise<void>;
 
   conductoras(): Promise<Conductora[]>;
   invitarConductora(): Promise<string>;
@@ -191,6 +211,9 @@ export interface Datos {
   generarCobros(periodo: string): Promise<number>;
   registrarPago(cobroId: string, medio: MedioPago, nota: string): Promise<void>;
   anularCobro(cobroId: string, nota: string): Promise<void>;
+  cambiarMontoCobro(cobroId: string, monto: number, nota: string): Promise<void>;
+  /** Precio mensual del alumno; también ajusta sus cobros pendientes desde `desde` (YYYY-MM). */
+  fijarMensualidad(alumnoId: string, monto: number, desde: string | null): Promise<number>;
 
   solicitudes(): Promise<Solicitud[]>;
   mensajes(solicitudId: string): Promise<Mensaje[]>;

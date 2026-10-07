@@ -108,6 +108,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .manejo span { font-size: 26px; }
 .demo { border: 1px dashed var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.vista > .seg { flex-shrink: 0; align-self: flex-start; }
+.vista > .seg button { padding: 8px 14px; font-size: 15px; }
 .seg button { border: 0; background: transparent; padding: 4px 9px; font-size: 13px; font-weight: 700; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--app); }
 .chk { display: inline-flex; gap: 6px; align-items: center; }
@@ -133,6 +135,8 @@ table.det { width: 100%; border-collapse: collapse; font-size: 13px; margin-top:
 table.det th, table.det td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); }
 table.det td.mono { font-size: 12px; }
 .volver-adm { border: 0; background: transparent; font-weight: 700; color: var(--navy); padding: 2px 0; align-self: flex-start; cursor: pointer; }
+.rec { border: 2px solid var(--bus); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bus-soft); }
+.rec-lista { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 2px; }
 .ejemplo { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
 </style>
 </head>
@@ -151,12 +155,17 @@ table.det td.mono { font-size: 12px; }
     { id: "sofia", nombre: "Sofía Pérez", curso: "3° Básico", apoderado: "Ana (mamá)", direccion: "Av. Ossa 1200, La Reina", indic: "Portón verde", lat: -33.4495, lng: -70.5560, respuesta: "app" },
     { id: "matias", nombre: "Matías Soto", curso: "5° Básico", apoderado: "Luis (papá)", direccion: "Av. Tomás Moro 300, Las Condes", indic: "Depto 302, conserjería", lat: -33.4180, lng: -70.5540, respuesta: "sininternet" },
     { id: "isidora", nombre: "Isidora Rojas", curso: "1° Básico", apoderado: "Ana (mamá)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina", lat: -33.4260, lng: -70.6100, respuesta: "recibido" },
+    { id: "benjamin", nombre: "Benjamín Muñoz", curso: "2° Básico", apoderado: "Carla (mamá)", direccion: "Irarrázaval 3500, Ñuñoa", indic: "Reja negra", lat: -33.4560, lng: -70.5900, respuesta: "app" },
+    { id: "florencia", nombre: "Florencia Díaz", curso: "4° Básico", apoderado: "Pedro (papá)", direccion: "Simón Bolívar 4200, Ñuñoa", indic: "Casa con palmera", lat: -33.4420, lng: -70.5750, respuesta: "recibido" },
   ];
-  ALUMNOS.forEach((a) => { a.activo = true; a.familiaApp = true; a.mensualidad = 60000; });
+  ALUMNOS.forEach((a) => { a.activo = true; a.familiaApp = true; a.mensualidad = a.id === "matias" ? 65000 : 60000; });
   const alumnosDeRuta = (r) => r.orden.map((id) => ALUMNOS.find((a) => a.id === id)).filter((a) => a && a.activo);
+  // Los que sí van hoy: la ruta del día se salta a quienes tienen «hoy no va».
+  const alumnosQueVan = (r) => alumnosDeRuta(r).filter((a) => !r.noViaja.includes(a.id));
+  // Benjamín y Florencia se agregaron hace poco al final de las rutas: prueba «Recomendar ruta».
   const RUTAS = [
-    { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"], orden: ["isidora", "matias", "sofia"] },
-    { id: "vuelta", nombre: "Vuelta tarde", tipo: "vuelta", hora: "16:30", inicio: 16 * 3600 + 30 * 60, noViaja: [], orden: ["sofia", "matias", "isidora"] },
+    { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"], porTia: [], orden: ["isidora", "matias", "sofia", "benjamin", "florencia"] },
+    { id: "vuelta", nombre: "Vuelta tarde", tipo: "vuelta", hora: "16:30", inicio: 16 * 3600 + 30 * 60, noViaja: [], porTia: [], orden: ["sofia", "matias", "isidora", "benjamin", "florencia"] },
   ];
   const HISTORIAL = [
     { fecha: "Lun 6 oct", ruta: "Vuelta tarde", inicio: "16:31", fin: "17:02", km: 14.4, ejemplo: true,
@@ -167,11 +176,6 @@ table.det td.mono { font-size: 12px; }
       det: [["Sofía Pérez", "16:33", "16:39", "Llamada app (gratis)"], ["Matías Soto", "—", "—", "No viajó"], ["Isidora Rojas", "16:50", "16:57", "Llamada app (gratis)"]] },
   ];
   const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, acuseApp: 15 };
-  // Modo GPS real: parámetros según cómo te muevas en la prueba.
-  const MODOS = {
-    pie: { nombre: "a pie", kmh: 5, parada: 20, proximidad: 50, llegada: 25, casas: [[300, 0], [420, 380], [0, 760]] },
-    auto: { nombre: "en auto", kmh: 25, parada: 60, proximidad: 300, llegada: 60, casas: [[1500, 0], [2100, 1900], [0, 3800]] },
-  };
 
   // ---------- Geometría ----------
   const rad = (g) => g * Math.PI / 180;
@@ -212,7 +216,7 @@ table.det td.mono { font-size: 12px; }
   const colorCasa = (p) => p.estado === "entregado" ? "#1D7F45" : p.estado === "pendiente" ? (p.avisoT !== null ? "#C4281C" : "#16324F") : "#8A95A1";
   const urlNavegar = (p) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving&dir_action=navigate`;
 
-  // ---------- Google Maps (con tu clave; sin clave se usa el mapa dibujado) ----------
+  // ---------- Google Maps (lo conecta la empresa; sin conexión se usa el mapa dibujado) ----------
   const ESTILO_GOOGLE = [
     { featureType: "poi", stylers: [{ visibility: "off" }] },
     { featureType: "poi.school", stylers: [{ visibility: "on" }] },
@@ -224,7 +228,8 @@ table.det td.mono { font-size: 12px; }
   const GM = { estado: "sin_clave", error: null, avisoRuta: null, mapa: null, div: null, rutas: {}, claves: {}, objetos: null, rid: null, seguir: true, ultimo: 0, izq: false, prev: null };
   const ll = (p) => ({ lat: p.lat, lng: p.lng });
   function claveGoogle() {
-    try { return new URLSearchParams(location.search).get("gmaps") || localStorage.getItem("gmaps_key") || ""; } catch { return ""; }
+    // La clave la configura la empresa al publicar la app (variable de entorno); aquí, por la URL.
+    try { return new URLSearchParams(location.search).get("gmaps") || ""; } catch { return ""; }
   }
   function cargarGoogle() {
     const k = claveGoogle();
@@ -233,7 +238,7 @@ table.det td.mono { font-size: 12px; }
     GM.estado = "cargando"; GM.error = null;
     window.gm_authFailure = () => {
       GM.estado = "error";
-      GM.error = "Google rechazó la clave: revisa que tenga habilitadas «Maps JavaScript API» y «Directions API», y que este sitio esté permitido.";
+      GM.error = "Google Maps no está disponible en este momento. Se muestra el mapa básico.";
       if (GM.div) GM.div.remove();
       GM.mapa = null; GM.div = null; GM.objetos = null; previo = "";
     };
@@ -248,7 +253,7 @@ table.det td.mono { font-size: 12px; }
   async function prepararRutasGoogle() {
     const svc = new google.maps.DirectionsService();
     for (const r of RUTAS) {
-      const orden = alumnosDeRuta(r);
+      const orden = alumnosQueVan(r);
       const pts = r.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden];
       try {
         const res = await svc.route({
@@ -275,7 +280,6 @@ table.det td.mono { font-size: 12px; }
       });
       new google.maps.TrafficLayer().setMap(GM.mapa);
       GM.mapa.addListener("dragstart", () => { GM.seguir = false; previo = ""; });
-      GM.mapa.addListener("click", (e) => { if (R && R.gps) { moverCasaA(e.latLng.lat(), e.latLng.lng()); previo = ""; } });
     }
     if (GM.div.parentNode !== host) host.appendChild(GM.div);
   }
@@ -284,20 +288,20 @@ table.det td.mono { font-size: 12px; }
     const ahora = performance.now();
     if (ahora - GM.ultimo < 90) return;
     GM.ultimo = ahora;
-    const pos = R.gps ? R.yo : puntoEn(dSuave());
+    const pos = puntoEn(dSuave());
     if (GM.rid !== R) {
       // Nuevo recorrido: se rehacen los objetos del mapa.
       if (GM.objetos) { GM.objetos.casas.forEach((m) => m.setMap(null)); [GM.objetos.van, GM.objetos.casing, GM.objetos.ruta, GM.objetos.hecho, GM.objetos.colegio].forEach((o) => o && o.setMap(null)); }
       const map = GM.mapa;
-      const casing = new google.maps.Polyline({ map, path: R.gps ? [] : R.puntos.map(ll), strokeColor: "#FFFFFF", strokeWeight: 9, strokeOpacity: 1, zIndex: 1 });
-      const ruta = new google.maps.Polyline({ map, path: R.gps ? [] : R.puntos.map(ll), strokeColor: "#8A95A1", strokeWeight: 5, strokeOpacity: .9, zIndex: 2 });
+      const casing = new google.maps.Polyline({ map, path: R.puntos.map(ll), strokeColor: "#FFFFFF", strokeWeight: 9, strokeOpacity: 1, zIndex: 1 });
+      const ruta = new google.maps.Polyline({ map, path: R.puntos.map(ll), strokeColor: "#8A95A1", strokeWeight: 5, strokeOpacity: .9, zIndex: 2 });
       const hecho = new google.maps.Polyline({ map, path: [], strokeColor: "#16324F", strokeWeight: 6, zIndex: 3 });
-      const colegio = R.gps ? null : new google.maps.Marker({ map, position: ll(COLEGIO), title: COLEGIO.nombre, icon: { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSVG("🏫", "#15202B", 34)), anchor: new google.maps.Point(17, 45) } });
-      const casas = R.paradas.map((p, j) => new google.maps.Marker({ map, position: ll(p), title: p.nombre, zIndex: 5 }));
+      const colegio = new google.maps.Marker({ map, position: ll(COLEGIO), title: COLEGIO.nombre, icon: { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSVG("🏫", "#15202B", 34)), anchor: new google.maps.Point(17, 45) } });
+      const casas = R.paradas.map((p) => new google.maps.Marker({ map: p.estado === "no_viaja" ? null : map, position: ll(p), title: p.nombre, zIndex: 5 }));
       const van = new google.maps.Marker({ map, position: ll(pos), title: "Tu furgón", zIndex: 10 });
       GM.objetos = { casing, ruta, hecho, colegio, casas, van, iconos: [], vanIzq: null };
       GM.rid = R; GM.seguir = true; GM.prev = pos;
-      const b = new google.maps.LatLngBounds(); [pos, ...R.paradas].forEach((p) => b.extend(ll(p)));
+      const b = new google.maps.LatLngBounds(); [pos, ...R.paradas.filter((p) => p.estado !== "no_viaja")].forEach((p) => b.extend(ll(p)));
       GM.mapa.fitBounds(b, 40);
     }
     const o = GM.objetos;
@@ -311,19 +315,15 @@ table.det td.mono { font-size: 12px; }
     o.van.setPosition(ll(pos));
     // Casas: el ícono cambia con el estado (pendiente, avisada, entregada).
     R.paradas.forEach((p, j) => {
-      if (R.gps) o.casas[j].setPosition(ll(p));
       const clave = p.estado + (p.avisoT !== null);
       if (o.iconos[j] !== clave) {
         o.casas[j].setIcon({ url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSVG(p.estado === "entregado" ? "✓" : j + 1, colorCasa(p), 32)), anchor: new google.maps.Point(16, 42) });
         o.iconos[j] = clave;
       }
     });
-    // Trayecto hecho (azul) sobre la ruta completa (gris); en GPS real, tu rastro.
-    if (R.gps) o.hecho.setPath(R.trazo.map(ll));
-    else {
-      const i0 = R.acum.findIndex((a) => a >= dSuave());
-      o.hecho.setPath([...R.puntos.slice(0, i0 === -1 ? R.puntos.length : i0), pos].map(ll));
-    }
+    // Trayecto hecho (azul) sobre la ruta completa (gris).
+    const i0 = R.acum.findIndex((a) => a >= dSuave());
+    o.hecho.setPath([...R.puntos.slice(0, i0 === -1 ? R.puntos.length : i0), pos].map(ll));
     // Cámara que acompaña al furgón, salvo que muevas el mapa.
     if (GM.seguir) {
       const b = GM.mapa.getBounds();
@@ -336,14 +336,78 @@ table.det td.mono { font-size: 12px; }
     }
   }
 
+  // ---------- Ruta recomendada ----------
+  // Misma lógica que supabase/functions/_shared/core/recomendar-ruta.ts: la ida termina en el
+  // colegio y la vuelta parte de él. Hasta 9 casas se prueban todas las combinaciones; con más,
+  // se mejora el orden actual invirtiendo tramos (2-opt). Con Google conectado, el servidor
+  // además lo afina por calles reales.
+  const FACTOR_CALLES = 1.3;
+  function recomendarRuta(r) {
+    const casas = alumnosDeRuta(r), n = casas.length;
+    const ext = r.tipo === "ida" ? { fin: COLEGIO } : { inicio: COLEGIO };
+    const d = casas.map((a) => casas.map((b) => dist(a, b)));
+    const ini = casas.map((p) => (ext.inicio ? dist(ext.inicio, p) : 0)), fin = casas.map((p) => (ext.fin ? dist(p, ext.fin) : 0));
+    const costo = (o) => (o.length ? ini[o[0]] + fin[o[o.length - 1]] + o.slice(1).reduce((t, v, i) => t + d[o[i]][v], 0) : 0);
+    const actual = casas.map((_, i) => i);
+    let mejor = actual, mejorC = costo(actual);
+    if (n >= 2 && n <= 9) {
+      const camino = [], usado = Array(n).fill(false);
+      const buscar = (acum) => {
+        if (acum >= mejorC - 1e-6) return;
+        if (camino.length === n) { const t = acum + fin[camino[n - 1]]; if (t < mejorC - 1e-6) { mejorC = t; mejor = [...camino]; } return; }
+        for (let i = 0; i < n; i++) {
+          if (usado[i]) continue;
+          const paso = camino.length ? d[camino[camino.length - 1]][i] : ini[i];
+          usado[i] = true; camino.push(i); buscar(acum + paso); camino.pop(); usado[i] = false;
+        }
+      };
+      buscar(0);
+    } else if (n > 9) {
+      for (let hubo = true; hubo;) {
+        hubo = false;
+        for (let i = 0; i < n - 1; i++) for (let j = i + 1; j < n; j++) {
+          const p = [...mejor.slice(0, i), ...mejor.slice(i, j + 1).reverse(), ...mejor.slice(j + 1)];
+          if (costo(p) < mejorC - 1e-6) { mejor = p; mejorC = costo(p); hubo = true; }
+        }
+      }
+    }
+    // Ahorros de menos de 50 m no justifican cambiarle el orden a la tía.
+    if ((costo(actual) - mejorC) * FACTOR_CALLES < 50) { mejor = actual; mejorC = costo(actual); }
+    return {
+      orden: mejor.map((i) => casas[i].id), metros: mejorC * FACTOR_CALLES, metrosActual: costo(actual) * FACTOR_CALLES,
+      cambia: mejor.some((v, i) => v !== i),
+    };
+  }
+  const kmTxt = (m) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
+  // Mini mapa de una ruta: colegio, casas numeradas en el orden dado y el trazado.
+  function mapaRuta(r, orden) {
+    const casas = orden.map((id) => ALUMNOS.find((a) => a.id === id)).filter(Boolean);
+    const van = casas.filter((a) => !r.noViaja.includes(a.id));
+    const pts = (r.tipo === "ida" ? [...van, COLEGIO] : [COLEGIO, ...van]).map(px);
+    const linea = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const col = px(COLEGIO);
+    let num = 0;
+    const pines = casas.map((a) => {
+      const c = px(a), no = r.noViaja.includes(a.id);
+      return `<svg x="${c.x - 12}" y="${c.y - 32}" width="24" height="32" viewBox="0 0 30 40">${pinSVG(no ? "–" : ++num, no ? "#8A95A1" : "#C4281C").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
+    }).join("");
+    return `<div class="mapa"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa de la ruta">${FONDO_MAPA}
+      <polyline points="${linea}" fill="none" stroke="var(--surface)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${linea}" fill="none" stroke="var(--navy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg x="${col.x - 13}" y="${col.y - 34}" width="26" height="34" viewBox="0 0 30 40">${pinSVG("🏫", "#15202B").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
+      ${pines}</svg><span class="sello">${r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"}</span></div>`;
+  }
+
   // ---------- Administración (la tía dueña del furgón) ----------
   const mesTxt = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(new Date());
   const ADM = {
-    vista: "menu", form: null, msg: null, solSel: null, agregarEn: null, codigo: null,
+    vista: "menu", form: null, msg: null, solSel: null, agregarEn: null, codigo: null, rec: null, subCobros: "mes", editMonto: null,
     cobros: [
       { id: "k1", alumno: "sofia", monto: 60000, estado: "pagado", medio: "transferencia" },
-      { id: "k2", alumno: "matias", monto: 60000, estado: "pendiente", vencido: true },
+      { id: "k2", alumno: "matias", monto: 65000, estado: "pendiente", vencido: true },
       { id: "k3", alumno: "isidora", monto: 60000, estado: "pendiente" },
+      { id: "k4", alumno: "benjamin", monto: 60000, estado: "pagado", medio: "efectivo" },
+      { id: "k5", alumno: "florencia", monto: 60000, estado: "pendiente" },
     ],
     solicitudes: [
       { id: "s1", tipo: "cancelacion_servicio", asunto: "Nos cambiamos de casa", autor: "Luis (papá)", alumno: "matias", estado: "abierta",
@@ -385,7 +449,7 @@ table.det td.mono { font-size: 12px; }
         <button class="btn" data-a="adm" data-v="alumnos">Listo</button></div>`;
     }
     if (ADM.vista === "nuevo") {
-      const f = ADM.form ?? (ADM.form = { nombre: "", curso: "", direccion: "", tel: "", pin: null, rutas: RUTAS.map((r) => r.id) });
+      const f = ADM.form ?? (ADM.form = { nombre: "", curso: "", direccion: "", tel: "", precio: "60000", pin: null, rutas: RUTAS.map((r) => r.id) });
       const casas = activos.map((a) => { const c = px(a); return `<circle cx="${c.x}" cy="${c.y}" r="5" fill="var(--muted)" opacity=".6"/>`; }).join("");
       const pin = f.pin ? (() => { const c = px(f.pin); return `<svg x="${c.x - 13}" y="${c.y - 35}" width="26" height="35" viewBox="0 0 30 40">${pinSVG("🏠", "#C4281C").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`; })() : "";
       const campo = (k, etq, extra = "") => `<div class="campo"><label for="adm-${k}">${etq}</label><input id="adm-${k}" data-f="${k}" value="${esc(f[k])}" ${extra}></div>`;
@@ -396,33 +460,65 @@ table.det td.mono { font-size: 12px; }
         <div class="mapa"><svg viewBox="0 0 ${W} ${H}" data-a="pinAdm" role="img" aria-label="Toca para ubicar la casa" style="cursor:crosshair">${FONDO_MAPA}${casas}${pin}</svg>
           <span class="sello">${f.pin ? "📍 Casa ubicada" : "Toca la puerta de la casa"}</span></div>
         ${campo("tel", "Teléfono del apoderado", 'inputmode="tel" placeholder="9 1234 5678"')}
+        ${campo("precio", "Precio mensual (CLP)", 'inputmode="numeric" placeholder="60000"')}
         <div class="chips">${RUTAS.map((r) => `<button class="chip ${f.rutas.includes(r.id) ? "ok" : ""}" data-a="rutaAdm" data-id="${r.id}" style="border:0;cursor:pointer">${f.rutas.includes(r.id) ? "✓ " : ""}${r.nombre}</button>`).join("")}</div>
         <button class="btn xl" data-a="guardarAlumno">Guardar alumno</button></div>`;
     }
     if (ADM.vista === "rutas") {
+      const chico = 'style="min-height:36px;padding:4px 10px"';
       return `<div class="vista">${volver}<h1>Rutas</h1>${msg}
-        <span class="muted" style="font-size:14px">El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo.</span>
+        <span class="muted" style="font-size:14px">El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Hoy no va» saca a un alumno solo de la ruta de hoy.</span>
         ${RUTAS.map((r) => {
           const lista = alumnosDeRuta(r);
           const fuera = activos.filter((a) => !r.orden.includes(a.id));
+          const rec = ADM.rec && ADM.rec.ruta === r.id ? ADM.rec : null;
+          const panel = !rec ? (lista.length >= 2 ? `<button class="btn bus" data-a="recomendar" data-id="${r.id}">✨ Recomendar ruta</button>` : "")
+            : !rec.cambia ? `<div class="rec"><b>👍 Tu orden ya es el más corto</b><span class="muted" style="font-size:14px">≈ ${kmTxt(rec.metrosActual)} por recorrido.</span><button class="btn sec" data-a="descartarRec">Cerrar</button></div>`
+            : `<div class="rec"><b>✨ Ruta recomendada: ${kmTxt(rec.metros)}</b>
+                <span class="muted" style="font-size:14px">Hoy haces ≈ ${kmTxt(rec.metrosActual)}. Ahorras ${kmTxt(rec.metrosActual - rec.metros)} (≈ ${Math.max(1, Math.round((rec.metrosActual - rec.metros) / 1000 / 25 * 60))} min) en cada recorrido.</span>
+                ${mapaRuta(r, rec.orden)}
+                <ol class="rec-lista">${rec.orden.map((id, i) => { const antes = r.orden.filter((x) => lista.some((a) => a.id === x)).indexOf(id); return `<li><b>${esc(nombreDe(id))}</b>${antes === i ? "" : ` <span class="muted">(antes ${antes + 1}°)</span>`}</li>`; }).join("")}</ol>
+                <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="aplicarRec">Aplicar</button><button class="no" style="min-height:52px;font-size:16px" data-a="descartarRec">Descartar</button></div>
+              </div>`;
           return `<div class="card"><h3>${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}</h3>
-            ${lista.map((a, i) => `<div class="fila" style="border-bottom:1px solid var(--line);padding:6px 0"><span>${i + 1}. ${esc(a.nombre)}</span>
-              <span style="display:flex;gap:4px"><button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-              <button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="1" ${i === lista.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button>
-              <button class="btn sec" style="min-height:36px;padding:4px 10px" data-a="quitarAdm" data-id="${r.id}" data-al="${a.id}" aria-label="Quitar">✕</button></span></div>`).join("")}
+            <span class="muted" style="font-size:13px">≈ ${kmTxt(recomendarRuta({ ...r, orden: r.orden }).metrosActual)} · ${lista.length - r.noViaja.filter((x) => lista.some((a) => a.id === x)).length} de ${lista.length} van hoy</span>
+            ${panel}
+            ${lista.map((a, i) => { const no = r.noViaja.includes(a.id); return `<div style="border-bottom:1px solid var(--line);padding:6px 0;display:flex;flex-direction:column;gap:6px">
+              <div class="fila"><span style="${no ? "color:var(--muted);text-decoration:line-through" : ""}">${i + 1}. ${esc(a.nombre)}</span>
+              <span style="display:flex;gap:4px"><button class="btn sec" ${chico} data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="btn sec" ${chico} data-a="moverAdm" data-id="${r.id}" data-al="${a.id}" data-d="1" ${i === lista.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button>
+              <button class="btn sec" ${chico} data-a="quitarAdm" data-id="${r.id}" data-al="${a.id}" aria-label="Quitar">✕</button></span></div>
+              <button class="btn ${no ? "peligro" : "sec"}" ${chico} data-a="noVaAdm" data-id="${r.id}" data-al="${a.id}" aria-pressed="${no}">${no ? `📅 Hoy no va${r.porTia.includes(a.id) ? "" : " (avisó su familia)"} · tocar si sí va` : "Hoy no va"}</button>
+            </div>`; }).join("")}
             ${fuera.length ? (ADM.agregarEn === r.id ? fuera.map((a) => `<button class="btn sec" data-a="agregarAdm" data-id="${r.id}" data-al="${a.id}">+ ${esc(a.nombre)}</button>`).join("")
               : `<button class="btn sec" data-a="abrirAgregar" data-id="${r.id}">+ Agregar alumno a esta ruta</button>`) : ""}
           </div>`;
         }).join("")}</div>`;
     }
     if (ADM.vista === "cobros") {
+      const f = ADM.form ?? (ADM.form = {});
       const lista = ADM.cobros.filter((c) => c.estado !== "anulado");
       const total = (e) => lista.filter((c) => c.estado === e).reduce((t, c) => t + c.monto, 0);
-      return `<div class="vista">${volver}<h1>Cobros de ${mesTxt}</h1>${msg}
+      const pesta = `<span class="seg" role="group" aria-label="Vista"><button data-a="subCobros" data-v="mes" aria-pressed="${ADM.subCobros === "mes"}">Cobros del mes</button><button data-a="subCobros" data-v="precios" aria-pressed="${ADM.subCobros === "precios"}">Precios</button></span>`;
+      if (ADM.subCobros === "precios") {
+        const esperado = activos.reduce((t, a) => t + a.mensualidad, 0);
+        return `<div class="vista">${volver}<h1>Precios</h1>${pesta}${msg}
+          <div class="cifras"><div class="cifra"><b>${pesosTxt(esperado)}</b><span>Ingreso mensual esperado</span></div><div class="cifra"><b>${activos.length}</b><span>Alumnos activos</span></div></div>
+          <span class="muted" style="font-size:14px">El precio mensual de cada alumno. Al guardarlo también se actualiza su cobro pendiente de ${mesTxt}.</span>
+          ${activos.map((a) => `<div class="card"><div class="fila"><b>${esc(a.nombre)}</b><b class="mono">${pesosTxt(a.mensualidad)}</b></div>
+            <div class="campo"><label for="adm-p_${a.id}">Precio mensual (CLP)</label>
+              <div style="display:flex;gap:8px"><input id="adm-p_${a.id}" data-f="p_${a.id}" inputmode="numeric" value="${esc(f["p_" + a.id] ?? a.mensualidad)}" style="flex:1;min-width:0"><button class="btn sec" style="min-height:44px" data-a="guardarPrecio" data-id="${a.id}">Guardar</button></div></div>
+          </div>`).join("")}</div>`;
+      }
+      return `<div class="vista">${volver}<h1>Cobros de ${mesTxt}</h1>${pesta}${msg}
         <div class="cifras"><div class="cifra"><b>${pesosTxt(total("pagado"))}</b><span>Cobrado</span></div><div class="cifra"><b>${pesosTxt(total("pendiente"))}</b><span>Por cobrar</span></div></div>
         ${lista.map((c) => `<div class="card"><div class="fila"><b>${esc(nombreDe(c.alumno))}</b><b class="mono">${pesosTxt(c.monto)}</b></div>
-          ${c.estado === "pagado" ? `<span class="chip ok">✓ Pagado · ${c.medio}</span>` : `<span class="chip ${c.vencido ? "alerta" : "bus"}">${c.vencido ? "Vencido" : "Pendiente"}</span>
-          <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="pagarAdm" data-id="${c.id}" data-m="efectivo">Pagó en efectivo</button><button class="ok" style="min-height:52px;font-size:16px;background:var(--navy);color:var(--navy-ink)" data-a="pagarAdm" data-id="${c.id}" data-m="transferencia">Transferencia</button></div>`}
+          ${c.estado === "pagado" ? `<span class="chip ok">✓ Pagado · ${c.medio}</span>` : ADM.editMonto === c.id ? `
+            <div class="campo"><label for="adm-m_${c.id}">Monto de ${mesTxt} (CLP)</label><input id="adm-m_${c.id}" data-f="m_${c.id}" inputmode="numeric" value="${esc(f["m_" + c.id] ?? c.monto)}"></div>
+            <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="guardarMonto" data-id="${c.id}">Guardar monto</button><button class="no" style="min-height:52px;font-size:16px" data-a="editarMonto" data-id="">Cancelar</button></div>`
+          : `<span class="chip ${c.vencido ? "alerta" : "bus"}">${c.vencido ? "Vencido" : "Pendiente"}${c.nota ? ` · ${esc(c.nota)}` : ""}</span>
+          <div class="grandes" style="grid-template-columns:1fr 1fr"><button class="ok" style="min-height:52px;font-size:16px" data-a="pagarAdm" data-id="${c.id}" data-m="efectivo">Pagó en efectivo</button><button class="ok" style="min-height:52px;font-size:16px;background:var(--navy);color:var(--navy-ink)" data-a="pagarAdm" data-id="${c.id}" data-m="transferencia">Transferencia</button></div>
+          <button class="volver-adm" data-a="editarMonto" data-id="${c.id}">✏️ Cambiar monto de este mes</button>`}
         </div>`).join("")}</div>`;
     }
     if (ADM.vista === "solicitud") {
@@ -449,19 +545,20 @@ table.det td.mono { font-size: 12px; }
     return `<div class="vista"><h1>Administrar</h1>
       <span class="muted" style="font-size:14px">Eres la dueña del furgón: tú agregas a tus alumnos, ordenas la ruta y llevas los pagos. Se bloquea mientras manejas.</span>
       ${opcion("alumnos", "👧 Mis alumnos", `${activos.length} activos${sinApp ? ` · ${sinApp} familia(s) sin la app` : ""}`, false)}
-      ${opcion("rutas", "🗺️ Rutas", "Orden de las paradas, agregar y quitar", false)}
-      ${opcion("cobros", "💳 Cobros", `${pesosTxt(porCobrar)} por cobrar en ${mesTxt}`, ADM.cobros.some((c) => c.estado === "pendiente" && c.vencido))}
+      ${opcion("rutas", "🗺️ Rutas", "Ruta recomendada, orden y «hoy no va»", false)}
+      ${opcion("cobros", "💳 Cobros y precios", `${pesosTxt(porCobrar)} por cobrar en ${mesTxt}`, ADM.cobros.some((c) => c.estado === "pendiente" && c.vencido))}
       ${opcion("solicitudes", "💬 Solicitudes de las familias", sinResp ? `${sinResp} sin responder` : "Todo respondido", sinResp > 0)}
       <p class="nota">También puedes entrar al panel web de administración con esta misma cuenta.</p></div>`;
   }
 
   // ---------- Estado de la app ----------
-  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [], modoGps: "pie", errorGps: null, buscandoGps: false };
+  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [] };
   let R = null; // recorrido activo
 
   function iniciarRecorrido(rutaId) {
     const ruta = RUTAS.find((r) => r.id === rutaId);
-    const orden = alumnosDeRuta(ruta);
+    const orden = alumnosQueVan(ruta);
+    const noVan = alumnosDeRuta(ruta).filter((a) => ruta.noViaja.includes(a.id));
     // Con Google Maps conectado, el furgón recorre la ruta real por calles.
     const vigente = GM.claves[ruta.tipo] === orden.map((a) => a.id).join();
     const puntos = (vigente && GM.rutas[ruta.tipo]) || trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
@@ -477,11 +574,12 @@ table.det td.mono { font-size: 12px; }
     });
     R = {
       ruta, puntos, acum, largo: acum.at(-1), t: 0, d: 0, cola: 0, enviadas: 0, detenido: null, fin: false,
-      paradas: orden.map((a, j) => ({ ...a, dRuta: enRuta[j], estado: ruta.noViaja.includes(a.id) ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
+      paradas: [...orden.map((a, j) => ({ ...a, dRuta: enRuta[j], estado: "pendiente" })), ...noVan.map((a) => ({ ...a, dRuta: Infinity, estado: "no_viaja" }))]
+        .map((p) => ({ ...p, eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
       llamadas: [], ev: [], gratis: 0, pagadas: 0,
     };
     evento("▶️", `Recorrido iniciado. Compartiendo ubicación cada ${CFG.gps} s.`);
-    R.paradas.filter((p) => p.estado === "no_viaja").forEach((p) => evento("📅", `${p.nombre} no viaja hoy (lo marcó su apoderado).`));
+    R.paradas.filter((p) => p.estado === "no_viaja").forEach((p) => evento("📅", `${p.nombre} no va hoy (${ruta.porTia.includes(p.id) ? "lo marcaste tú" : "lo marcó su apoderado"}): la ruta se salta su casa.`));
     gps();
     app.vista = "recorrido";
   }
@@ -490,7 +588,7 @@ table.det td.mono { font-size: 12px; }
   const evento = (i, txt, tipo = "") => R.ev.unshift({ t: R.t, i, txt, tipo });
 
   function dSuave() {
-    if (!R || R.gps || R.fin || R.detenido || app.hoja || app.vista !== "recorrido") return R ? R.d : 0;
+    if (!R || R.fin || R.detenido || app.hoja || app.vista !== "recorrido") return R ? R.d : 0;
     const obj = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
     return Math.min(obj ? obj.dRuta : R.largo, R.d + (typeof acc === "number" ? acc : 0) * CFG.kmh / 3.6);
   }
@@ -555,123 +653,6 @@ table.det td.mono { font-size: 12px; }
     }
   }
 
-  // ---------- Prueba con GPS real del teléfono ----------
-  // Las casas de prueba se ubican cerca de ti; el ETA usa la misma geocerca de respaldo
-  // del servidor (distancia acumulada × 1,3 a la velocidad del modo elegido).
-  const desplazar = (o, norte, este) => ({ lat: o.lat + norte / mLat, lng: o.lng + este / mLng });
-  function iniciarGps() {
-    app.errorGps = null;
-    if (!("geolocation" in navigator)) { app.errorGps = "Este navegador no tiene GPS disponible."; return; }
-    if (!window.isSecureContext) { app.errorGps = "El navegador bloquea el GPS en esta página. Ábrela desde una dirección https (o desde Chrome en el computador)."; return; }
-    app.buscandoGps = true;
-    navigator.geolocation.getCurrentPosition((pos) => {
-      app.buscandoGps = false;
-      const modo = MODOS[app.modoGps];
-      const yo = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, vel: pos.coords.speed };
-      const ahora = new Date();
-      R = {
-        gps: true, modo, ruta: { nombre: "Prueba con GPS real", tipo: "vuelta", inicio: ahora.getHours() * 3600 + ahora.getMinutes() * 60 + ahora.getSeconds() },
-        inicioMs: Date.now(), t: 0, d: 0, largo: 0, yo, trazo: [yo], cola: 0, enviadas: 0, detenido: null, fin: false, ultimaEval: 0,
-        paradas: ALUMNOS.filter((a) => a.activo !== false).slice(0, 3).map((a, j) => ({ ...a, ...desplazar(yo, modo.casas[j][0], modo.casas[j][1]), direccion: `Casa de prueba ${j + 1}`, indic: "Toca el mapa para moverla",
-          estado: "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
-        llamadas: [], ev: [], gratis: 0, pagadas: 0, mover: 0,
-      };
-      evento("📡", `Prueba con GPS real (${modo.nombre}). Precisión ±${Math.round(yo.acc)} m.`);
-      R.watch = navigator.geolocation.watchPosition(alPosicion, (e) => {
-        // Un timeout solo significa que no hubo lectura nueva (por ejemplo, estando quieta).
-        if (e.code === 3 || R.errorGpsVisto === e.code) return;
-        R.errorGpsVisto = e.code;
-        evento("⚠️", e.code === 1 ? "Se quitó el permiso de ubicación." : "Se perdió la señal de GPS.");
-      }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-      evaluarGps();
-      app.vista = "recorrido"; previo = ""; render(true);
-    }, (e) => {
-      app.buscandoGps = false;
-      app.errorGps = e.code === 1 ? "Permiso de ubicación denegado. Actívalo en los ajustes del navegador y vuelve a intentar." : "No pudimos obtener tu ubicación. Sal al aire libre y vuelve a intentar.";
-      previo = ""; render(true);
-    }, { enableHighAccuracy: true, timeout: 20000 });
-  }
-
-  function alPosicion(pos) {
-    if (!R || !R.gps || R.fin) return;
-    const nuevo = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, vel: pos.coords.speed };
-    const mov = dist(R.yo, nuevo);
-    R.yo = nuevo;
-    if (mov >= 5) { R.d += mov; R.trazo.push(nuevo); if (R.trazo.length > 600) R.trazo.shift(); }
-    // Igual que la app: se envía una posición cada ~10 s (5 s a pie, para que la prueba responda rápido).
-    if (Date.now() - R.ultimaEval >= (R.modo.kmh < 10 ? 5000 : 10000)) evaluarGps();
-  }
-
-  function evaluarGps() {
-    R.ultimaEval = Date.now();
-    if (!app.senal) { R.cola++; return; }
-    if (R.cola) evento("📶", `Señal recuperada: se enviaron ${R.cola + 1} posiciones guardadas.`);
-    R.enviadas += R.cola + 1; R.cola = 0;
-    const m = R.modo, v = m.kmh / 3.6;
-    const pend = R.paradas.filter((p) => p.estado === "pendiente");
-    let previo_ = R.yo, acum = 0;
-    pend.forEach((p, i) => { acum += dist(previo_, p); previo_ = p; p.eta = (acum * 1.3) / v + i * m.parada; });
-    for (const p of pend) {
-      if (p.avisoT !== null) continue;
-      if (dist(R.yo, p) <= m.proximidad || p.eta <= 5 * 60 + CFG.margen) {
-        p.avisoT = R.t;
-        avisar(p);
-        app.toast = { txt: `🔔 Se avisó a ${p.apoderado} que llegas en ~${Math.max(1, Math.round(p.eta / 60))} min.`, hasta: performance.now() + 5000 };
-      }
-    }
-    const sig = pend[0];
-    if (sig && !R.detenido && dist(R.yo, sig) <= m.llegada) { R.detenido = sig; evento("🅿️", `Llegaste a la casa de prueba de ${sig.nombre}. Marca la entrega.`); }
-  }
-
-  function moverCasa(e, svg) {
-    const r = svg.getBoundingClientRect(), T = R.mapaT;
-    if (!T) return;
-    const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
-    const pend = R.paradas.filter((p) => p.estado === "pendiente");
-    if (!pend.length) return;
-    const p = pend[R.mover % pend.length]; R.mover++;
-    p.lat = T.lat0 - (y - T.oy) / T.k / mLat; p.lng = T.lng0 + (x - T.ox) / T.k / mLng;
-    evento("📍", `Moviste la casa de prueba de ${p.nombre}.`);
-    evaluarGps();
-  }
-
-  // Igual que moverCasa, pero desde un clic en Google Maps.
-  function moverCasaA(lat, lng) {
-    const pend = R.paradas.filter((p) => p.estado === "pendiente");
-    if (!pend.length) return;
-    const p = pend[R.mover % pend.length]; R.mover++;
-    p.lat = lat; p.lng = lng;
-    evento("📍", `Moviste la casa de prueba de ${p.nombre}.`);
-    evaluarGps();
-  }
-
-  function mapaGps() {
-    if (GM.estado === "listo") return mapa();
-    const pts = [R.yo, ...R.paradas, ...R.trazo];
-    const lat0 = Math.max(...pts.map((p) => p.lat)), lat1 = Math.min(...pts.map((p) => p.lat));
-    const lng0 = Math.min(...pts.map((p) => p.lng)), lng1 = Math.max(...pts.map((p) => p.lng));
-    const anchoM = Math.max(80, (lng1 - lng0) * mLng), altoM = Math.max(80, (lat0 - lat1) * mLat);
-    const kk = Math.min((W - 50) / anchoM, (H - 50) / altoM);
-    const T = { lat0, lng0, k: kk, ox: (W - anchoM * kk) / 2, oy: (H - altoM * kk) / 2 };
-    R.mapaT = T;
-    const P = (p) => ({ x: T.ox + (p.lng - lng0) * mLng * kk, y: T.oy + (lat0 - p.lat) * mLat * kk });
-    const yo = P(R.yo), traz = R.trazo.map(P);
-    const casas = R.paradas.map((p, j) => {
-      const c = P(p);
-      const col = p.estado === "entregado" ? "var(--ok)" : p.estado === "pendiente" ? (p.avisoT !== null ? "var(--alert)" : "var(--navy)") : "var(--muted)";
-      return `<circle cx="${c.x}" cy="${c.y}" r="${Math.max(6, R.modo.proximidad * kk)}" fill="var(--bus)" fill-opacity=".18"/>
-        <circle cx="${c.x}" cy="${c.y}" r="10" fill="${col}" stroke="var(--surface)" stroke-width="2"/>
-        <text x="${c.x}" y="${c.y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--surface)" font-family="var(--font-body)">${j + 1}</text>`;
-    }).join("");
-    return `<div class="mapa"><svg viewBox="0 0 ${W} ${H}" data-a="moverCasa" role="img" aria-label="Tu ubicación real y las casas de prueba; toca para mover una casa" style="cursor:crosshair">
-      ${traz.length > 1 ? `<polyline points="${traz.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
-      ${casas}
-      <circle cx="${yo.x}" cy="${yo.y}" r="${Math.max(8, (R.yo.acc || 0) * kk)}" fill="var(--navy)" fill-opacity=".12"/>
-      <svg x="${yo.x - 26}" y="${yo.y - 38}" width="52" height="44" viewBox="0 0 64 54">${furgonSVG(false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
-      <text x="8" y="${H - 8}" font-size="11" fill="var(--muted)" font-family="var(--font-body)">Toca el mapa para mover la próxima casa de prueba</text>
-    </svg></div>`;
-  }
-
   function paso() {
     if (!R || R.fin) return;
     R.t++;
@@ -704,7 +685,6 @@ table.det td.mono { font-size: 12px; }
     const det = R.paradas.map((p) => [p.nombre, p.avisoT !== null ? hora(p.avisoT) : "—", p.marcaT !== null ? hora(p.marcaT) : "—",
       p.estado === "no_viaja" ? "No viajó" : p.estado === "ausente" ? "Ausente" : !p.confPor ? (pend ? "Pendiente" : "Sin confirmar")
       : p.confPor.includes("telefónica") ? "Teléfono (con costo)" : p.confPor.includes("llamada por la app") ? "Llamada app (gratis)" : "Recibido en app"]);
-    if (R.watch !== undefined) navigator.geolocation.clearWatch(R.watch);
     app.terminados.unshift({ fecha: "Hoy", ruta: R.ruta.nombre, inicio: hora(0), fin: hora(R.t), km: +(R.d / 1000).toFixed(1), det, ejemplo: false });
     app.hoja = null; app.vista = "resumen";
   }
@@ -740,7 +720,7 @@ table.det td.mono { font-size: 12px; }
       const n = alumnosDeRuta(r).filter((a) => !r.noViaja.includes(a.id)).length;
       return `<div class="card">
         <div class="fila"><h2>${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}</h2><span class="mono muted">${r.hora}</span></div>
-        <span class="muted">${r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"} · ${n} alumno${n === 1 ? "" : "s"}${r.noViaja.length ? ` · ${r.noViaja.length} no viaja hoy` : ""}</span>
+        <span class="muted">${r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"} · ${n} alumno${n === 1 ? "" : "s"}${r.noViaja.length ? ` · ${r.noViaja.length} no va hoy` : ""}</span>
         ${hecha ? `<span class="chip ok">✓ Terminado ${hecha.inicio}–${hecha.fin}</span>` : `<button class="btn xl bus" data-a="iniciar" data-id="${r.id}">Iniciar recorrido</button>`}
       </div>`;
     }).join("");
@@ -756,13 +736,6 @@ table.det td.mono { font-size: 12px; }
         <div class="chips"><span class="chip ok">✓ Ubicación “Siempre”</span><span class="chip ok">✓ Notificaciones</span><span class="chip ok">✓ Batería 82%</span><span class="chip ok">✓ Ahorro de batería desactivado</span></div>
       </div>
       ${rutas}
-      <div class="card">
-        <div class="fila"><h2>📡 Probar con GPS real</h2></div>
-        <span class="muted">Usa la ubicación real de este teléfono. Se ubican 3 casas de prueba cerca de ti; camina o maneja hacia ellas y verás los avisos dispararse solos.</span>
-        <span class="seg" role="group" aria-label="Cómo te moverás">${Object.entries(MODOS).map(([k, m]) => `<button data-a="modoGps" data-v="${k}" aria-pressed="${app.modoGps === k}">${m.nombre}</button>`).join("")}</span>
-        ${app.errorGps ? `<p class="nota" style="color:var(--alert)">${esc(app.errorGps)}</p>` : ""}
-        <button class="btn xl" data-a="gps" ${app.buscandoGps ? "disabled" : ""}>${app.buscandoGps ? "Buscando tu ubicación…" : "Iniciar prueba con mi GPS"}</button>
-      </div>
       <p class="nota">Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.</p>
     </div>`;
   }
@@ -792,6 +765,7 @@ table.det td.mono { font-size: 12px; }
     const sig = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
     const izq = sig ? px(sig).x < van.x - 1 : false;
     const casas = R.paradas.map((p, j) => {
+      if (p.estado === "no_viaja") return "";
       const c = px(p);
       return `<circle cx="${c.x}" cy="${c.y}" r="${CFG.proximidad * k}" fill="var(--bus)" fill-opacity=".14"/>
         <svg x="${c.x - 12}" y="${c.y - 32}" width="24" height="32" viewBox="0 0 30 40">${pinSVG(p.estado === "entregado" ? "✓" : j + 1, colorCasa(p)).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
@@ -807,8 +781,8 @@ table.det td.mono { font-size: 12px; }
       <circle class="halo" cx="${van.x}" cy="${van.y - 8}" r="22" fill="var(--bus)"/>
       <svg x="${van.x - 32}" y="${van.y - 47}" width="64" height="54" viewBox="0 0 64 54">${furgonSVG(izq).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
     </svg>
-    <span class="sello">Mapa básico</span></div>
-    <div class="nota-mapa">${GM.estado === "error" ? esc(GM.error) : GM.estado === "cargando" ? "Conectando con Google Maps…" : "Para ver el mapa de Google con tráfico en vivo, agrega tu clave de Google Maps en Perfil."}</div>`;
+    <span class="sello">Mapa del recorrido</span></div>
+    ${GM.estado === "error" ? `<div class="nota-mapa">${esc(GM.error)}</div>` : GM.estado === "cargando" ? `<div class="nota-mapa">Conectando con Google Maps…</div>` : ""}`;
   }
 
   function vRecorrido() {
@@ -822,17 +796,16 @@ table.det td.mono { font-size: 12px; }
       <div class="fila"><h1>${R.ruta.nombre}</h1><span class="mono muted">${hora(R.t)}</span></div>
       <div class="chips">
         ${app.senal ? `<span class="chip ok"><span class="dot"></span>Compartiendo ubicación</span>` : `<span class="chip alerta"><span class="dot"></span>Sin señal · ${R.cola} posiciones guardadas</span>`}
-        ${R.gps ? `<span class="chip bus">📡 GPS real ±${Math.round(R.yo.acc || 0)} m${R.yo.vel != null && R.yo.vel >= 0 ? ` · ${Math.round(R.yo.vel * 3.6)} km/h` : ""}</span><span class="chip">${(R.d / 1000).toFixed(2)} km</span>`
-          : `<span class="chip">${(R.d / 1000).toFixed(1)} de ${(R.largo / 1000).toFixed(1)} km</span>`}
+        <span class="chip">${(R.d / 1000).toFixed(1)} de ${(R.largo / 1000).toFixed(1)} km</span>
       </div>
       ${R.detenido ? "" : `<div class="manejo"><span>🚐</span><div><b>Conduce tranquila</b>Los avisos a los apoderados se envían solos. Marca a cada alumno cuando estés detenida.</div></div>`}
-      ${R.gps ? mapaGps() : mapa()}
+      ${mapa()}
       ${pend.map((p, i) => {
         const aqui = R.detenido === p;
         return `<div class="parada ${i === 0 ? "actual" : ""}">
           <span class="num">Parada ${R.paradas.indexOf(p) + 1}${aqui ? " · estás aquí" : p.eta != null ? ` · llegada en ~${Math.max(1, Math.round(p.eta / 60))} min` : ""}</span>
           <span class="nom">${esc(p.nombre)}</span>
-          <span class="muted">${esc(p.direccion)} · ${R.gps ? `a ${Math.round(dist(R.yo, p))} m` : esc(p.indic)}</span>
+          <span class="muted">${esc(p.direccion)} · ${esc(p.indic)}</span>
           <div class="chips">${estadoAviso(p)}</div>
           ${i === 0 && !aqui ? `<a class="btn-nav" href="${urlNavegar(p)}" target="_blank" rel="noopener">🧭 Navegar con <b>Google Maps</b></a>` : ""}
           ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
@@ -844,7 +817,7 @@ table.det td.mono { font-size: 12px; }
         <ul class="lista-ev">${R.ev.slice(0, 8).map((e) => `<li><span class="h">${hora(e.t)}</span><span>${e.i}</span><span>${esc(e.txt)}</span></li>`).join("")}</ul></div>
       <button class="btn sec" data-a="pedirFin">Finalizar recorrido</button>
       <div class="demo" aria-label="Controles de la demostración"><b>Demo</b>
-        ${R.gps ? "" : `<span class="seg">`}${R.gps ? "" : [5, 20, 40].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("") + "</span>"}
+        <span class="seg">${[5, 20, 40].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("")}</span>
         <label class="chk"><input type="checkbox" id="chkSenal" ${app.senal ? "" : "checked"}> Sin señal</label>
       </div>
     </div>`;
@@ -913,13 +886,6 @@ table.det td.mono { font-size: 12px; }
         <div class="dato"><span>Notificaciones</span><span style="color:var(--ok)">Activadas ✓</span></div>
         <div class="dato"><span>Ahorro de batería</span><span style="color:var(--ok)">Excluida ✓</span></div>
       </div>
-      <div class="card"><h3>Google Maps</h3>
-        <span class="muted" style="font-size:14px">Pega tu clave de Google Maps para ver el mapa real con tráfico y la ruta por calles. Necesita habilitadas «Maps JavaScript API» y «Directions API».</span>
-        <div class="campo"><label for="gkey">Clave de Google Maps</label><input id="gkey" value="${esc(claveGoogle())}" placeholder="AIza…" autocomplete="off" spellcheck="false"></div>
-        <div class="chips">${GM.estado === "listo" ? '<span class="chip ok">✓ Conectado</span>' : GM.estado === "cargando" ? '<span class="chip">Conectando…</span>' : GM.estado === "error" ? '<span class="chip alerta">No conectado</span>' : '<span class="chip">Sin clave: mapa básico</span>'}</div>
-        ${GM.error ? `<p class="nota" style="color:var(--alert);margin:0">${esc(GM.error)}</p>` : ""}
-        <button class="btn" data-a="guardarClave">Guardar y conectar</button>
-      </div>
       <p class="nota">🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
     </div>`;
@@ -963,7 +929,40 @@ table.det td.mono { font-size: 12px; }
     if (a === "cerrarHoja" && el !== e.target && el.classList.contains("hoja-fondo")) return;
     if (a === "entrar") { app.vista = "hoy"; app.tab = "hoy"; }
     else if (a === "tab") { app.tab = el.dataset.id; if (el.dataset.id === "admin") { ADM.vista = "menu"; ADM.msg = null; } }
-    else if (a === "adm") { ADM.vista = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.agregarEn = null; }
+    else if (a === "adm") { ADM.vista = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.agregarEn = null; ADM.rec = null; ADM.editMonto = null; }
+    else if (a === "recomendar") { const r = RUTAS.find((x) => x.id === el.dataset.id); ADM.rec = { ruta: r.id, ...recomendarRuta(r) }; ADM.msg = null; }
+    else if (a === "descartarRec") ADM.rec = null;
+    else if (a === "aplicarRec") {
+      const r = RUTAS.find((x) => x.id === ADM.rec.ruta);
+      r.orden = [...ADM.rec.orden, ...r.orden.filter((x) => !ADM.rec.orden.includes(x))];
+      ADM.msg = { ok: true, txt: `Listo: ${r.nombre} quedó con la ruta recomendada (${kmTxt(ADM.rec.metros)}). El próximo recorrido la usa.` };
+      ADM.rec = null;
+    }
+    else if (a === "noVaAdm") {
+      const r = RUTAS.find((x) => x.id === el.dataset.id), id = el.dataset.al, nom = nombreDe(id).split(" ")[0];
+      if (r.noViaja.includes(id)) { r.noViaja = r.noViaja.filter((x) => x !== id); r.porTia = r.porTia.filter((x) => x !== id); ADM.msg = { ok: true, txt: `${nom} sí va hoy en ${r.nombre}.` }; }
+      else { r.noViaja.push(id); r.porTia.push(id); ADM.msg = { ok: true, txt: `${nom} no va hoy en ${r.nombre}: la ruta de hoy se salta su casa y su familia no recibe aviso.` }; }
+      app.toast = { txt: `📅 ${ADM.msg.txt}`, hasta: performance.now() + 3500 };
+      ADM.rec = null;
+    }
+    else if (a === "subCobros") { ADM.subCobros = el.dataset.v; ADM.msg = null; ADM.form = null; ADM.editMonto = null; }
+    else if (a === "editarMonto") { ADM.editMonto = el.dataset.id || null; ADM.msg = null; }
+    else if (a === "guardarMonto" || a === "guardarPrecio") {
+      const id = el.dataset.id, campo = (a === "guardarMonto" ? "m_" : "p_") + id;
+      const txt = String(ADM.form?.[campo] ?? "").replace(/\D/g, "");
+      if (ADM.form?.[campo] === undefined) ADM.msg = { ok: true, txt: "Sin cambios." };
+      else if (!txt) ADM.msg = { ok: false, txt: "Escribe un monto (solo números)." };
+      else if (a === "guardarMonto") {
+        const c = ADM.cobros.find((x) => x.id === id); c.monto = Number(txt); ADM.editMonto = null;
+        ADM.msg = { ok: true, txt: `Cobro de ${nombreDe(c.alumno)} en ${mesTxt}: ${pesosTxt(c.monto)}.` };
+      } else {
+        const al = ALUMNOS.find((x) => x.id === id); al.mensualidad = Number(txt);
+        ADM.cobros.filter((c) => c.alumno === id && c.estado === "pendiente").forEach((c) => { c.monto = al.mensualidad; });
+        ADM.msg = { ok: true, txt: `Precio de ${al.nombre}: ${pesosTxt(al.mensualidad)} al mes.` };
+      }
+      if (ADM.form) delete ADM.form[campo];
+      if (ADM.msg.ok) app.toast = { txt: `✅ ${ADM.msg.txt}`, hasta: performance.now() + 3500 };
+    }
     else if (a === "codigoFam") { const al = ALUMNOS.find((x) => x.id === el.dataset.id); al.codigo ??= nuevoCodigo(); ADM.codigo = { nombre: al.nombre, codigo: al.codigo }; ADM.vista = "codigo"; }
     else if (a === "pinAdm") {
       const r = el.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
@@ -975,25 +974,27 @@ table.det td.mono { font-size: 12px; }
       if (!f.nombre.trim() || !f.direccion.trim()) ADM.msg = { ok: false, txt: "Falta el nombre o la dirección." };
       else if (!f.pin) ADM.msg = { ok: false, txt: "Toca el mapa para ubicar la casa: así el aviso llega a tiempo." };
       else if (tel.length < 8) ADM.msg = { ok: false, txt: "Revisa el teléfono (ej: 9 1234 5678)." };
+      else if (!/^\d+$/.test(String(f.precio).replace(/\D/g, "") || "x")) ADM.msg = { ok: false, txt: "Escribe el precio mensual (solo números)." };
       else {
+        const precioNuevo = Number(String(f.precio).replace(/\D/g, ""));
         const id = "a" + Date.now();
         ALUMNOS.push({ id, nombre: f.nombre.trim(), curso: f.curso.trim(), apoderado: "Apoderado/a", direccion: f.direccion.trim(), indic: "—",
-          lat: f.pin.lat, lng: f.pin.lng, respuesta: "app", activo: true, familiaApp: false, mensualidad: 60000, codigo: nuevoCodigo() });
+          lat: f.pin.lat, lng: f.pin.lng, respuesta: "app", activo: true, familiaApp: false, mensualidad: precioNuevo, codigo: nuevoCodigo() });
         f.rutas.forEach((rid) => RUTAS.find((r) => r.id === rid).orden.push(id));
-        ADM.cobros.push({ id: "k" + Date.now(), alumno: id, monto: 60000, estado: "pendiente" });
+        ADM.cobros.push({ id: "k" + Date.now(), alumno: id, monto: precioNuevo, estado: "pendiente" });
         ADM.codigo = { nombre: f.nombre.trim(), codigo: ALUMNOS.at(-1).codigo, nuevo: true };
         ADM.vista = "codigo"; ADM.form = null; ADM.msg = null;
       }
     }
     else if (a === "moverAdm") {
+      ADM.rec = null;
       const r = RUTAS.find((x) => x.id === el.dataset.id), vis = alumnosDeRuta(r).map((x) => x.id);
       const i = vis.indexOf(el.dataset.al), j = i + Number(el.dataset.d);
       if (j >= 0 && j < vis.length) { [vis[i], vis[j]] = [vis[j], vis[i]]; r.orden = [...vis, ...r.orden.filter((x) => !vis.includes(x))]; ADM.msg = { ok: true, txt: "Orden actualizado: el próximo recorrido lo usará." }; }
     }
-    else if (a === "quitarAdm") { const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden = r.orden.filter((x) => x !== el.dataset.al); ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} salió de ${r.nombre}.` }; }
+    else if (a === "quitarAdm") { ADM.rec = null; const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden = r.orden.filter((x) => x !== el.dataset.al); ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} salió de ${r.nombre}.` }; }
     else if (a === "abrirAgregar") ADM.agregarEn = el.dataset.id;
-    if (/^(moverAdm|quitarAdm|agregarAdm|guardarAlumno|resolverAdm)$/.test(a) && GM.estado === "listo") prepararRutasGoogle();
-    else if (a === "agregarAdm") { const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden.push(el.dataset.al); ADM.agregarEn = null; ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} quedó al final de ${r.nombre}.` }; }
+    else if (a === "agregarAdm") { ADM.rec = null; const r = RUTAS.find((x) => x.id === el.dataset.id); r.orden.push(el.dataset.al); ADM.agregarEn = null; ADM.msg = { ok: true, txt: `${nombreDe(el.dataset.al)} quedó al final de ${r.nombre}.` }; }
     else if (a === "pagarAdm") { const c = ADM.cobros.find((x) => x.id === el.dataset.id); Object.assign(c, { estado: "pagado", medio: el.dataset.m, vencido: false }); ADM.msg = { ok: true, txt: `Pago de ${nombreDe(c.alumno)} registrado.` }; }
     else if (a === "verSol") { ADM.solSel = el.dataset.id; ADM.vista = "solicitud"; ADM.form = { resp: "" }; ADM.msg = null; }
     else if (a === "responderAdm" || a === "resolverAdm") {
@@ -1017,17 +1018,9 @@ table.det td.mono { font-size: 12px; }
     else if (a === "finalizar") finalizar();
     else if (a === "volver") { app.vista = "hoy"; app.tab = "historial"; R = null; }
     else if (a === "vel") app.vel = Number(el.dataset.v);
-    else if (a === "modoGps") app.modoGps = el.dataset.v;
-    else if (a === "guardarClave") {
-      const k = ($tel.querySelector("#gkey")?.value || "").trim();
-      try { if (k) localStorage.setItem("gmaps_key", k); else localStorage.removeItem("gmaps_key"); } catch { /* sin almacenamiento */ }
-      // Google Maps no permite cambiar la clave en caliente: se recarga si ya se había cargado.
-      if (window.google && window.google.maps) location.reload();
-      else { GM.estado = "sin_clave"; cargarGoogle(); }
-    }
-    else if (a === "gps") iniciarGps();
-    else if (a === "moverCasa" && R && R.gps) moverCasa(e, el);
     else if (a === "salir") { app.vista = "login"; }
+    // Si cambió el orden o quién va hoy, Google vuelve a trazar las rutas por calles.
+    if (/^(moverAdm|quitarAdm|agregarAdm|guardarAlumno|resolverAdm|aplicarRec|noVaAdm)$/.test(a) && GM.estado === "listo") prepararRutasGoogle();
     previo = ""; render(true);
   });
   document.addEventListener("input", (e) => {
@@ -1045,10 +1038,7 @@ table.det td.mono { font-size: 12px; }
   let ult = performance.now(), acc = 0;
   function bucle(ahora) {
     const dt = Math.min(0.25, (ahora - ult) / 1000); ult = ahora;
-    if (app.vista === "recorrido" && R && !R.fin && R.gps) {
-      const t = Math.floor((Date.now() - R.inicioMs) / 1000);
-      while (R.t < t) { R.t++; llamadas(); }
-    } else if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
+    if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
     render();
     actualizarGoogle();
     requestAnimationFrame(bucle);

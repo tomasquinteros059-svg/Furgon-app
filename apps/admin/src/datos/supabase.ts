@@ -2,7 +2,7 @@
 // (supabase/migrations/20261009000001_administracion.sql), que exigen rol admin.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
-  Alumno, Cobro, Conductora, Datos, Empresa, LlamadaReporte, Mensaje, Pregunta, RecorridoHoy, Resumen, Ruta, Solicitud,
+  Alumno, Cobro, Conductora, Datos, Empresa, LlamadaReporte, Mensaje, Pregunta, RecomendacionRuta, RecorridoHoy, Resumen, Ruta, Solicitud,
 } from "./tipos";
 
 function ok<T>(r: { data: T; error: { message: string } | null }): T {
@@ -110,20 +110,49 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     },
 
     async rutas() {
-      const filas = ok(await sb.from("rutas")
-        .select("id, nombre, tipo, hora_salida, conductor_id, conductor:perfiles(nombre), furgones(patente, descripcion), ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion))")
-        .order("nombre"));
+      const [filas, hoy] = await Promise.all([
+        sb.from("rutas")
+          .select("id, nombre, tipo, hora_salida, conductor_id, colegio_nombre, colegio_lat, colegio_lng, conductor:perfiles(nombre), furgones(patente, descripcion), ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion, lat, lng))")
+          .order("nombre").then(ok),
+        sb.rpc("hoy_empresa").then(ok) as Promise<string>,
+      ]);
+      const inasistencias = ok(await sb.from("inasistencias").select("alumno_id, tipo").eq("fecha", hoy)) ?? [];
       return (filas ?? []).map((r) => {
         const f = r.furgones as unknown as { patente: string; descripcion: string | null } | null;
+        const noVa = (alumnoId: string) => inasistencias.some((i) => i.alumno_id === alumnoId && (i.tipo === r.tipo || i.tipo === "ambos"));
         return {
           id: r.id, nombre: r.nombre, tipo: r.tipo, hora_salida: r.hora_salida, conductor_id: r.conductor_id,
           conductor_nombre: (r.conductor as unknown as { nombre: string } | null)?.nombre ?? null,
           furgon: f ? `${f.descripcion ?? ""} · ${f.patente}` : null,
-          paradas: (r.ruta_paradas as unknown as { alumno_id: string; orden: number; alumnos: { nombre: string }; domicilios: { direccion: string } }[])
-            .map((p) => ({ alumno_id: p.alumno_id, orden: p.orden, nombre: p.alumnos?.nombre ?? "—", direccion: p.domicilios?.direccion ?? "" }))
+          colegio: r.colegio_lat != null && r.colegio_lng != null ? { nombre: r.colegio_nombre, lat: r.colegio_lat, lng: r.colegio_lng } : null,
+          paradas: (r.ruta_paradas as unknown as { alumno_id: string; orden: number; alumnos: { nombre: string }; domicilios: { direccion: string; lat: number; lng: number } | null }[])
+            .map((p) => ({
+              alumno_id: p.alumno_id, orden: p.orden, nombre: p.alumnos?.nombre ?? "—", direccion: p.domicilios?.direccion ?? "",
+              lat: p.domicilios?.lat ?? null, lng: p.domicilios?.lng ?? null, hoy_no_va: noVa(p.alumno_id),
+            }))
             .sort((a, b) => a.orden - b.orden),
         } satisfies Ruta;
       });
+    },
+    async recomendarRuta(rutaId) {
+      const { data, error } = await sb.functions.invoke("recomendar-ruta", { body: { ruta_id: rutaId } });
+      if (error) {
+        const cuerpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
+        throw new Error(cuerpo?.mensaje ?? "No se pudo calcular la recomendación.");
+      }
+      return data as RecomendacionRuta;
+    },
+    async aplicarOrden(rutaId, orden) {
+      ok(await sb.rpc("aplicar_orden_ruta", { p_ruta: rutaId, p_alumnos: orden }));
+    },
+    async hoyNoVa(alumnoId, tipo, valor) {
+      const hoy = ok(await sb.rpc("hoy_empresa")) as string;
+      const marcar = async (t: string, v: boolean) => ok(await sb.rpc("marcar_no_viaja", { p_alumno: alumnoId, p_fecha: hoy, p_tipo: t, p_no_viaja: v }));
+      if (valor) { await marcar(tipo, true); return; }
+      await marcar(tipo, false);
+      // Si la familia había marcado todo el día, se deja solo el otro tramo.
+      const ambos = ok(await sb.from("inasistencias").select("id").eq("alumno_id", alumnoId).eq("fecha", hoy).eq("tipo", "ambos"));
+      if (ambos?.length) { await marcar("ambos", false); await marcar(tipo === "ida" ? "vuelta" : "ida", true); }
     },
     async moverParada(rutaId, alumnoId, delta) {
       ok(await sb.rpc("mover_parada", { p_ruta: rutaId, p_alumno: alumnoId, p_delta: delta }));
@@ -163,6 +192,12 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     },
     async anularCobro(cobroId, nota) {
       ok(await sb.rpc("anular_cobro", { p_cobro: cobroId, p_nota: nota || null }));
+    },
+    async cambiarMontoCobro(cobroId, monto, nota) {
+      ok(await sb.rpc("cambiar_monto_cobro", { p_cobro: cobroId, p_monto: monto, p_nota: nota || null }));
+    },
+    async fijarMensualidad(alumnoId, monto, desde) {
+      return ok(await sb.rpc("fijar_mensualidad", { p_alumno: alumnoId, p_monto: monto, p_desde: desde ? `${desde}-01` : null })) as number;
     },
 
     async solicitudes() {

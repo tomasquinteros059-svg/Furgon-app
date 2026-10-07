@@ -21,8 +21,8 @@ export default function MenuAdministrar() {
   return (
     <Pantalla titulo="Administración" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
       {opcion("👧 Alumnos", r ? `${r.alumnos_activos} activos${r.familias_sin_app ? ` · ${r.familias_sin_app} familia(s) sin la app` : ""}` : "…", "/conductor/administrar/alumnos")}
-      {opcion("🗺️ Rutas", r?.alumnos_sin_ruta ? `${r.alumnos_sin_ruta} alumno(s) sin ruta` : "Orden de las paradas", "/conductor/administrar/rutas", !!r?.alumnos_sin_ruta)}
-      {opcion("💳 Cobros", r ? `${pesos(r.por_cobrar_mes)} por cobrar este mes${r.morosos ? ` · ${r.morosos} vencido(s)` : ""}` : "…", "/conductor/administrar/cobros", !!r?.morosos)}
+      {opcion("🗺️ Rutas", r?.alumnos_sin_ruta ? `${r.alumnos_sin_ruta} alumno(s) sin ruta` : "Ruta recomendada, orden y «hoy no va»", "/conductor/administrar/rutas", !!r?.alumnos_sin_ruta)}
+      {opcion("💳 Cobros", r ? `${pesos(r.por_cobrar_mes)} por cobrar este mes · precios${r.morosos ? ` · ${r.morosos} vencido(s)` : ""}` : "…", "/conductor/administrar/cobros", !!r?.morosos)}
       {opcion("💬 Solicitudes", r ? (r.solicitudes_abiertas ? `${r.solicitudes_abiertas} sin responder` : "Todo respondido") : "…", "/conductor/administrar/solicitudes", !!r?.solicitudes_abiertas)}
       <View style={{ marginTop: 8 }}>
         <Text style={estilos.textoSuave}>También puedes entrar al panel web de administración con esta misma cuenta.</Text>

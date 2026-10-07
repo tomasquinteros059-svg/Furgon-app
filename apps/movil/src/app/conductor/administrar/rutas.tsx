@@ -2,53 +2,137 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
-import { mensajeError, supabase } from "../../../lib/supabase";
+import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
 
-interface Ruta { id: string; nombre: string; tipo: string; ruta_paradas: { alumno_id: string; orden: number; alumnos: { nombre: string } }[] }
+interface Ruta {
+  id: string;
+  nombre: string;
+  tipo: "ida" | "vuelta";
+  ruta_paradas: { alumno_id: string; orden: number; alumnos: { nombre: string } }[];
+}
+interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
+
+const km = (m: number) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
+const botonChico = { minHeight: 40, paddingHorizontal: 12 };
 
 export default function RutasAdmin() {
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [alumnos, setAlumnos] = useState<{ id: string; nombre: string }[]>([]);
+  const [noVan, setNoVan] = useState<{ alumno_id: string; tipo: string }[]>([]);
+  const [hoy, setHoy] = useState<string | null>(null);
   const [agregando, setAgregando] = useState<string | null>(null);
+  const [recomendacion, setRecomendacion] = useState<{ rutaId: string; r: Recomendacion } | null>(null);
+  const [calculando, setCalculando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+
   const cargar = useCallback(async () => {
-    const [r, a] = await Promise.all([
+    const { data: fecha } = await supabase.rpc("hoy_empresa");
+    const [r, a, i] = await Promise.all([
       supabase.from("rutas").select("id, nombre, tipo, ruta_paradas(alumno_id, orden, alumnos(nombre))").eq("activa", true).order("nombre"),
       supabase.from("alumnos").select("id, nombre").eq("activo", true).order("nombre"),
+      supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", fecha as string),
     ]);
-    setRutas((r.data as unknown as Ruta[]) ?? []); setAlumnos(a.data ?? []);
+    setHoy(fecha as string);
+    setRutas((r.data as unknown as Ruta[]) ?? []); setAlumnos(a.data ?? []); setNoVan(i.data ?? []);
   }, []);
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
-  const hacer = async (p: PromiseLike<{ error: { message: string } | null }>) => {
-    setError(null);
+  const hacer = async (p: PromiseLike<{ error: { message: string } | null }>, ok?: string) => {
+    setError(null); setExito(null);
     const { error } = await p;
-    if (error) setError(mensajeError(error));
+    if (error) setError(mensajeError(error)); else if (ok) setExito(ok);
     cargar();
   };
 
+  const noVaHoy = (alumnoId: string, tipo: string) => noVan.some((x) => x.alumno_id === alumnoId && (x.tipo === tipo || x.tipo === "ambos"));
+  async function cambiarHoyNoVa(alumnoId: string, nombre: string, tipo: "ida" | "vuelta", valor: boolean) {
+    if (!hoy) return;
+    const marcar = (t: string, v: boolean) => supabase.rpc("marcar_no_viaja", { p_alumno: alumnoId, p_fecha: hoy, p_tipo: t, p_no_viaja: v });
+    setError(null); setExito(null);
+    let res = await marcar(tipo, valor);
+    // Si la familia había marcado todo el día, se deja marcado solo el otro tramo.
+    if (!res.error && !valor && noVan.some((x) => x.alumno_id === alumnoId && x.tipo === "ambos")) {
+      res = await marcar("ambos", false);
+      if (!res.error) res = await marcar(tipo === "ida" ? "vuelta" : "ida", true);
+    }
+    if (res.error) setError(mensajeError(res.error));
+    else setExito(valor ? `${nombre} no va hoy: tu ruta de hoy se salta su casa y su familia no recibe aviso.` : `${nombre} sí va hoy.`);
+    cargar();
+  }
+
+  async function recomendar(ruta: Ruta) {
+    setError(null); setExito(null); setCalculando(ruta.id);
+    try {
+      setRecomendacion({ rutaId: ruta.id, r: await llamarFuncion<Recomendacion>("recomendar-ruta", { ruta_id: ruta.id }) });
+    } catch (e) {
+      setError(mensajeError(e));
+    } finally {
+      setCalculando(null);
+    }
+  }
+
   return (
     <Pantalla titulo="Rutas" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
-      <Text style={estilos.textoSuave}>El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo.</Text>
+      <Text style={estilos.textoSuave}>El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Recomendar ruta» calcula el orden más corto con las direcciones de tus alumnos.</Text>
       {error ? <Aviso tipo="error" texto={error} /> : null}
+      {exito ? <Aviso tipo="exito" texto={exito} /> : null}
       {rutas.map((r) => {
         const paradas = [...r.ruta_paradas].sort((a, b) => a.orden - b.orden);
         const fuera = alumnos.filter((a) => !paradas.some((p) => p.alumno_id === a.id));
+        const rec = recomendacion?.rutaId === r.id ? recomendacion.r : null;
+        const nombre = (id: string) => paradas.find((p) => p.alumno_id === id)?.alumnos?.nombre ?? "—";
         return (
           <Tarjeta key={r.id}>
             <Text style={estilos.subtitulo}>{r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}</Text>
-            {paradas.map((p, i) => (
-              <View key={p.alumno_id} style={[estilos.fila, { justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderColor: colores.borde }]}>
-                <Text style={[estilos.texto, { flex: 1 }]}>{i + 1}. {p.alumnos?.nombre}</Text>
-                <View style={estilos.fila}>
-                  <Boton titulo="↑" variante="secundario" deshabilitado={i === 0} estilo={{ minHeight: 40, paddingHorizontal: 12 }}
-                    onPress={() => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: -1 }))} />
-                  <Boton titulo="↓" variante="secundario" deshabilitado={i === paradas.length - 1} estilo={{ minHeight: 40, paddingHorizontal: 12 }}
-                    onPress={() => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: 1 }))} />
-                  <Boton titulo="✕" variante="secundario" estilo={{ minHeight: 40, paddingHorizontal: 12 }}
-                    onPress={() => hacer(supabase.from("ruta_paradas").delete().eq("ruta_id", r.id).eq("alumno_id", p.alumno_id))} />
-                </View>
+            {paradas.length >= 2 && !rec ? (
+              <Boton titulo={calculando === r.id ? "Calculando…" : "✨ Recomendar ruta"} variante="secundario" cargando={calculando === r.id} onPress={() => recomendar(r)} />
+            ) : null}
+            {rec ? (
+              <View style={{ gap: 6, padding: 10, borderRadius: 12, borderWidth: 2, borderColor: colores.amarillo }}>
+                {rec.cambia ? (
+                  <>
+                    <Text style={[estilos.texto, { fontWeight: "700" }]}>✨ Ruta recomendada: {km(rec.metros)} (antes {km(rec.metrosActual)})</Text>
+                    <Text style={estilos.textoSuave}>Ahorras {km(rec.ahorroM)} por recorrido. {rec.fuente === "google" ? "Calculada por calles con Google Maps." : "Calculada por distancia (aproximada)."}</Text>
+                    {rec.orden.map((id, i) => {
+                      const antes = paradas.findIndex((p) => p.alumno_id === id);
+                      return <Text key={id} style={estilos.texto}>{i + 1}. {nombre(id)} <Text style={estilos.textoSuave}>{antes === i ? "" : `(antes ${antes + 1}°)`}</Text></Text>;
+                    })}
+                    <View style={estilos.fila}>
+                      <Boton titulo="Aplicar" variante="exito" estilo={{ flex: 1 }} onPress={() => {
+                        setRecomendacion(null);
+                        hacer(supabase.rpc("aplicar_orden_ruta", { p_ruta: r.id, p_alumnos: rec.orden }), `Listo: ${r.nombre} quedó con el orden recomendado.`);
+                      }} />
+                      <Boton titulo="Descartar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setRecomendacion(null)} />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={estilos.texto}>👍 El orden actual ya es el más corto (≈ {km(rec.metrosActual)}).</Text>
+                    <Boton titulo="Cerrar" variante="texto" onPress={() => setRecomendacion(null)} />
+                  </>
+                )}
               </View>
-            ))}
+            ) : null}
+            {paradas.map((p, i) => {
+              const noVa = noVaHoy(p.alumno_id, r.tipo);
+              return (
+                <View key={p.alumno_id} style={{ paddingVertical: 6, borderBottomWidth: 1, borderColor: colores.borde, gap: 6 }}>
+                  <View style={[estilos.fila, { justifyContent: "space-between" }]}>
+                    <Text style={[estilos.texto, { flex: 1 }, noVa && { color: colores.suave, textDecorationLine: "line-through" }]}>{i + 1}. {p.alumnos?.nombre}</Text>
+                    <View style={estilos.fila}>
+                      <Boton titulo="↑" variante="secundario" deshabilitado={i === 0} estilo={botonChico}
+                        onPress={() => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: -1 }))} />
+                      <Boton titulo="↓" variante="secundario" deshabilitado={i === paradas.length - 1} estilo={botonChico}
+                        onPress={() => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: 1 }))} />
+                      <Boton titulo="✕" variante="secundario" estilo={botonChico}
+                        onPress={() => hacer(supabase.from("ruta_paradas").delete().eq("ruta_id", r.id).eq("alumno_id", p.alumno_id))} />
+                    </View>
+                  </View>
+                  <Boton titulo={noVa ? "📅 Hoy no va · tocar si sí va" : "Hoy no va"} variante={noVa ? "peligro" : "secundario"} estilo={botonChico}
+                    onPress={() => cambiarHoyNoVa(p.alumno_id, p.alumnos?.nombre ?? "", r.tipo, !noVa)} />
+                </View>
+              );
+            })}
             {agregando === r.id ? (
               <View style={{ gap: 6, marginTop: 8 }}>
                 {fuera.length === 0 ? <Text style={estilos.textoSuave}>Todos los alumnos ya están en esta ruta.</Text> : fuera.map((a) => (

@@ -171,8 +171,15 @@ td.num, th.num { text-align: right; }
 .modal { background: var(--surface); border-radius: 16px; padding: 20px; width: min(520px, 100%); max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
 .modal-cab { display: flex; justify-content: space-between; align-items: center; }
 .filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); align-self: flex-start; width: fit-content; }
 .seg button { border: 0; background: transparent; padding: 8px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 .login { min-height: 100%; display: grid; place-items: center; padding: 20px; background: var(--lateral); }
 .login .tarjeta { width: min(400px, 100%); }
+
+/* Ruta recomendada y «hoy no va» */
+.paradas li.no-va { opacity: .6; }
+.paradas li.no-va b { text-decoration: line-through; }
+.recomendacion { border: 2px solid var(--bus); background: var(--surface); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.rec-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; align-items: start; }
+@media (max-width: 760px) { .rec-cuerpo { grid-template-columns: minmax(0, 1fr); } }
