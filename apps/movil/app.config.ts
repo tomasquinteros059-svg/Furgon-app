@@ -20,6 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     infoPlist: {
       UIBackgroundModes: ["location", "remote-notification"],
+      // Para abrir la navegación en la app de Google Maps si está instalada.
+      LSApplicationQueriesSchemes: ["comgooglemaps"],
     },
     entitlements: {
       // Permite que el aviso atraviese el modo Concentración (iOS 15+).

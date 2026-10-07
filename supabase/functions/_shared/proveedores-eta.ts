@@ -81,3 +81,27 @@ export function proveedorDesdeEntorno(): ProveedorEta | null {
       return null;
   }
 }
+
+/**
+ * Trazado por calles (polilínea codificada) de origen → paradas en orden, para dibujar
+ * la ruta en el mapa de la conductora. Devuelve null si no hay clave de Google configurada.
+ */
+export async function trazadoGoogle(origen: LatLng, destinos: LatLng[]): Promise<string | null> {
+  const key = entorno.googleMapsKey();
+  if (!key || destinos.length === 0) return null;
+  const wp = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
+  const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": "routes.polyline.encodedPolyline" },
+    body: JSON.stringify({
+      origin: wp(origen),
+      destination: wp(destinos[destinos.length - 1]),
+      intermediates: destinos.slice(0, -1).slice(0, 24).map(wp),
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_AWARE",
+    }),
+  });
+  if (!resp.ok) throw new Error(`Routes API HTTP ${resp.status}`);
+  const datos = await resp.json() as { routes?: { polyline?: { encodedPolyline?: string } }[] };
+  return datos.routes?.[0]?.polyline?.encodedPolyline ?? null;
+}

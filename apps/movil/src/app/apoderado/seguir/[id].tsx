@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Circle, Marker, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ESTILO_MAPA, Furgon, PROVEEDOR_MAPA } from "../../../componentes/mapa";
 import { Boton, colores } from "../../../componentes/ui";
 import { supabase } from "../../../lib/supabase";
 
@@ -101,6 +102,8 @@ export default function SeguirFurgon() {
       <MapView
         ref={mapa}
         style={StyleSheet.absoluteFill}
+        provider={PROVEEDOR_MAPA}
+        customMapStyle={ESTILO_MAPA}
         initialRegion={casa ? { ...casa, latitudeDelta: 0.03, longitudeDelta: 0.03 } : undefined}
         showsPointsOfInterests={false}
         toolbarEnabled={false}
@@ -121,8 +124,8 @@ export default function SeguirFurgon() {
             fillColor="rgba(242,183,5,0.25)" strokeColor="rgba(242,183,5,0.9)" strokeWidth={2} />
         ) : null}
         {furgon && exacta ? (
-          <Marker coordinate={furgon} anchor={{ x: 0.5, y: 0.5 }} title="Furgón">
-            <View style={estilos.van}><Text style={{ fontSize: 22 }}>🚐</Text></View>
+          <Marker coordinate={furgon} anchor={{ x: 0.5, y: 0.85 }} title="Furgón">
+            <Furgon haciaIzquierda={!!casa && casa.longitude < furgon.longitude} />
           </Marker>
         ) : null}
       </MapView>

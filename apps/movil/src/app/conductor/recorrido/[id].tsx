@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
+import { navegarConGoogleMaps } from "../../../componentes/mapa";
+import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
 import { detenerSeguimiento, enviarCola, iniciarSeguimiento, pendientesEnCola, recorridoActivo } from "../../../ubicacion/seguimiento";
@@ -13,7 +15,7 @@ interface Parada {
   estado: EstadoParada;
   eta_seg: number | null;
   alumno: { nombre: string };
-  domicilio: { direccion: string; indicaciones: string | null };
+  domicilio: { direccion: string; indicaciones: string | null; lat: number; lng: number };
   avisos: { id: string }[];
 }
 
@@ -37,7 +39,7 @@ export default function RecorridoConductor() {
       supabase.from("recorridos").select("tipo, estado").eq("id", id).single(),
       supabase
         .from("recorrido_alumnos")
-        .select("id, orden, estado, eta_seg, alumno:alumnos(nombre), domicilio:domicilios(direccion, indicaciones), avisos(id)")
+        .select("id, orden, estado, eta_seg, alumno:alumnos(nombre), domicilio:domicilios(direccion, indicaciones, lat, lng), avisos(id)")
         .eq("recorrido_id", id)
         .order("orden"),
     ]);
@@ -109,6 +111,10 @@ export default function RecorridoConductor() {
       </View>
       {error ? <Aviso texto={error} tipo="error" /> : null}
 
+      <MapaConductor recorridoId={id} casas={paradas.map((p) => ({
+        id: p.id, numero: p.orden, lat: p.domicilio.lat, lng: p.domicilio.lng, estado: p.estado, avisado: p.avisos.length > 0,
+      }))} />
+
       {pendientes.map((p, i) => (
         <Tarjeta key={p.id} estilo={i === 0 ? { borderColor: colores.amarillo, borderWidth: 2 } : undefined}>
           <Text style={{ fontSize: 20, fontWeight: "700", color: colores.texto }}>{p.orden}. {p.alumno.nombre}</Text>
@@ -118,6 +124,9 @@ export default function RecorridoConductor() {
             {p.avisos.length ? "🔔 Apoderado avisado" : "Aún sin aviso"}
             {p.eta_seg !== null ? ` · llegada en ~${Math.max(1, Math.round(p.eta_seg / 60))} min` : ""}
           </Text>
+          {i === 0 ? (
+            <Boton titulo="🧭 Navegar con Google Maps" variante="secundario" onPress={() => navegarConGoogleMaps(p.domicilio.lat, p.domicilio.lng)} />
+          ) : null}
           <View style={[estilos.fila, { marginTop: 10 }]}>
             <Boton titulo={textoEntregado} variante="exito" grande estilo={{ flex: 2 }}
               cargando={marcando === p.id} onPress={() => marcar(p, "entregado")} />

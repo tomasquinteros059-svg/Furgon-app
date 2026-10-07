@@ -15,6 +15,7 @@
   --bus: #F5B700; --bus-ink: #2A2100; --bus-soft: #FFF4CC;
   --navy: #16324F; --navy-ink: #FFFFFF;
   --ok: #1D7F45; --ok-soft: #E4F3EA; --alert: #C4281C; --alert-soft: #FCE9E7;
+  --mapa-fondo: #E9EEF2; --mapa-manzana: #F6F8FA; --mapa-calle: #FFFFFF; --mapa-avenida: #FFE9A8; --mapa-parque: #D5EBCF; --mapa-agua: #BFDDF0;
   --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -24,6 +25,7 @@
     --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
     --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
     --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
+    --mapa-fondo: #1A232C; --mapa-manzana: #212C36; --mapa-calle: #2D3A46; --mapa-avenida: #4A4220; --mapa-parque: #1F3324; --mapa-agua: #1C3446;
     color-scheme: dark;
   }
 }
@@ -31,7 +33,8 @@
   --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
   --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
   --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
-  color-scheme: dark;
+  --mapa-fondo: #1A232C; --mapa-manzana: #212C36; --mapa-calle: #2D3A46; --mapa-avenida: #4A4220; --mapa-parque: #1F3324; --mapa-agua: #1C3446;
+    color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -81,7 +84,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .campo label { font-weight: 700; font-size: 14px; }
 .campo input { border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; font-size: 16px; background: var(--surface); color: var(--ink); }
 .nota { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 9px 11px; }
-.mapa svg { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--surface-2); }
+.mapa { position: relative; }
+.mapa > svg { width: 100%; height: auto; display: block; border-radius: 14px; background: var(--mapa-fondo); }
+.gmap-host, .gmap { width: 100%; height: 320px; border-radius: 14px; overflow: hidden; }
+.sello { position: absolute; left: 8px; bottom: 8px; background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.15); display: inline-flex; gap: 5px; align-items: center; }
+.sello .g { color: #1A73E8; }
+.nota-mapa { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.btn-nav { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; min-height: 48px; border-radius: 12px; font-weight: 700; border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
+.btn-nav b { color: #1A73E8; }
+@media (prefers-reduced-motion: no-preference) { .halo { animation: halo 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; } }
+@keyframes halo { from { opacity: .55; transform: scale(.6); } to { opacity: 0; transform: scale(1.6); } }
 .lista-ev { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .lista-ev li { display: grid; grid-template-columns: 46px 20px minmax(0, 1fr); gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .lista-ev li:last-child { border-bottom: 0; }
@@ -168,6 +180,159 @@ table.det td.mono { font-size: 12px; }
   const ox = (W - (lngMax - lngMin) * mLng * k) / 2, oy = (H - (latMax - latMin) * mLat * k) / 2;
   const px = (p) => ({ x: ox + (p.lng - lngMin) * mLng * k, y: oy + (latMax - p.lat) * mLat * k });
 
+  // ---------- Furgón escolar y pines (SVG) ----------
+  // Furgón escolar chileno visto de lado: amarillo, franja negra y letrero "ESCOLAR".
+  function furgonSVG(izq, ancho = 56) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${Math.round(ancho * 54 / 64)}" viewBox="0 0 64 54">
+      <ellipse cx="32" cy="50" rx="24" ry="3.5" fill="#000" opacity=".18"/>
+      <g ${izq ? 'transform="translate(64 0) scale(-1 1)"' : ""}>
+        <path d="M7 12 H43 Q51 12 55 19 L59 26 Q60.5 28.5 60.5 31.5 V36 Q60.5 41 56 41 H8 Q3.5 41 3.5 36.5 V16.5 Q3.5 12 7 12 Z" fill="#F5B700" stroke="#2A2100" stroke-width="2.5" stroke-linejoin="round"/>
+        <rect x="8" y="16.5" width="9" height="8" rx="1.6" fill="#BFE3F5" stroke="#2A2100"/>
+        <rect x="20" y="16.5" width="9" height="8" rx="1.6" fill="#BFE3F5" stroke="#2A2100"/>
+        <rect x="32" y="16.5" width="9" height="8" rx="1.6" fill="#BFE3F5" stroke="#2A2100"/>
+        <path d="M44 16.5 H48.5 Q51.5 16.5 53.5 21 L55 24.5 H44 Z" fill="#BFE3F5" stroke="#2A2100" stroke-linejoin="round"/>
+        <rect x="4" y="30" width="56" height="3.6" fill="#15202B"/>
+        <rect x="56.5" y="34.5" width="3" height="2.6" rx=".8" fill="#FFF3B0"/>
+        <circle cx="16" cy="41" r="6.6" fill="#15202B"/><circle cx="16" cy="41" r="2.6" fill="#C4CBD3"/>
+        <circle cx="47" cy="41" r="6.6" fill="#15202B"/><circle cx="47" cy="41" r="2.6" fill="#C4CBD3"/>
+      </g>
+      <rect x="19" y="2" width="26" height="9" rx="2" fill="#15202B"/>
+      <text x="32" y="8.8" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.2" font-weight="900" fill="#F5B700" letter-spacing=".3">ESCOLAR</text>
+    </svg>`;
+  }
+  function pinSVG(texto, color, ancho = 30) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${Math.round(ancho * 40 / 30)}" viewBox="0 0 30 40">
+      <path d="M15 39 C15 39 2.5 24 2.5 14.5 a12.5 12.5 0 1 1 25 0 C27.5 24 15 39 15 39 Z" fill="${color}" stroke="#fff" stroke-width="2.5"/>
+      <text x="15" y="19" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="800" fill="#fff">${texto}</text>
+    </svg>`;
+  }
+  const colorCasa = (p) => p.estado === "entregado" ? "#1D7F45" : p.estado === "pendiente" ? (p.avisoT !== null ? "#C4281C" : "#16324F") : "#8A95A1";
+  const urlNavegar = (p) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving&dir_action=navigate`;
+
+  // ---------- Google Maps (con tu clave; sin clave se usa el mapa dibujado) ----------
+  const ESTILO_GOOGLE = [
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "poi.school", stylers: [{ visibility: "on" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { featureType: "landscape", stylers: [{ color: "#F1F3F5" }] },
+    { featureType: "water", stylers: [{ color: "#C9E3F2" }] },
+  ];
+  const GM = { estado: "sin_clave", error: null, avisoRuta: null, mapa: null, div: null, rutas: {}, objetos: null, rid: null, seguir: true, ultimo: 0, izq: false, prev: null };
+  const ll = (p) => ({ lat: p.lat, lng: p.lng });
+  function claveGoogle() {
+    try { return new URLSearchParams(location.search).get("gmaps") || localStorage.getItem("gmaps_key") || ""; } catch { return ""; }
+  }
+  function cargarGoogle() {
+    const k = claveGoogle();
+    if (!k) { GM.estado = "sin_clave"; return; }
+    if (GM.estado === "cargando" || GM.estado === "listo") return;
+    GM.estado = "cargando"; GM.error = null;
+    window.gm_authFailure = () => {
+      GM.estado = "error";
+      GM.error = "Google rechazó la clave: revisa que tenga habilitadas «Maps JavaScript API» y «Directions API», y que este sitio esté permitido.";
+      if (GM.div) GM.div.remove();
+      GM.mapa = null; GM.div = null; GM.objetos = null; previo = "";
+    };
+    window.__furgonGoogle = () => { GM.estado = "listo"; prepararRutasGoogle(); previo = ""; };
+    const sc = document.createElement("script");
+    sc.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(k)}&v=weekly&loading=async&callback=__furgonGoogle`;
+    sc.async = true;
+    sc.onerror = () => { GM.estado = "error"; GM.error = "No se pudo cargar Google Maps. Revisa tu conexión a internet."; previo = ""; };
+    document.head.appendChild(sc);
+  }
+  // Ruta real por calles para cada recorrido (Directions API). Si falla, se usa la aproximada.
+  async function prepararRutasGoogle() {
+    const svc = new google.maps.DirectionsService();
+    for (const r of RUTAS) {
+      const orden = r.tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
+      const pts = r.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden];
+      try {
+        const res = await svc.route({
+          origin: ll(pts[0]), destination: ll(pts.at(-1)),
+          waypoints: pts.slice(1, -1).map((p) => ({ location: ll(p), stopover: true })),
+          travelMode: google.maps.TravelMode.DRIVING,
+        });
+        const camino = res.routes[0].overview_path.map((q) => ({ lat: q.lat(), lng: q.lng() }));
+        if (camino.length > 1) GM.rutas[r.tipo] = camino;
+      } catch (e) {
+        GM.avisoRuta = "Google no entregó la ruta por calles (¿«Directions API» habilitada?). Se muestra una ruta aproximada.";
+      }
+    }
+    previo = "";
+  }
+  function montarGoogle() {
+    const host = $tel.querySelector("#gmap-host");
+    if (!host || GM.estado !== "listo" || !window.google) return;
+    if (!GM.div) {
+      GM.div = document.createElement("div"); GM.div.className = "gmap";
+      GM.mapa = new google.maps.Map(GM.div, {
+        center: { lat: -33.44, lng: -70.58 }, zoom: 13, disableDefaultUI: true, zoomControl: true,
+        clickableIcons: false, gestureHandling: "greedy", styles: ESTILO_GOOGLE,
+      });
+      new google.maps.TrafficLayer().setMap(GM.mapa);
+      GM.mapa.addListener("dragstart", () => { GM.seguir = false; previo = ""; });
+      GM.mapa.addListener("click", (e) => { if (R && R.gps) { moverCasaA(e.latLng.lat(), e.latLng.lng()); previo = ""; } });
+    }
+    if (GM.div.parentNode !== host) host.appendChild(GM.div);
+  }
+  function actualizarGoogle() {
+    if (!GM.mapa || !R || app.vista !== "recorrido") return;
+    const ahora = performance.now();
+    if (ahora - GM.ultimo < 90) return;
+    GM.ultimo = ahora;
+    const pos = R.gps ? R.yo : puntoEn(dSuave());
+    if (GM.rid !== R) {
+      // Nuevo recorrido: se rehacen los objetos del mapa.
+      if (GM.objetos) { GM.objetos.casas.forEach((m) => m.setMap(null)); [GM.objetos.van, GM.objetos.casing, GM.objetos.ruta, GM.objetos.hecho, GM.objetos.colegio].forEach((o) => o && o.setMap(null)); }
+      const map = GM.mapa;
+      const casing = new google.maps.Polyline({ map, path: R.gps ? [] : R.puntos.map(ll), strokeColor: "#FFFFFF", strokeWeight: 9, strokeOpacity: 1, zIndex: 1 });
+      const ruta = new google.maps.Polyline({ map, path: R.gps ? [] : R.puntos.map(ll), strokeColor: "#8A95A1", strokeWeight: 5, strokeOpacity: .9, zIndex: 2 });
+      const hecho = new google.maps.Polyline({ map, path: [], strokeColor: "#16324F", strokeWeight: 6, zIndex: 3 });
+      const colegio = R.gps ? null : new google.maps.Marker({ map, position: ll(COLEGIO), title: COLEGIO.nombre, icon: { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSVG("🏫", "#15202B", 34)), anchor: new google.maps.Point(17, 45) } });
+      const casas = R.paradas.map((p, j) => new google.maps.Marker({ map, position: ll(p), title: p.nombre, zIndex: 5 }));
+      const van = new google.maps.Marker({ map, position: ll(pos), title: "Tu furgón", zIndex: 10 });
+      GM.objetos = { casing, ruta, hecho, colegio, casas, van, iconos: [], vanIzq: null };
+      GM.rid = R; GM.seguir = true; GM.prev = pos;
+      const b = new google.maps.LatLngBounds(); [pos, ...R.paradas].forEach((p) => b.extend(ll(p)));
+      GM.mapa.fitBounds(b, 40);
+    }
+    const o = GM.objetos;
+    // Furgón: posición y hacia dónde mira.
+    if (GM.prev && Math.abs(pos.lng - GM.prev.lng) > 1e-6) GM.izq = pos.lng < GM.prev.lng;
+    GM.prev = pos;
+    if (o.vanIzq !== GM.izq) {
+      o.van.setIcon({ url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(furgonSVG(GM.izq, 60)), anchor: new google.maps.Point(30, 48) });
+      o.vanIzq = GM.izq;
+    }
+    o.van.setPosition(ll(pos));
+    // Casas: el ícono cambia con el estado (pendiente, avisada, entregada).
+    R.paradas.forEach((p, j) => {
+      if (R.gps) o.casas[j].setPosition(ll(p));
+      const clave = p.estado + (p.avisoT !== null);
+      if (o.iconos[j] !== clave) {
+        o.casas[j].setIcon({ url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSVG(p.estado === "entregado" ? "✓" : j + 1, colorCasa(p), 32)), anchor: new google.maps.Point(16, 42) });
+        o.iconos[j] = clave;
+      }
+    });
+    // Trayecto hecho (azul) sobre la ruta completa (gris); en GPS real, tu rastro.
+    if (R.gps) o.hecho.setPath(R.trazo.map(ll));
+    else {
+      const i0 = R.acum.findIndex((a) => a >= dSuave());
+      o.hecho.setPath([...R.puntos.slice(0, i0 === -1 ? R.puntos.length : i0), pos].map(ll));
+    }
+    // Cámara que acompaña al furgón, salvo que muevas el mapa.
+    if (GM.seguir) {
+      const b = GM.mapa.getBounds();
+      if (b && !b.contains(ll(pos))) GM.mapa.panTo(ll(pos));
+      else if (b) {
+        const ne = b.getNorthEast(), sw = b.getSouthWest();
+        const mx = (ne.lng() - sw.lng()) * .2, my = (ne.lat() - sw.lat()) * .2;
+        if (pos.lng > ne.lng() - mx || pos.lng < sw.lng() + mx || pos.lat > ne.lat() - my || pos.lat < sw.lat() + my) GM.mapa.panTo(ll(pos));
+      }
+    }
+  }
+
   // ---------- Estado de la app ----------
   const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [], modoGps: "pie", errorGps: null, buscandoGps: false };
   let R = null; // recorrido activo
@@ -175,12 +340,21 @@ table.det td.mono { font-size: 12px; }
   function iniciarRecorrido(rutaId) {
     const ruta = RUTAS.find((r) => r.id === rutaId);
     const orden = ruta.tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
-    const puntos = trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
+    // Con Google Maps conectado, el furgón recorre la ruta real por calles.
+    const puntos = GM.rutas[ruta.tipo] ?? trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
     const acum = [0];
     for (let i = 1; i < puntos.length; i++) acum.push(acum[i - 1] + dist(puntos[i - 1], puntos[i]));
+    // Cada casa queda en el punto de la ruta más cercano, avanzando en orden.
+    let desde = 0;
+    const enRuta = orden.map((a) => {
+      let mejor = desde, menor = Infinity;
+      for (let i = desde; i < puntos.length; i++) { const dd = dist(puntos[i], a); if (dd < menor) { menor = dd; mejor = i; } }
+      desde = mejor;
+      return acum[mejor];
+    });
     R = {
       ruta, puntos, acum, largo: acum.at(-1), t: 0, d: 0, cola: 0, enviadas: 0, detenido: null, fin: false,
-      paradas: orden.map((a, j) => ({ ...a, dRuta: acum[2 * (j + 1)], estado: ruta.noViaja.includes(a.id) ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
+      paradas: orden.map((a, j) => ({ ...a, dRuta: enRuta[j], estado: ruta.noViaja.includes(a.id) ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
       llamadas: [], ev: [], gratis: 0, pagadas: 0,
     };
     evento("▶️", `Recorrido iniciado. Compartiendo ubicación cada ${CFG.gps} s.`);
@@ -191,6 +365,12 @@ table.det td.mono { font-size: 12px; }
 
   const hora = (t) => { const s = Math.floor(R.ruta.inicio + t); return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}`; };
   const evento = (i, txt, tipo = "") => R.ev.unshift({ t: R.t, i, txt, tipo });
+
+  function dSuave() {
+    if (!R || R.gps || R.fin || R.detenido || app.hoja || app.vista !== "recorrido") return R ? R.d : 0;
+    const obj = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
+    return Math.min(obj ? obj.dRuta : R.largo, R.d + (typeof acc === "number" ? acc : 0) * CFG.kmh / 3.6);
+  }
 
   function puntoEn(d) {
     let i = R.acum.findIndex((a) => a >= d); if (i <= 0) i = 1;
@@ -328,12 +508,22 @@ table.det td.mono { font-size: 12px; }
     if (!pend.length) return;
     const p = pend[R.mover % pend.length]; R.mover++;
     p.lat = T.lat0 - (y - T.oy) / T.k / mLat; p.lng = T.lng0 + (x - T.ox) / T.k / mLng;
-    p.avisoT = p.avisoT; // el aviso ya enviado no se repite
+    evento("📍", `Moviste la casa de prueba de ${p.nombre}.`);
+    evaluarGps();
+  }
+
+  // Igual que moverCasa, pero desde un clic en Google Maps.
+  function moverCasaA(lat, lng) {
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    if (!pend.length) return;
+    const p = pend[R.mover % pend.length]; R.mover++;
+    p.lat = lat; p.lng = lng;
     evento("📍", `Moviste la casa de prueba de ${p.nombre}.`);
     evaluarGps();
   }
 
   function mapaGps() {
+    if (GM.estado === "listo") return mapa();
     const pts = [R.yo, ...R.paradas, ...R.trazo];
     const lat0 = Math.max(...pts.map((p) => p.lat)), lat1 = Math.min(...pts.map((p) => p.lat));
     const lng0 = Math.min(...pts.map((p) => p.lng)), lng1 = Math.max(...pts.map((p) => p.lng));
@@ -354,7 +544,7 @@ table.det td.mono { font-size: 12px; }
       ${traz.length > 1 ? `<polyline points="${traz.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
       ${casas}
       <circle cx="${yo.x}" cy="${yo.y}" r="${Math.max(8, (R.yo.acc || 0) * kk)}" fill="var(--navy)" fill-opacity=".12"/>
-      <g transform="translate(${yo.x} ${yo.y})"><rect x="-15" y="-10" width="30" height="20" rx="5" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/><rect x="-10" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/><rect x="2" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/></g>
+      <svg x="${yo.x - 26}" y="${yo.y - 38}" width="52" height="44" viewBox="0 0 64 54">${furgonSVG(false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
       <text x="8" y="${H - 8}" font-size="11" fill="var(--muted)" font-family="var(--font-body)">Toca el mapa para mover la próxima casa de prueba</text>
     </svg></div>`;
   }
@@ -454,25 +644,48 @@ table.det td.mono { font-size: 12px; }
     </div>`;
   }
 
+  // Fondo de mapa dibujado: manzanas, calles, avenidas, un parque y el río Mapocho.
+  const FONDO_MAPA = (() => {
+    let f = `<rect width="${W}" height="${H}" fill="var(--mapa-fondo)"/>`;
+    for (let x = 6; x < W; x += 30) for (let y = 6; y < H; y += 26) f += `<rect x="${x}" y="${y}" width="24" height="20" rx="3" fill="var(--mapa-manzana)"/>`;
+    f += `<rect x="186" y="58" width="54" height="46" rx="8" fill="var(--mapa-parque)"/>`;
+    f += `<path d="M-10 40 C 60 18, 120 52, 190 30 S 300 6, 380 22" fill="none" stroke="var(--mapa-agua)" stroke-width="9" stroke-linecap="round"/>`;
+    for (let x = 3; x < W; x += 30) f += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="var(--mapa-calle)" stroke-width="${x % 90 === 3 ? 5 : 3}"/>`;
+    for (let y = 3; y < H; y += 26) f += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--mapa-calle)" stroke-width="${y % 78 === 3 ? 5 : 3}"/>`;
+    f += `<line x1="0" y1="185" x2="${W}" y2="160" stroke="var(--mapa-avenida)" stroke-width="7"/>`;
+    return f;
+  })();
+
   function mapa() {
-    const pts = R.puntos.map(px), van = px(puntoEn(R.d));
-    const i0 = R.acum.findIndex((a) => a >= R.d);
+    if (GM.estado === "listo") {
+      return `<div class="mapa"><div id="gmap-host" class="gmap-host"></div><span class="sello"><span class="g">G</span> Google Maps · tráfico en vivo</span></div>
+        ${GM.avisoRuta ? `<div class="nota-mapa">${esc(GM.avisoRuta)}</div>` : ""}`;
+    }
+    const d = dSuave();
+    const pts = R.puntos.map(px), van = px(puntoEn(d));
+    const i0 = R.acum.findIndex((a) => a >= d);
     const hecho = pts.slice(0, i0 === -1 ? pts.length : i0).concat([van]);
+    const linea = (arr) => arr.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const sig = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
+    const izq = sig ? px(sig).x < van.x - 1 : false;
     const casas = R.paradas.map((p, j) => {
       const c = px(p);
-      const col = p.estado === "entregado" ? "var(--ok)" : p.estado === "pendiente" ? (p.avisoT !== null ? "var(--alert)" : "var(--navy)") : "var(--muted)";
-      return `<circle cx="${c.x}" cy="${c.y}" r="${CFG.proximidad * k}" fill="var(--bus)" fill-opacity=".18"/>
-        <circle cx="${c.x}" cy="${c.y}" r="9" fill="${col}" stroke="var(--surface)" stroke-width="2"/>
-        <text x="${c.x}" y="${c.y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--surface)" font-family="var(--font-body)">${j + 1}</text>`;
+      return `<circle cx="${c.x}" cy="${c.y}" r="${CFG.proximidad * k}" fill="var(--bus)" fill-opacity=".14"/>
+        <svg x="${c.x - 12}" y="${c.y - 32}" width="24" height="32" viewBox="0 0 30 40">${pinSVG(p.estado === "entregado" ? "✓" : j + 1, colorCasa(p)).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
     }).join("");
     const col = px(COLEGIO);
     return `<div class="mapa"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa del recorrido">
-      <polyline points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--road)" stroke-width="5" stroke-dasharray="2 7" stroke-linecap="round"/>
-      <polyline points="${hecho.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="${col.x - 8}" y="${col.y - 8}" width="16" height="16" rx="3" fill="var(--ink)"/><text x="${col.x}" y="${col.y + 4}" text-anchor="middle" font-size="11" fill="var(--surface)" font-weight="700" font-family="var(--font-body)">C</text>
+      ${FONDO_MAPA}
+      <polyline points="${linea(pts)}" fill="none" stroke="var(--surface)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${linea(pts)}" fill="none" stroke="var(--muted)" stroke-width="4" stroke-dasharray="1 7" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${linea(hecho)}" fill="none" stroke="var(--navy)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg x="${col.x - 13}" y="${col.y - 34}" width="26" height="34" viewBox="0 0 30 40">${pinSVG("🏫", "#15202B").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
       ${casas}
-      <g transform="translate(${van.x} ${van.y})"><rect x="-15" y="-10" width="30" height="20" rx="5" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/><rect x="-10" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/><rect x="2" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/></g>
-    </svg></div>`;
+      <circle class="halo" cx="${van.x}" cy="${van.y - 8}" r="22" fill="var(--bus)"/>
+      <svg x="${van.x - 32}" y="${van.y - 47}" width="64" height="54" viewBox="0 0 64 54">${furgonSVG(izq).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
+    </svg>
+    <span class="sello">Mapa básico</span></div>
+    <div class="nota-mapa">${GM.estado === "error" ? esc(GM.error) : GM.estado === "cargando" ? "Conectando con Google Maps…" : "Para ver el mapa de Google con tráfico en vivo, agrega tu clave de Google Maps en Perfil."}</div>`;
   }
 
   function vRecorrido() {
@@ -498,6 +711,7 @@ table.det td.mono { font-size: 12px; }
           <span class="nom">${esc(p.nombre)}</span>
           <span class="muted">${esc(p.direccion)} · ${R.gps ? `a ${Math.round(dist(R.yo, p))} m` : esc(p.indic)}</span>
           <div class="chips">${estadoAviso(p)}</div>
+          ${i === 0 && !aqui ? `<a class="btn-nav" href="${urlNavegar(p)}" target="_blank" rel="noopener">🧭 Navegar con <b>Google Maps</b></a>` : ""}
           ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
         </div>`;
       }).join("")}
@@ -576,6 +790,13 @@ table.det td.mono { font-size: 12px; }
         <div class="dato"><span>Notificaciones</span><span style="color:var(--ok)">Activadas ✓</span></div>
         <div class="dato"><span>Ahorro de batería</span><span style="color:var(--ok)">Excluida ✓</span></div>
       </div>
+      <div class="card"><h3>Google Maps</h3>
+        <span class="muted" style="font-size:14px">Pega tu clave de Google Maps para ver el mapa real con tráfico y la ruta por calles. Necesita habilitadas «Maps JavaScript API» y «Directions API».</span>
+        <div class="campo"><label for="gkey">Clave de Google Maps</label><input id="gkey" value="${esc(claveGoogle())}" placeholder="AIza…" autocomplete="off" spellcheck="false"></div>
+        <div class="chips">${GM.estado === "listo" ? '<span class="chip ok">✓ Conectado</span>' : GM.estado === "cargando" ? '<span class="chip">Conectando…</span>' : GM.estado === "error" ? '<span class="chip alerta">No conectado</span>' : '<span class="chip">Sin clave: mapa básico</span>'}</div>
+        ${GM.error ? `<p class="nota" style="color:var(--alert);margin:0">${esc(GM.error)}</p>` : ""}
+        <button class="btn" data-a="guardarClave">Guardar y conectar</button>
+      </div>
       <p class="nota">🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
     </div>`;
@@ -605,6 +826,7 @@ table.det td.mono { font-size: 12px; }
       previo = html; $tel.innerHTML = html;
       const v = $tel.querySelector(".vista"); if (v) v.scrollTop = scroll;
     }
+    montarGoogle();
   }
 
   // ---------- Eventos ----------
@@ -622,6 +844,13 @@ table.det td.mono { font-size: 12px; }
     else if (a === "volver") { app.vista = "hoy"; app.tab = "historial"; R = null; }
     else if (a === "vel") app.vel = Number(el.dataset.v);
     else if (a === "modoGps") app.modoGps = el.dataset.v;
+    else if (a === "guardarClave") {
+      const k = ($tel.querySelector("#gkey")?.value || "").trim();
+      try { if (k) localStorage.setItem("gmaps_key", k); else localStorage.removeItem("gmaps_key"); } catch { /* sin almacenamiento */ }
+      // Google Maps no permite cambiar la clave en caliente: se recarga si ya se había cargado.
+      if (window.google && window.google.maps) location.reload();
+      else { GM.estado = "sin_clave"; cargarGoogle(); }
+    }
     else if (a === "gps") iniciarGps();
     else if (a === "moverCasa" && R && R.gps) moverCasa(e, el);
     else if (a === "salir") { app.vista = "login"; }
@@ -643,8 +872,10 @@ table.det td.mono { font-size: 12px; }
       while (R.t < t) { R.t++; llamadas(); }
     } else if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
     render();
+    actualizarGoogle();
     requestAnimationFrame(bucle);
   }
+  cargarGoogle();
   render(); requestAnimationFrame(bucle);
 })();
 </script>

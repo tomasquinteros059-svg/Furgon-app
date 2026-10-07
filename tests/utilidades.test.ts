@@ -106,3 +106,19 @@ describe("cola de posiciones sin señal", () => {
     expect(await cola.contar()).toBe(1);
   });
 });
+
+import { decodificarPolilinea } from "../supabase/functions/_shared/core/polilinea.ts";
+
+describe("polilínea de Google", () => {
+  it("decodifica el ejemplo oficial de la documentación de Google", () => {
+    // https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+    expect(decodificarPolilinea("_p~iF~ps|U_ulLnnqC_mqNvxq`@")).toEqual([
+      { lat: 38.5, lng: -120.2 },
+      { lat: 40.7, lng: -120.95 },
+      { lat: 43.252, lng: -126.453 },
+    ]);
+  });
+  it("una cadena vacía no tiene puntos", () => {
+    expect(decodificarPolilinea("")).toEqual([]);
+  });
+});

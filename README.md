@@ -95,6 +95,7 @@ supabase/
     posiciones/                  Recibe posiciones y dispara avisos
     marcar-parada/               "Entregado"/"Ausente" + push de confirmación
     llamada-app/                 Acuse, confirmación o rechazo de la llamada gratis por la app
+    trazado-ruta/                Ruta por calles (Google Routes) para el mapa de la conductora
     twilio-webhook/              TwiML de la llamada, confirmación y estado
     procesar-llamadas/           Respaldo para despachar reintentos (cron)
 tools/simulador/                 Demo de datos y recorrido con GPS falso
@@ -171,6 +172,24 @@ npm run demo:preparar
 
 Para probar las llamadas en local, Twilio necesita llegar a tu máquina. Expón el puerto 54321 con
 un túnel (`ngrok http 54321` o `cloudflared`) y define `FUNCTIONS_PUBLIC_URL=https://<tunel>/functions/v1`.
+
+## Mapas (Google Maps)
+
+- **App móvil:** usa Google Maps en Android y en iOS (`react-native-maps` con `PROVIDER_GOOGLE`;
+  las claves `GOOGLE_MAPS_ANDROID_API_KEY` / `GOOGLE_MAPS_IOS_API_KEY` habilitan *Maps SDK for
+  Android/iOS*). La conductora ve:
+  - su furgón escolar amarillo en la posición del GPS de su celular;
+  - las casas numeradas, que cambian de color al avisar y al entregar;
+  - el tráfico en vivo;
+  - la ruta por calles, calculada en el servidor por `trazado-ruta` con Routes API y la misma
+    `GOOGLE_MAPS_API_KEY` del ETA.
+  El botón **"Navegar con Google Maps"** abre la navegación paso a paso hacia la próxima casa.
+- **Maqueta `docs/perfil-tia-del-furgon.html`:**
+  - Si pegas tu clave en *Perfil → Google Maps* (o abres el archivo con `?gmaps=TU_CLAVE`),
+    muestra Google Maps con tráfico y el furgón recorre la ruta real por calles. La clave
+    necesita *Maps JavaScript API* y *Directions API*.
+  - Sin clave, o si Google la rechaza, se muestra el mapa dibujado con el mismo furgón.
+  - Restringe la clave por sitio web (HTTP referrer) en Google Cloud.
 
 ## App web de administración
 
@@ -297,7 +316,7 @@ Para revisar los tipos de las Edge Functions: `cd supabase/functions && deno che
 supabase link --project-ref <ref>
 supabase db push
 supabase secrets set --env-file supabase/functions/.env
-supabase functions deploy posiciones marcar-parada llamada-app twilio-webhook procesar-llamadas
+supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta twilio-webhook procesar-llamadas
 ```
 
 `twilio-webhook` y `procesar-llamadas` se despliegan sin verificación de JWT (ver `supabase/config.toml`):
