@@ -57,6 +57,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); position: relative; }
 .tabs button span { font-size: 20px; line-height: 1; }
 .tabs button[aria-current="page"] { color: var(--ink); }
+.codigo-fam { font-family: var(--font-mono); font-size: 28px; letter-spacing: .12em; text-align: center; background: var(--bus-soft); border: 2px dashed var(--bus); border-radius: 12px; padding: 10px; }
 .card.invita { border: 2px solid var(--ok); text-align: left; font: inherit; color: inherit; cursor: pointer; }
 .tia-res { display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 10px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -174,7 +175,15 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
 <script>
 (() => {
   // ---------- Datos de la demo ----------
-  const AP = { nombre: "Ana Pérez", corto: "Ana", email: "ana.perez@correo.cl", tel: "+56 9 1111 1111" };
+  // Perfil de familia compartido (dúo): Ana (mamá) comparte a sus hijos con Rodrigo (papá).
+  // Cada uno entra con su propia cuenta; los dos reciben la alarma y siguen el furgón.
+  const PERSONAS = {
+    ana: { id: "ana", nombre: "Ana Pérez", corto: "Ana", rol: "mamá", ini: "AP", atento: "atenta", email: "ana.perez@correo.cl", tel: "+56 9 1111 1111" },
+    rodrigo: { id: "rodrigo", nombre: "Rodrigo Pérez", corto: "Rodrigo", rol: "papá", ini: "RP", atento: "atento", email: "rodrigo.perez@correo.cl", tel: "+56 9 3333 4444" },
+  };
+  let AP = PERSONAS.ana;
+  const FAMILIA = { unido: false, codigo: null, parentesco: "Papá", hijos: null }; // hijos: ids compartidos (null = todos)
+  const otroPadre = () => (AP.id === "ana" ? PERSONAS.rodrigo : PERSONAS.ana);
   const TIA = { nombre: "Tía Marcela", furgon: "Hyundai H1 blanca · DEMO-11", tel: "+56 9 5555 1234" };
   const COLEGIO = { lat: -33.4565, lng: -70.5978 };
   const PARADAS = [ // recorrido de vuelta completo (las casas de otras familias no se muestran)
@@ -198,6 +207,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     { id: "pedro", nombre: "Pedro Salas (tío Pedro)", empresa: "Furgones del Sur", comunas: "La Florida, Puente Alto", presentacion: null, estado: null },
   ];
   const tiasConectadas = () => TIAS.filter((t) => t.estado === "aceptada");
+  // Rodrigo ve solo a los hijos que Ana compartió con él.
+  const hijosVisibles = () => (AP.id === "ana" ? HIJOS : HIJOS.filter((h) => !FAMILIA.hijos || FAMILIA.hijos.includes(h.id)));
   const HISTORIAL = [
     { fecha: "Lun 6 oct · Vuelta", ejemplo: true, items: [["16:34", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 Contestaste y presionaste 1"], ["16:40", "✅ Sofía está en su hogar"], ["16:55", "🔔 Aviso: Isidora llega en ~5 min"], ["16:55", "📱 Tocaste “Recibido”"], ["17:01", "✅ Isidora está en su hogar"]] },
     { fecha: "Lun 6 oct · Ida", ejemplo: true, items: [["07:01", "🔔 Aviso: el furgón pasa por Isidora en ~5 min"], ["07:06", "✅ Isidora subió al furgón"], ["07:20", "🔔 Aviso: el furgón pasa por Sofía en ~5 min"], ["07:26", "✅ Sofía subió al furgón"]] },
@@ -290,7 +301,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         p.avisoT = R.t; p.dAviso = R.d;
         const m = Math.max(1, Math.round(p.eta / 60));
         notificar({ tipo: "aviso", hijo: h.id, titulo: `🚐 ${h.nombre} llega pronto a casa`, cuerpo: `El furgón llegará en aproximadamente ${m} minutos con ${h.nombre} ${h.apellido}. Por favor, que alguien esté esperando en casa.` });
-        linea(`🔔 Aviso: ${h.nombre} llega en ~${m} min`);
+        linea(`🔔 Aviso: ${h.nombre} llega en ~${m} min${FAMILIA.unido && (!FAMILIA.hijos || FAMILIA.hijos.includes(h.id)) ? " (sonó en el teléfono de Ana y en el de Rodrigo)" : ""}`);
         if (app.llamadaAuto) iniciarLlamada(p, 1);
       }
     }
@@ -422,11 +433,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       ${!R ? `<span class="muted">Simula la vuelta de hoy: el furgón sale del colegio y deja a tus hijos en casa. Sube el volumen para oír la alarma.</span><button class="btn bus" data-a="simular">▶ Simular la vuelta de hoy</button>`
         : R.fin ? `<span class="muted">La vuelta terminó. Revisa el historial.</span><button class="btn sec" data-a="reiniciar">Simular de nuevo</button>`
         : `<span class="muted">${app.corriendo ? "El furgón va en camino. Cuando suene la llamada, contesta con 1 o cuelga para ver los reintentos." : "En pausa."}</span><button class="btn sec" data-a="pausa">${app.corriendo ? "⏸ Pausar" : "▶ Continuar"}</button>`}
-      <div class="sw-fila"><span><b>${app.internet ? "📶 Ana tiene internet" : "📵 Ana sin internet"}</b><br><span class="muted" style="font-size:12px">Sin internet, la llamada gratis no llega y se llama por teléfono (con costo).</span></span>
-        <label class="sw"><input type="checkbox" data-a="internet" ${app.internet ? "checked" : ""} aria-label="Internet en el teléfono de Ana"><span></span></label></div>
+      <div class="sw-fila"><span><b>${app.internet ? `📶 ${AP.corto} tiene internet` : `📵 ${AP.corto} sin internet`}</b><br><span class="muted" style="font-size:12px">Sin internet, la llamada gratis no llega y se llama por teléfono (con costo).</span></span>
+        <label class="sw"><input type="checkbox" data-a="internet" ${app.internet ? "checked" : ""} aria-label="Internet en el teléfono de ${AP.corto}"><span></span></label></div>
       ${R ? `<span class="muted" style="font-size:12px">Llamadas hoy: <b>${app.llamGratis}</b> por la app (sin costo) · <b>${app.llamPagadas}</b> telefónicas (con costo)</span>` : ""}
     </div>`;
-    const tarjetas = HIJOS.map((h) => {
+    const tarjetas = hijosVisibles().map((h) => {
       const p = parDe(h);
       const aBordo = R && p && p.estado === "pendiente" && p.aBordoT != null;
       const verMapa = R && p && p.estado === "pendiente" && (p.avisoT !== null || aBordo);
@@ -437,7 +448,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         ${verMapa ? miniMapa(p) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Cuando ${esc(h.nombre)} se suba, toca «Ya subió» y la verás en vivo. Si no, verás el furgón desde tu aviso.</div>` : ""}
         ${R && !R.fin && p && p.estado === "pendiente" && !aBordo ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
         ${R && !R.fin && p && p.estado === "pendiente" ? `<button class="btn" data-a="seguir" data-id="${h.id}">🗺️ ${aBordo ? `Seguir a ${esc(h.nombre)} en vivo` : "Seguir el furgón en vivo"}</button>` : ""}
-        ${p && p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
+        ${p && p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy ${AP.atento}</button>` : ""}
         ${h.asignado ? `<div><span style="font-weight:700; font-size:14px">Hoy no viaja</span>
           ${["ida", "vuelta"].map((t) => {
             const bloqueado = t === "ida" || (R && p && (p.estado === "entregado" || (p.estado === "pendiente" && p.avisoT !== null && Math.abs(p.dRuta - R.d) < 2)));
@@ -448,7 +459,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     return `<div class="vista">
       <div><span class="muted">Martes 7 de octubre</span><h1>Hola, ${AP.corto}</h1></div>
       ${demo}
-      ${TIAS.some((t) => t.estado === "pendiente" && t.inicio === "tia") ? `<button class="card invita" data-a="conectar">🤝 <b>${esc(TIAS.find((t) => t.estado === "pendiente" && t.inicio === "tia").nombre)}</b> quiere conectarse contigo<span class="muted" style="font-size:13px">Toca para responder</span></button>` : ""}
+      ${FAMILIA.unido ? `<div class="card"><div class="fila"><b>👨‍👩‍👧 Ver la app como</b></div>
+          <span class="seg" role="group" aria-label="Ver la app como">${Object.values(PERSONAS).map((x) => `<button data-a="verComo" data-v="${x.id}" aria-pressed="${AP.id === x.id}">${x.corto} (${x.rol})</button>`).join("")}</span>
+          <span class="muted" style="font-size:12px">Perfil compartido: los dos ven a los mismos hijos y reciben la misma alarma, cada uno en su teléfono.</span></div>`
+        : AP.id === "ana" ? `<button class="card invita" data-a="familia" style="border-color:var(--bus)">👨‍👩‍👧 <b>Comparte con el papá</b><span class="muted" style="font-size:13px">Que Rodrigo también reciba la alarma, las llamadas y siga el furgón en vivo desde su teléfono.</span></button>` : ""}
+      ${AP.id === "ana" && TIAS.some((t) => t.estado === "pendiente" && t.inicio === "tia") ? `<button class="card invita" data-a="conectar">🤝 <b>${esc(TIAS.find((t) => t.estado === "pendiente" && t.inicio === "tia").nombre)}</b> quiere conectarse contigo<span class="muted" style="font-size:13px">Toca para responder</span></button>` : ""}
       ${tarjetas}
       <button class="btn sec" data-a="agregar">+ Agregar hijo/a</button>
       <button class="btn sec" data-a="conectar">🤝 Conectar con tía o tío</button>
@@ -522,6 +537,32 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     </div>`;
   }
 
+  // Familia: compartir el perfil con el papá (o la mamá).
+  function vFamilia() {
+    const lista = FAMILIA.hijos ?? HIJOS.map((h) => h.id);
+    const msj = (c) => `Hola 👋 Te comparto a ${HIJOS.filter((h) => lista.includes(h.id)).map((h) => h.nombre).join(" e ")} en la app «Furgón Escolar» para que también recibas los avisos del furgón y lo sigas en vivo. 1) Descarga la app. 2) Toca «Crear cuenta» y escribe este código: ${c}. Si ya tienes cuenta, ve a Familia → «Tengo un código».`;
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <h1>Familia</h1>
+      <span class="muted" style="font-size:14px">Comparte a tus hijos con el papá o la mamá (o un abuelo/a). Cada uno entra con su propia cuenta y los dos reciben la alarma, las llamadas, siguen el furgón en vivo y pueden marcar «Ya subió» y «hoy no viaja».</span>
+      ${HIJOS.map((h) => `<div class="card"><b>${esc(h.nombre)} ${esc(h.apellido)}</b>
+        <div class="dato"><span>👤 Ana Pérez</span><span class="muted">mamá${AP.id === "ana" ? " · tú" : ""}</span></div>
+        ${FAMILIA.unido && lista.includes(h.id) ? `<div class="dato"><span>👥 Rodrigo Pérez</span><span class="muted">papá${AP.id === "rodrigo" ? " · tú" : ""}</span></div>` : ""}
+      </div>`).join("")}
+      ${FAMILIA.unido ? `<p class="nota" style="color:var(--ok)">✓ Rodrigo se unió con su propia cuenta. Su teléfono quedó en la llamada automática de ${HIJOS.filter((h) => lista.includes(h.id)).map((h) => h.nombre).join(" e ")}.</p>
+          ${AP.id === "ana" ? `<button class="btn sec" data-a="dejarCompartir">Dejar de compartir con Rodrigo</button>` : ""}`
+        : FAMILIA.codigo ? `<div class="card" style="border:2px solid var(--bus)"><b>Código para Rodrigo</b>
+          <div class="codigo-fam">${FAMILIA.codigo}</div>
+          <span class="muted" style="font-size:13px">Sirve una vez y vence en 7 días. Esperando que Rodrigo lo use…</span>
+          <a class="btn ok" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center" href="https://wa.me/?text=${encodeURIComponent(msj(FAMILIA.codigo))}" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>`
+        : `<div class="card" style="border:2px solid var(--bus)"><h3>👨‍👩‍👧 Compartir con…</h3>
+          <div class="chips">${["Papá", "Abuelo/a", "Otro"].map((p) => `<button class="chip ${FAMILIA.parentesco === p ? "ok" : ""}" style="border:0;cursor:pointer;font-size:14px;padding:8px 12px" data-a="parentescoFam" data-v="${p}">${FAMILIA.parentesco === p ? "✓ " : ""}${p}</button>`).join("")}</div>
+          <span style="font-weight:700;font-size:14px">¿A quiénes?</span>
+          <div class="chips">${HIJOS.map((h) => `<button class="chip ${lista.includes(h.id) ? "ok" : ""}" style="border:0;cursor:pointer;font-size:14px;padding:8px 12px" data-a="hijoFam" data-id="${h.id}">${lista.includes(h.id) ? "✓ " : ""}${esc(h.nombre)}</button>`).join("")}</div>
+          <button class="btn" data-a="crearCodigoFam">Crear código para compartir</button></div>`}
+    </div>`;
+  }
+
   // Conectar con la tía o el tío: búsqueda por nombre, furgón o comuna, e invitaciones recibidas.
   function vConectar() {
     const q = app.busqueda.trim().toLowerCase();
@@ -568,10 +609,15 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
 
   function vPerfil() {
     return `<div class="vista">
-      <div style="display:flex; gap:14px; align-items:center"><div class="avatar">AP</div><div style="min-width:0"><h1>${AP.nombre}</h1><span class="muted">Apoderada de ${HIJOS.map((h) => h.nombre).join(" e ")}</span></div></div>
+      <div style="display:flex; gap:14px; align-items:center"><div class="avatar">${AP.ini}</div><div style="min-width:0"><h1>${AP.nombre}</h1><span class="muted">${AP.rol === "mamá" ? "Apoderada" : "Apoderado"} de ${hijosVisibles().map((h) => h.nombre).join(" e ")}</span></div></div>
       <div class="card"><h3>Mis datos</h3>
         <div class="dato"><span>Teléfono</span><span class="mono">${AP.tel}</span></div>
         <div class="dato"><span>Correo</span><span>${AP.email}</span></div>
+      </div>
+      <div class="card"><div class="fila"><h3>👨‍👩‍👧 Familia</h3><button class="btn link" data-a="familia">${FAMILIA.unido ? "Ver ›" : "Compartir ›"}</button></div>
+        <div class="dato"><span>👤 Tú</span><span class="muted">${AP.rol}</span></div>
+        ${FAMILIA.unido ? `<div class="dato"><span>👥 ${otroPadre().nombre}</span><span class="muted">${otroPadre().rol} · recibe los avisos</span></div>`
+          : `<span class="muted" style="font-size:13px">Comparte a tus hijos con el papá para que él también reciba la alarma y siga el furgón.</span>`}
       </div>
       <div class="card"><div class="fila"><h3>Mis tías y tíos</h3><button class="btn link" data-a="conectar">Conectar ›</button></div>
         ${tiasConectadas().map((t) => `<div class="dato"><span>✓ ${esc(t.nombre)}</span><span class="muted">${esc(t.empresa)}</span></div>`).join("")}
@@ -660,7 +706,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <span class="muted" style="font-size:14px">${detalle}</span>
         <div class="pasos">${paso(p.aBordoT != null, false, "Subió")}${paso(true, false, "Salió del colegio")}${paso(p.avisoT !== null, p.avisoT === null && p.estado === "pendiente", "Aviso")}${paso(p.estado === "entregado", p.avisoT !== null && p.estado === "pendiente", "En su hogar")}</div>
         ${p.estado === "pendiente" && !aBordo && !R.fin ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
-        ${p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
+        ${p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy ${AP.atento}</button>` : ""}
         <div class="conductora"><div class="avatar chico">M</div>
           <div style="flex:1; min-width:0"><b>${TIA.nombre}</b><br><span class="muted" style="font-size:13px">Hyundai H1 blanca · lleva a ${esc(h.nombre)}</span></div>
           <span class="patente">DEMO-11</span></div>
@@ -738,6 +784,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (app.sub === "agregar") cuerpo = vAgregar();
     else if (app.sub === "seguir") cuerpo = vSeguir();
     else if (app.sub === "conectar") cuerpo = vConectar();
+    else if (app.sub === "familia") cuerpo = vFamilia();
     else cuerpo = { inicio: vInicio, historial: vHistorial, perfil: vPerfil }[app.tab]();
     const b = app.banner && app.banner.hasta > performance.now() ? app.banner : null;
     const banner = b && !(R && R.llamada && R.llamada.fase === "sonando") ? `<div class="banner ${b.tipo === "aviso" ? "vibra" : "ok"}" data-a="banner" role="status">
@@ -830,6 +877,28 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       }
       app.sub = "seguir"; app.hijoId = h.id; cam.s = null;
     }
+    else if (a === "familia") app.sub = "familia";
+    else if (a === "parentescoFam") FAMILIA.parentesco = el.dataset.v;
+    else if (a === "hijoFam") {
+      const l = new Set(FAMILIA.hijos ?? HIJOS.map((h) => h.id));
+      if (l.has(el.dataset.id) && l.size > 1) l.delete(el.dataset.id); else l.add(el.dataset.id);
+      FAMILIA.hijos = l.size === HIJOS.length ? null : [...l];
+    }
+    else if (a === "crearCodigoFam") {
+      FAMILIA.codigo = "F" + Math.random().toString(16).slice(2, 9).toUpperCase().padEnd(7, "0");
+      // Demostración: Rodrigo crea su cuenta con el código a los pocos segundos.
+      setTimeout(() => {
+        FAMILIA.unido = true;
+        // Su teléfono entra a la llamada automática de los hijos compartidos (si hay cupo).
+        HIJOS.filter((h) => !FAMILIA.hijos || FAMILIA.hijos.includes(h.id)).forEach((h) => {
+          if (h.contactos.length < 3 && !h.contactos.some((c) => c.papa)) h.contactos.push({ nombre: "Rodrigo (papá)", tel: PERSONAS.rodrigo.tel, papa: true });
+        });
+        app.banner = { tipo: "ok", titulo: "👨‍👩‍👧 Rodrigo se unió a la familia", cuerpo: "Desde ahora la alarma y las llamadas también le llegan a él. Prueba «Ver la app como Rodrigo».", hasta: performance.now() + 6000 };
+        previo = ""; render(true);
+      }, 4000);
+    }
+    else if (a === "dejarCompartir") { Object.assign(FAMILIA, { unido: false, codigo: null, hijos: null }); HIJOS.forEach((h) => { h.contactos = h.contactos.filter((c) => !c.papa); }); }
+    else if (a === "verComo") { AP = PERSONAS[el.dataset.v]; app.sub = null; }
     else if (a === "conectar") { app.sub = "conectar"; app.msgCon = null; app.eligiendo = null; app.form = {}; }
     else if (a === "elegirCon") { app.eligiendo = el.dataset.id; app.form = { msgCon: "" }; }
     else if (a === "cancelarElegir") app.eligiendo = null;

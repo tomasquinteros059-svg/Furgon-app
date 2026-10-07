@@ -117,6 +117,7 @@ export default function InicioApoderado() {
           <Text style={estilos.subtitulo}>🤝 Conéctate con tu tía o tío del furgón</Text>
           <Text style={estilos.textoSuave}>Búscalo por su nombre o comuna y envíale una solicitud. Cuando la acepte, registras a tus hijos y empiezas a recibir los avisos.</Text>
           <Boton titulo="Buscar a mi tía o tío" onPress={() => router.push("/apoderado/conectar")} />
+          <Boton titulo="Me compartieron un código de la familia" variante="texto" onPress={() => router.push("/apoderado/familia")} />
         </Tarjeta>
       ) : alumnos.length === 0 ? (
         <Aviso texto="Aún no registras alumnos. Agrega a tu hijo/a con su dirección exacta para recibir los avisos." />
@@ -188,6 +189,7 @@ export default function InicioApoderado() {
         <Boton titulo="💳 Pagos" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
         <Boton titulo="💬 Ayuda" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
       </View>
+      <Boton titulo="👨‍👩‍👧 Familia: compartir con papá o mamá" variante="secundario" onPress={() => router.push("/apoderado/familia")} />
       <Boton titulo="🤝 Conectar con mi tía o tío" variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
       {perfil?.empresa_id ? <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
     </Pantalla>
