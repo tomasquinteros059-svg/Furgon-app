@@ -5,9 +5,10 @@ import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
-import { iniciarSeguimiento } from "../../ubicacion/seguimiento";
+import { iniciarSeguimiento, pedirPermisosUbicacion } from "../../ubicacion/seguimiento";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
 import { SelectorTema } from "../../componentes/tema";
+import { EnlacePrivacidad } from "../../componentes/privacidad";
 
 interface Ruta {
   id: string;
@@ -53,6 +54,12 @@ export default function RutasConductor() {
     setError(null);
     setIniciando(ruta.id);
     try {
+      // Primero los permisos: así no queda un recorrido iniciado sin GPS.
+      const permisos = await pedirPermisosUbicacion();
+      if (!permisos.ok) {
+        Alert.alert("Permiso de ubicación", permisos.mensaje);
+        return;
+      }
       const { data: recorridoId, error } = await supabase.rpc("iniciar_recorrido", { p_ruta: ruta.id });
       if (error) throw error;
       const gps = await iniciarSeguimiento(recorridoId as string);
@@ -131,6 +138,7 @@ export default function RutasConductor() {
       })}
       <Tarjeta><SelectorTema /></Tarjeta>
       <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

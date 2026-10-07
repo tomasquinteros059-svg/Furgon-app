@@ -102,6 +102,18 @@ npm run admin          # http://localhost:5173 — usa apps/admin/.env (escrito 
 Entra con tu cuenta, agrega una conductora (código de invitación), alumnos y rutas.
 Publicarlo en internet (Vercel o Netlify) es un paso aparte.
 
+### Cuentas de prueba para las tiendas
+
+Google Play y App Store piden una cuenta para revisar la app. Usa dos correos tuyos que no sean
+tus cuentas personales (por ejemplo `revision.tia@…` y `revision.familia@…`):
+
+```bash
+npm run cuentas-revision -- --tia revision.tia@tudominio.cl --familia revision.familia@tudominio.cl
+```
+
+Crea un servicio de demostración (tía con licencia al día, furgón, rutas «Mañana» y «Tarde» y una
+familia con dos hijos) y muestra contraseñas nuevas una sola vez, para copiarlas en cada tienda.
+
 ## 7. Llamadas telefónicas con Twilio (≈ 20 min, con costo)
 
 Sin este paso igual funcionan la alarma y la llamada gratis por la app. Twilio solo hace la

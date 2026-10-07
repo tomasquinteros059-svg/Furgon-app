@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Text } from "../componentes/icono";
 import { Boton, estilos, Pantalla } from "../componentes/ui";
 import { useSesion } from "../lib/sesion";
+import { EnlacePrivacidad } from "../componentes/privacidad";
 
 export default function SinPerfil() {
   const { cerrarSesion, recargarPerfil } = useSesion();
@@ -14,6 +15,7 @@ export default function SinPerfil() {
       <Boton titulo="Reintentar" onPress={recargarPerfil} />
       <Boton titulo="Cerrar sesión" variante="secundario" onPress={cerrarSesion} />
       <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

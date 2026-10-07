@@ -167,7 +167,7 @@ Ubicación en segundo plano: la usa solo la cuenta de conductor, entre «Iniciar
 
 Notificaciones urgentes (Time Sensitive): el aviso de llegada del furgón debe sonar aunque el teléfono esté en modo Concentración, porque el niño tiene que salir a tiempo.
 
-Cuentas de prueba (con datos de demostración):
+Cuentas de prueba (con datos de demostración; las crea `npm run cuentas-revision`):
 • Conductor: [CORREO DEMO TÍA] / [CONTRASEÑA DEMO]
 • Familia: [CORREO DEMO FAMILIA] / [CONTRASEÑA DEMO]
 

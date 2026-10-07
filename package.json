@@ -1,7 +1,7 @@
 {
   "name": "furgon-app",
   "private": true,
-  "description": "Avisos autom\u00e1ticos de llegada para furgones escolares",
+  "description": "Avisos automáticos de llegada para furgones escolares",
   "workspaces": [
     "apps/*",
     "tools/*"
@@ -17,7 +17,8 @@
     "desplegar": "node scripts/desplegar-supabase.mjs",
     "crear-empresa": "node scripts/crear-empresa.mjs",
     "verificar-google": "node scripts/verificar-google.mjs",
-    "iconos": "node --experimental-strip-types --no-warnings scripts/generar-iconos.mjs"
+    "iconos": "node --experimental-strip-types --no-warnings scripts/generar-iconos.mjs",
+    "cuentas-revision": "node scripts/crear-cuentas-revision.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",

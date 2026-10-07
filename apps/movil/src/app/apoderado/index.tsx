@@ -6,6 +6,7 @@ import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../compone
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
 import { SelectorTema } from "../../componentes/tema";
+import { EnlacePrivacidad } from "../../componentes/privacidad";
 
 interface Alumno {
   id: string;
@@ -211,6 +212,7 @@ export default function InicioApoderado() {
       {perfil?.empresa_id ? <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
       <Tarjeta><SelectorTema /></Tarjeta>
       <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

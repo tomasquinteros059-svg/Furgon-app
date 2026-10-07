@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
 import { mensajeError, supabase } from "../lib/supabase";
+import { EnlacePrivacidad } from "../componentes/privacidad";
 
 export default function Ingresar() {
   const [email, setEmail] = useState("");
@@ -37,6 +38,7 @@ export default function Ingresar() {
       <Link href="/registro" style={{ marginTop: 20, textAlign: "center", color: colores.azul, fontWeight: "600" }}>
         ¿Tienes un código de invitación? Crea tu cuenta
       </Link>
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

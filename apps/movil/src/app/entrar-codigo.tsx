@@ -7,6 +7,7 @@ import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
+import { EnlacePrivacidad } from "../componentes/privacidad";
 
 export default function EntrarConCodigo() {
   const [codigo, setCodigo] = useState("");
@@ -56,6 +57,8 @@ export default function EntrarConCodigo() {
         ayuda="Para llamarte si no contestan el aviso." />
       <Boton titulo="Entrar" onPress={entrar} cargando={cargando} deshabilitado={!familia || !nombre.trim() || !telefono.trim()} />
       <Boton titulo="Ya tengo cuenta" variante="texto" onPress={() => router.back()} />
+      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>Al entrar aceptas que tratemos tus datos para el transporte escolar, según la política de privacidad.</Text>
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

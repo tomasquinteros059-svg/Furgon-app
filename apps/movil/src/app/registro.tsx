@@ -4,6 +4,7 @@ import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
+import { EnlacePrivacidad } from "../componentes/privacidad";
 
 const NOMBRE_ROL = { apoderado: "apoderado", conductor: "conductor", admin: "administrador" } as const;
 
@@ -82,6 +83,8 @@ export default function Registro() {
         deshabilitado={(!sinCodigo && !invitacion) || !nombre || !email || !password}
       />
       <Boton titulo="Ya tengo cuenta" variante="texto" onPress={() => router.back()} />
+      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>Al crear tu cuenta aceptas que tratemos tus datos y los de tus hijos para el transporte escolar, según la política de privacidad.</Text>
+      <EnlacePrivacidad />
     </Pantalla>
   );
 }

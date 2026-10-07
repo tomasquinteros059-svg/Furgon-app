@@ -1,6 +1,7 @@
 // GPS en segundo plano del conductor: solo existe mientras hay un recorrido activo.
 import * as Crypto from "expo-crypto";
 import * as Location from "expo-location";
+import { Alert } from "react-native";
 import Storage from "expo-sqlite/kv-store";
 import type { LocationObject } from "expo-location";
 import { type PosicionGps, type ResultadoEnvio, vaciarCola } from "../lib/core";
@@ -21,8 +22,28 @@ export function recorridoActivo(): string | null {
 
 export type ResultadoInicio = { ok: true } | { ok: false; mensaje: string };
 
-export async function iniciarSeguimiento(recorridoId: string): Promise<ResultadoInicio> {
-  const fg = await Location.requestForegroundPermissionsAsync();
+// Aviso destacado antes de pedir el permiso (lo exige Google Play para la ubicación en segundo plano).
+const avisoUbicacion = () => new Promise<boolean>((resolver) => Alert.alert(
+  "Ubicación del furgón",
+  "Furgón Escolar recopila la ubicación de este teléfono para compartir el furgón con las familias de tu recorrido "
+  + "y avisarles antes de que llegue, incluso cuando la app está cerrada o la pantalla apagada. "
+  + "Solo mientras hay un recorrido iniciado; al finalizarlo deja de usarla.\n\n"
+  + "En la siguiente pantalla elige «Permitir todo el tiempo».",
+  [
+    { text: "Ahora no", style: "cancel", onPress: () => resolver(false) },
+    { text: "Continuar", onPress: () => resolver(true) },
+  ],
+  { cancelable: true, onDismiss: () => resolver(false) },
+));
+
+/** Pide (con el aviso previo) los permisos de ubicación del recorrido. Se llama antes de iniciarlo. */
+export async function pedirPermisosUbicacion(): Promise<ResultadoInicio> {
+  const [fgActual, bgActual] = await Promise.all([Location.getForegroundPermissionsAsync(), Location.getBackgroundPermissionsAsync()]);
+  if (fgActual.granted && bgActual.granted) return { ok: true };
+  if (!(await avisoUbicacion())) {
+    return { ok: false, mensaje: "Sin la ubicación del furgón no podemos avisar a las familias. Puedes iniciar el recorrido cuando quieras." };
+  }
+  const fg = fgActual.granted ? fgActual : await Location.requestForegroundPermissionsAsync();
   if (fg.status !== "granted") {
     return { ok: false, mensaje: "Necesitamos acceso a tu ubicación para avisar a los apoderados." };
   }
@@ -33,6 +54,12 @@ export async function iniciarSeguimiento(recorridoId: string): Promise<Resultado
       mensaje: "Para avisar aunque la pantalla esté apagada, permite la ubicación \"Todo el tiempo\" en los ajustes.",
     };
   }
+  return { ok: true };
+}
+
+export async function iniciarSeguimiento(recorridoId: string): Promise<ResultadoInicio> {
+  const permisos = await pedirPermisosUbicacion();
+  if (!permisos.ok) return permisos;
 
   Storage.setItemSync(CLAVE_RECORRIDO, recorridoId);
   ultimaEncoladaMs = 0;
@@ -50,7 +77,7 @@ export async function iniciarSeguimiento(recorridoId: string): Promise<Resultado
     foregroundService: {
       notificationTitle: "Recorrido en curso",
       notificationBody: "Compartiendo la ubicación del furgón con los apoderados del recorrido.",
-      notificationColor: "#F2B705",
+      notificationColor: "#F5B700",
       killServiceOnDestroy: false,
     },
   });
