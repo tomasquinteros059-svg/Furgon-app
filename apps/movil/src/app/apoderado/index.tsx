@@ -121,6 +121,10 @@ export default function InicioApoderado() {
                     : aviso ? `🔔 Llega en ~${Math.max(1, Math.round((enCurso.eta_seg ?? 60) / 60))} min (aviso ${hora(aviso.disparado_en)})`
                     : "Te avisaremos cuando el furgón esté cerca."}
                 </Text>
+                {enCurso.estado === "pendiente" ? (
+                  <Boton titulo="🗺️ Seguir el furgón en vivo" variante="secundario"
+                    onPress={() => router.push({ pathname: "/apoderado/seguir/[id]", params: { id: alumno.id, nombre: alumno.nombre } })} />
+                ) : null}
                 {aviso && !aviso.confirmado_en && enCurso.estado === "pendiente" ? (
                   <Boton titulo="Recibido, estoy atento/a" variante="exito" onPress={() => confirmar(aviso.id)} />
                 ) : null}

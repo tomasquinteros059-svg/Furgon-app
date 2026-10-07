@@ -156,6 +156,21 @@ describe("recorrido, avisos y privacidad de la ubicación", () => {
     expect(await posicionesVisiblesPara(ids.admin)).toBeGreaterThan(0);
   });
 
+  it("seguimiento en vivo antes del aviso: solo zona aproximada (~1 km) y paradas que faltan", async () => {
+    await como("service_role", null, () =>
+      db.query(`select registrar_posiciones($1, $2::jsonb)`, [recorrido, JSON.stringify([
+        { client_id: crypto.randomUUID(), ts: Date.now(), lat: -33.43187, lng: -70.60321 },
+      ])]));
+    const s = await como("authenticated", ids.apoderadoA, async () =>
+      (await uno<{ s: Record<string, any> }>(`select seguimiento_furgon($1) as s`, [ids.alumnoA])).s);
+    expect(s.ubicacion).toMatchObject({ exacta: false, lat: -33.43, lng: -70.6, radio_m: 1000 });
+    expect(s.paradas_antes).toBe(0);
+    expect(s.conductor).toBe("Juan");
+    await expect(
+      como("authenticated", ids.apoderadoB, () => db.query(`select seguimiento_furgon($1)`, [ids.alumnoA])),
+    ).rejects.toThrow(/No autorizado/);
+  });
+
   it("la columna de última posición del recorrido no es legible por los usuarios", async () => {
     await expect(
       como("authenticated", ids.apoderadoA, () => db.query(`select ultima_lat from recorridos`)),
@@ -175,9 +190,18 @@ describe("recorrido, avisos y privacidad de la ubicación", () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it("tras el aviso, el apoderado ve el furgón; los demás apoderados no", async () => {
-    expect(await posicionesVisiblesPara(ids.apoderadoA)).toBeGreaterThan(0);
+  it("tras el aviso, el apoderado ve el furgón exacto, pero solo las posiciones desde su aviso", async () => {
+    // Las posiciones anteriores al aviso (posibles detenciones en otras casas) siguen ocultas.
+    expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(0);
+    await como("service_role", null, () =>
+      db.query(`select registrar_posiciones($1, $2::jsonb)`, [recorrido, JSON.stringify([
+        { client_id: crypto.randomUUID(), ts: Date.now() + 1000, lat: -33.41234, lng: -70.60111 },
+      ])]));
+    expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(1);
     expect(await posicionesVisiblesPara(ids.apoderadoB)).toBe(0);
+    const s = await como("authenticated", ids.apoderadoA, async () =>
+      (await uno<{ s: Record<string, any> }>(`select seguimiento_furgon($1) as s`, [ids.alumnoA])).s);
+    expect(s.ubicacion).toMatchObject({ exacta: true, lat: -33.41234, lng: -70.60111 });
   });
 
   it("reclamar_llamadas entrega cada llamada programada una sola vez", async () => {
@@ -199,6 +223,10 @@ describe("recorrido, avisos y privacidad de la ubicación", () => {
     expect(r.nombre).toBe("Sofía");
     expect((await uno<{ estado: string }>(`select estado from llamadas where intento = 2`)).estado).toBe("cancelada");
     expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(0);
+    const s = await como("authenticated", ids.apoderadoA, async () =>
+      (await uno<{ s: Record<string, any> }>(`select seguimiento_furgon($1) as s`, [ids.alumnoA])).s);
+    expect(s.estado).toBe("entregado");
+    expect(s.ubicacion).toBeNull();
   });
 
   it("otro conductor no puede marcar paradas ajenas", async () => {

@@ -190,7 +190,7 @@ npx expo start --dev-client
 | Rol | Puede |
 |---|---|
 | **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Entregado" o "Ausente" con un toque (botones grandes). Comparte el GPS solo mientras hay un recorrido activo. |
-| **Apoderado** | Se registra con un código de invitación y registra a sus hijos con un pin exacto en el mapa y dos teléfonos. Recibe la alarma, ve el estado y el ETA en tiempo real, confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
+| **Apoderado** | Se registra con un código de invitación y registra a sus hijos con un pin exacto en el mapa y dos teléfonos. Recibe la alarma, sigue al furgón en un **mapa en vivo** (pantalla `apoderado/seguir/[id]`), confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
 | **Administrador** | Asigna alumnos a rutas, genera invitaciones y ve los recorridos del día. |
 
 Los usuarios se registran con un **código de invitación** que entrega el administrador. El código
@@ -265,10 +265,12 @@ Se trata de datos de menores. Las reglas viven en la base de datos (RLS), no sol
 - **Rastreo acotado.** El GPS existe solo durante un recorrido activo. Al finalizar, el teléfono
   detiene la tarea. Si el conductor olvida cerrar, un job de `pg_cron` finaliza el recorrido tras
   30 min sin posiciones, y el teléfono se apaga al recibir `409`.
-- **Ubicación visible solo dentro de una ventana.** El apoderado ve el furgón **desde el aviso de
-  su hijo hasta la entrega**, nunca antes ni después. Así no puede deducir dónde viven los demás
-  niños. El conductor y el admin la ven solo mientras el recorrido está activo. La última posición
-  del recorrido no es legible por columna.
+- **Mapa en vivo tipo Uber con privacidad.** Durante todo el recorrido, el apoderado ve una **zona
+  aproximada** del furgón (~1 km), las paradas que faltan antes de su casa y el ETA. **Desde el
+  aviso de su hijo hasta la entrega** ve el furgón **exacto** y el trayecto recorrido desde ese
+  momento: las posiciones anteriores al aviso le siguen ocultas. Así no puede deducir dónde viven
+  los demás niños. El conductor y el admin ven la ubicación solo mientras el recorrido está activo.
+  La última posición del recorrido no es legible por columna.
 - **Mínimo acceso.**
   - Cada apoderado ve solo a sus hijos.
   - El conductor ve nombres y direcciones de su ruta, pero **no los teléfonos**.
@@ -280,8 +282,6 @@ Se trata de datos de menores. Las reglas viven en la base de datos (RLS), no sol
 ## Pendiente
 
 - **Fase 3**:
-  - mapa en tiempo real para el apoderado (la tabla `posiciones` ya publica por Realtime con la
-    ventana de privacidad aplicada);
   - pantalla de historial de recorridos y avisos (los datos ya se guardan);
   - panel de administrador completo (furgones, conductores, reordenar paradas).
 - Probar en dispositivos reales:

@@ -21,11 +21,13 @@ function Navegacion() {
   // Tocar la notificación de aviso cuenta como "recibido": detiene los reintentos de llamada.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
-      const data = r.notification.request.content.data as { tipo?: string; avisoId?: string };
+      const data = r.notification.request.content.data as { tipo?: string; avisoId?: string; alumnoId?: string };
       if (data?.tipo === "aviso" && data.avisoId) {
         supabase.rpc("confirmar_aviso", { p_aviso: data.avisoId }).then(() => {});
       }
-      if (data?.tipo) router.navigate("/");
+      // El aviso abre directo el mapa en vivo; las demás notificaciones, el inicio.
+      if (data?.tipo === "aviso" && data.alumnoId) router.navigate(`/apoderado/seguir/${data.alumnoId}`);
+      else if (data?.tipo) router.navigate("/");
     });
     return () => sub.remove();
   }, []);

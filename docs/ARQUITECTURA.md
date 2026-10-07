@@ -10,7 +10,7 @@
 | Deduplicación | `UNIQUE (recorrido_id, alumno_id)` en `avisos` + `INSERT … ON CONFLICT DO NOTHING RETURNING`. |
 | "Contestó la llamada" | Solo si **presiona 1**. Un buzón de voz no corta la escalera. |
 | Escalera de llamadas | Principal → reintento al principal a los 30 s → secundario. |
-| Mapa del apoderado | Visible solo **desde su aviso hasta la entrega** de su hijo. |
+| Mapa del apoderado | Tipo Uber. Durante el recorrido: **zona aproximada** (lat/lng redondeadas a 0,01° ≈ 1 km), paradas que faltan y ETA (`seguimiento_furgon`). **Desde su aviso hasta la entrega**: posición exacta y solo las posiciones registradas desde el aviso (RLS `puede_ver_posicion`). |
 | Registro | Por **código de invitación**, que fija rol y empresa. |
 | País | Chile: teléfonos +56, zona `America/Santiago`, voz en español. |
 | Alarma en iOS | `time-sensitive`. Las *Critical Alerts* requieren un permiso especial que se pide a Apple. |
