@@ -189,9 +189,9 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       contactos: [{ nombre: "Ana (mamá)", tel: "+56 9 1111 1111" }, { nombre: "Pedro (abuelo)", tel: "+56 9 2222 2222" }] },
   ];
   const HISTORIAL = [
-    { fecha: "Lun 6 oct · Vuelta", ejemplo: true, items: [["16:34", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 Contestaste y presionaste 1"], ["16:40", "✅ Sofía llegó a casa"], ["16:55", "🔔 Aviso: Isidora llega en ~5 min"], ["16:55", "📱 Tocaste “Recibido”"], ["17:01", "✅ Isidora llegó a casa"]] },
+    { fecha: "Lun 6 oct · Vuelta", ejemplo: true, items: [["16:34", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 Contestaste y presionaste 1"], ["16:40", "✅ Sofía está en su hogar"], ["16:55", "🔔 Aviso: Isidora llega en ~5 min"], ["16:55", "📱 Tocaste “Recibido”"], ["17:01", "✅ Isidora está en su hogar"]] },
     { fecha: "Lun 6 oct · Ida", ejemplo: true, items: [["07:01", "🔔 Aviso: el furgón pasa por Isidora en ~5 min"], ["07:06", "✅ Isidora subió al furgón"], ["07:20", "🔔 Aviso: el furgón pasa por Sofía en ~5 min"], ["07:26", "✅ Sofía subió al furgón"]] },
-    { fecha: "Vie 3 oct · Vuelta", ejemplo: true, items: [["16:33", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 No contestaste: llamamos a Pedro (abuelo), que confirmó"], ["16:39", "✅ Sofía llegó a casa"], ["16:50", "🔔 Aviso: Isidora llega en ~5 min"], ["16:57", "✅ Isidora llegó a casa"]] },
+    { fecha: "Vie 3 oct · Vuelta", ejemplo: true, items: [["16:33", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 No contestaste: llamamos a Pedro (abuelo), que confirmó"], ["16:39", "✅ Sofía está en su hogar"], ["16:50", "🔔 Aviso: Isidora llega en ~5 min"], ["16:57", "✅ Isidora está en su hogar"]] },
   ];
   const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, detencion: 40, timbreReal: 20, reintento: 30, acuseApp: 15 };
 
@@ -333,8 +333,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     if (R.llamada && R.llamada.p === p) R.llamada = null;
     if (!p.mia) return;
     const h = hijoDe(p);
-    linea(`✅ ${h.nombre} llegó a casa`);
-    notificar({ tipo: "ok", hijo: h.id, titulo: `✅ ${h.nombre} llegó a casa`, cuerpo: `La tía Marcela marcó a ${h.nombre} ${h.apellido} como entregado/a a las ${hora(R.t)}.` });
+    linea(`🏠 ${h.nombre} está en su hogar`);
+    notificar({ tipo: "ok", hijo: h.id, titulo: `🏠 ${h.nombre} está en su hogar`, cuerpo: `La tía Marcela marcó a ${h.nombre} ${h.apellido} en su hogar a las ${hora(R.t)}.` });
   }
 
   function guardarHistorial() {
@@ -397,7 +397,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     if (!R) return h.noViaja.vuelta ? `<div class="estado no"><b>Hoy no viaja en la vuelta</b><span>La tía Marcela no pasará por tu casa.</span></div>`
       : `<div class="estado"><b>Vuelta hoy · 16:30</b><span>Te avisaremos unos ${h.minutos} minutos antes de que llegue el furgón.</span></div>`;
     if (p.estado === "no_viaja") return `<div class="estado no"><b>Hoy no viaja</b><span>Se saltó en la ruta.</span></div>`;
-    if (p.estado === "entregado") return `<div class="estado ok"><b>✅ Llegó a casa a las ${hora(p.marcaT)}</b><span>Entregado/a por la tía Marcela.</span></div>`;
+    if (p.estado === "entregado") return `<div class="estado ok"><b>🏠 En su hogar desde las ${hora(p.marcaT)}</b><span>Dejado/a por la tía Marcela.</span></div>`;
     if (p.avisoT !== null) {
       const aqui = Math.abs(p.dRuta - R.d) < 2;
       return `<div class="estado bus"><b>${aqui ? "🚐 El furgón está afuera de tu casa" : `🔔 Llega en ~${Math.max(1, Math.round(p.eta / 60))} min`}</b><span>Aviso enviado a las ${hora(p.avisoT)}${p.confT !== null ? " · ✓ confirmado" : ""}</span></div>`;
@@ -583,7 +583,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     }
     const exacta = p.avisoT !== null && p.estado === "pendiente";
     let titulo, detalle;
-    if (p.estado === "entregado") { titulo = `${h.nombre} llegó a casa`; detalle = `Entregado/a a las ${hora(p.marcaT)} por la tía Marcela.`; }
+    if (p.estado === "entregado") { titulo = `${h.nombre} está en su hogar`; detalle = `En su hogar desde las ${hora(p.marcaT)} por la tía Marcela.`; }
     else if (p.estado !== "pendiente") { titulo = "Hoy no viaja"; detalle = "El furgón no pasará por tu casa."; }
     else {
       const aqui = Math.abs(p.dRuta - R.d) < 2;

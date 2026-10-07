@@ -691,7 +691,7 @@ table.det td.mono { font-size: 12px; }
     if (!p || p.estado !== "pendiente") return;
     p.estado = estado; p.marcaT = R.t;
     R.llamadas.filter((l) => l.p === p).forEach((l) => { l.fase = "fin"; });
-    const txt = estado === "ausente" ? `${p.nombre} marcado ausente.` : R.ruta.tipo === "ida" ? `${p.nombre} subió al furgón.` : `${p.nombre} llegó a casa.`;
+    const txt = estado === "ausente" ? `${p.nombre} marcado ausente.` : R.ruta.tipo === "ida" ? `${p.nombre} subió al furgón.` : `${p.nombre} está en su hogar.`;
     evento(estado === "ausente" ? "🚫" : "🏠", `${txt} Se avisó a ${p.apoderado}.`, "ok");
     app.toast = { txt: `✅ ${txt} Su apoderado ya recibió la confirmación.`, hasta: performance.now() + 4000 };
     if (R.detenido === p) R.detenido = null;
@@ -814,7 +814,7 @@ table.det td.mono { font-size: 12px; }
   function vRecorrido() {
     const pend = R.paradas.filter((p) => p.estado === "pendiente");
     const hechas = R.paradas.filter((p) => p.estado !== "pendiente");
-    const ok = R.ruta.tipo === "ida" ? "Subió ✅" : "Entregado ✅";
+    const ok = R.ruta.tipo === "ida" ? "Subió ✅" : "En su hogar ✅";
     const estadoAviso = (p) => p.confT !== null ? `<span class="chip ok">✓ ${esc(p.apoderado)} confirmó</span>`
       : p.avisoT !== null ? `<span class="chip alerta">🔔 Avisado ${hora(p.avisoT)} · esperando confirmación</span>`
       : `<span class="chip">Se avisará ~5 min antes</span>`;
@@ -863,7 +863,7 @@ table.det td.mono { font-size: 12px; }
       <div class="cifras">
         <div class="cifra"><b>${dur} min</b><span>Duración</span></div>
         <div class="cifra"><b>${r.km} km</b><span>Recorridos</span></div>
-        <div class="cifra"><b>${entregados}/${R.paradas.length}</b><span>${R.ruta.tipo === "ida" ? "Subieron" : "Entregados"}</span></div>
+        <div class="cifra"><b>${entregados}/${R.paradas.length}</b><span>${R.ruta.tipo === "ida" ? "Subieron" : "En su hogar"}</span></div>
         <div class="cifra"><b>${conf}/${avisos}</b><span>Avisos confirmados</span></div>
         <div class="cifra"><b>${R.gratis}</b><span>Llamadas por la app (sin costo)</span></div>
         <div class="cifra"><b>${R.pagadas}</b><span>Llamadas telefónicas (con costo)</span></div>
@@ -874,14 +874,14 @@ table.det td.mono { font-size: 12px; }
     </div>`;
   }
 
-  const tablaDet = (det) => `<table class="det"><thead><tr><th>Alumno</th><th>Aviso</th><th>${"Entrega"}</th><th>Confirmó</th></tr></thead><tbody>
+  const tablaDet = (det) => `<table class="det"><thead><tr><th>Alumno</th><th>Aviso</th><th>${"En su hogar"}</th><th>Confirmó</th></tr></thead><tbody>
     ${det.map((d) => `<tr><td>${esc(d[0])}</td><td class="mono">${d[1]}</td><td class="mono">${d[2]}</td><td>${esc(d[3])}</td></tr>`).join("")}</tbody></table>`;
 
   function vHistorial() {
     const todos = [...app.terminados, ...HISTORIAL];
     return `<div class="vista">
       <h1>Historial</h1>
-      <span class="muted">Hora de cada aviso y de cada entrega. Toca un recorrido para ver el detalle.</span>
+      <span class="muted">Hora de cada aviso y de cada llegada al hogar. Toca un recorrido para ver el detalle.</span>
       ${todos.map((h, i) => `<details class="hist" ${i === 0 ? "open" : ""}>
         <summary><div class="fila"><b>${h.fecha} · ${esc(h.ruta)}</b>${h.ejemplo ? `<span class="ejemplo">Ejemplo</span>` : `<span class="chip ok">Hoy</span>`}</div>
         <span class="muted mono" style="font-size:13px">${h.inicio}–${h.fin} · ${h.km} km</span></summary>

@@ -37,7 +37,7 @@ export function mensajeEstadoParada(p: { tipo: TipoRecorrido; nombreAlumno: stri
   }
   return p.tipo === "ida"
     ? { titulo: `✅ ${p.nombreAlumno} subió al furgón`, cuerpo: `${p.nombreAlumno} subió al furgón a las ${p.hora}.` }
-    : { titulo: `✅ ${p.nombreAlumno} fue entregado`, cuerpo: `${p.nombreAlumno} fue entregado en casa a las ${p.hora}.` };
+    : { titulo: `🏠 ${p.nombreAlumno} está en su hogar`, cuerpo: `${p.nombreAlumno} está en su hogar desde las ${p.hora}.` };
 }
 
 /** Hora local de Chile en formato HH:MM. */

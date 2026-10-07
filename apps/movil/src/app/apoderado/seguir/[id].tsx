@@ -92,7 +92,7 @@ export default function SeguirFurgon() {
   }, [casa?.latitude, casa?.longitude, furgon?.latitude, furgon?.longitude]);
 
   const exacta = !!s?.ubicacion?.exacta;
-  const titulo = !s ? "" : s.estado === "entregado" ? `${nombre ?? "Tu hijo/a"} llegó a casa`
+  const titulo = !s ? "" : s.estado === "entregado" ? `${nombre ?? "Tu hijo/a"} está en su hogar`
     : s.estado !== "pendiente" ? "Hoy no viaja"
     : s.eta_seg !== null && s.eta_seg < 90 ? "El furgón está llegando"
     : s.eta_seg !== null ? `Llega en ${Math.max(1, Math.round(s.eta_seg / 60))} min` : "Furgón en camino";
@@ -149,7 +149,7 @@ export default function SeguirFurgon() {
           <>
             <Text style={estilos.titulo}>{titulo}</Text>
             <Text style={estilos.suave}>
-              {s.estado === "entregado" && s.marcado_en ? `Entregado/a a las ${hora(s.marcado_en)}.`
+              {s.estado === "entregado" && s.marcado_en ? `En su hogar desde las ${hora(s.marcado_en)}.`
                 : exacta ? `Aviso enviado a las ${hora(s.aviso_en!)}${s.confirmado_en ? " · confirmado ✓" : ""}. Ubicación exacta en vivo.`
                 : s.paradas_antes > 0 ? `Faltan ${s.paradas_antes} parada${s.paradas_antes === 1 ? "" : "s"} antes de tu casa. Ubicación aproximada.`
                 : "Tu casa es la próxima parada. Ubicación aproximada hasta el aviso."}

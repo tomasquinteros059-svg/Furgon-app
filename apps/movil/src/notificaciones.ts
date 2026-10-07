@@ -39,7 +39,7 @@ export async function configurarCanales(): Promise<void> {
   });
   await Notifications.setNotificationChannelAsync(CANAL_GENERAL, {
     name: "Novedades del recorrido",
-    description: "Alumno entregado, ausente y otras novedades",
+    description: "Alumno en su hogar, ausente y otras novedades",
     importance: Notifications.AndroidImportance.HIGH,
   });
 }

@@ -115,7 +115,7 @@ export default function InicioApoderado() {
                 </Text>
                 <Text style={estilos.texto}>
                   {enCurso.estado === "entregado"
-                    ? `${enCurso.recorrido.tipo === "ida" ? "Subió al furgón" : "Entregado"} a las ${hora(enCurso.marcado_en!)} ✅`
+                    ? `${enCurso.recorrido.tipo === "ida" ? "Subió al furgón" : "En su hogar"} desde las ${hora(enCurso.marcado_en!)} ✅`
                     : enCurso.estado === "ausente" ? "Marcado ausente por el conductor"
                     : enCurso.estado === "no_viaja" ? "Hoy no viaja"
                     : aviso ? `🔔 Llega en ~${Math.max(1, Math.round((enCurso.eta_seg ?? 60) / 60))} min (aviso ${hora(aviso.disparado_en)})`

@@ -21,7 +21,7 @@ interface Parada {
 
 const ETIQUETA: Record<EstadoParada, string> = {
   pendiente: "Pendiente",
-  entregado: "Entregado ✅",
+  entregado: "En su hogar ✅",
   ausente: "Ausente",
   no_viaja: "Hoy no viaja",
 };
@@ -99,7 +99,7 @@ export default function RecorridoConductor() {
 
   const pendientes = paradas.filter((p) => p.estado === "pendiente");
   const atendidas = paradas.filter((p) => p.estado !== "pendiente");
-  const textoEntregado = tipo === "ida" ? "Subió ✅" : "Entregado ✅";
+  const textoEntregado = tipo === "ida" ? "Subió ✅" : "En su hogar ✅";
 
   return (
     <Pantalla titulo={tipo === "ida" ? "Recorrido de ida" : "Recorrido de vuelta"}>

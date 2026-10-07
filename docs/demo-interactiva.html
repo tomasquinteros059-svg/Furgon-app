@@ -419,13 +419,13 @@ a { color: var(--navy); font-weight: 700; }
     if (p.estado !== "pendiente") return;
     p.estado = estado; p.entregaT = S.t;
     detenerLlamadasDe(p, "detenido");
-    const verbo = estado === "ausente" ? "marcado ausente" : S.tipo === "ida" ? "subió al furgón" : "llegó a casa";
+    const verbo = estado === "ausente" ? "marcado ausente" : S.tipo === "ida" ? "subió al furgón" : "está en su hogar";
     log(estado === "ausente" ? "🚫" : "🏠", `${nombreCompleto(p)} ${verbo} a las ${hhmm(S.t)}. Push de confirmación al apoderado.`, "ok");
     notificar(p.apoderado, {
       tipo: estado,
-      titulo: estado === "ausente" ? `${p.nombre}: marcado ausente` : S.tipo === "ida" ? `✅ ${p.nombre} subió al furgón` : `✅ ${p.nombre} llegó a casa`,
+      titulo: estado === "ausente" ? `${p.nombre}: marcado ausente` : S.tipo === "ida" ? `✅ ${p.nombre} subió al furgón` : `🏠 ${p.nombre} está en su hogar`,
       cuerpo: estado === "ausente" ? `El conductor marcó a ${nombreCompleto(p)} como ausente a las ${hhmm(S.t)}.`
-        : S.tipo === "ida" ? `${nombreCompleto(p)} subió al furgón a las ${hhmm(S.t)}.` : `${nombreCompleto(p)} llegó a casa a las ${hhmm(S.t)}.`,
+        : S.tipo === "ida" ? `${nombreCompleto(p)} subió al furgón a las ${hhmm(S.t)}.` : `${nombreCompleto(p)} está en su hogar desde las ${hhmm(S.t)}.`,
       paradaId: p.id,
     });
     if (S.detenidoEn === p) S.detenidoEn = null;
@@ -584,7 +584,7 @@ a { color: var(--navy); font-weight: 700; }
     }
     const pend = S.paradas.filter((p) => p.estado === "pendiente");
     const hechas = S.paradas.filter((p) => p.estado !== "pendiente");
-    const ok = S.tipo === "ida" ? "Subió ✅" : "Entregado ✅";
+    const ok = S.tipo === "ida" ? "Subió ✅" : "En su hogar ✅";
     pintar(el, `${barra}<div class="app">
       <h3>${S.tipo === "ida" ? "Recorrido de ida" : "Recorrido de vuelta"}</h3>
       <div class="chips">
@@ -601,7 +601,7 @@ a { color: var(--navy); font-weight: 700; }
         </div>`).join("")}
       ${pend.length === 0 ? `<div class="nota">${S.terminado ? "Recorrido finalizado." : "No quedan alumnos pendientes. Rumbo al final de la ruta."}</div>` : ""}
       ${hechas.length ? `<span class="etq">Atendidos</span>` : ""}
-      ${hechas.map((p) => `<div class="parada hecha"><span>${S.paradas.indexOf(p) + 1}. ${esc_(nombreCompleto(p))} · ${{ entregado: S.tipo === "ida" ? "Subió ✅" : "Entregado ✅", ausente: "Ausente", no_viaja: "Hoy no viaja" }[p.estado]}</span></div>`).join("")}
+      ${hechas.map((p) => `<div class="parada hecha"><span>${S.paradas.indexOf(p) + 1}. ${esc_(nombreCompleto(p))} · ${{ entregado: S.tipo === "ida" ? "Subió ✅" : "En su hogar ✅", ausente: "Ausente", no_viaja: "Hoy no viaja" }[p.estado]}</span></div>`).join("")}
     </div>`);
   }
 
