@@ -1,6 +1,6 @@
 // Implementaciones reales (Supabase) de las dependencias del flujo de aviso.
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { CONFIG_DISPARO_POR_DEFECTO, type CacheEta, type ParadaPendiente } from "./core/disparo.ts";
 import type { RegistroAvisos } from "./core/dedup.ts";
 import type { DepsFlujo } from "./core/flujo-aviso.ts";

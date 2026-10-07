@@ -5,7 +5,7 @@
 // (push de alta prioridad) o se habla con la API de Twilio, y se vencen las
 // llamadas por la app que no tuvieron acuse o respuesta.
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import {
   CONFIG_LLAMADAS_POR_DEFECTO,
   type CanalLlamada,

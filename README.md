@@ -333,6 +333,10 @@ Para revisar los tipos de las Edge Functions: `cd supabase/functions && deno che
 
 ## Despliegue
 
+**Paso a paso para un proyecto real (Supabase + Google Maps):** ver [`docs/PUESTA-EN-MARCHA.md`](docs/PUESTA-EN-MARCHA.md). `npm run desplegar` aplica las migraciones, carga los secretos y despliega las funciones usando solo la API HTTPS de Supabase (sin Docker).
+
+Manual, con la CLI:
+
 ```bash
 supabase link --project-ref <ref>
 supabase db push

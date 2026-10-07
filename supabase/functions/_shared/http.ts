@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient, type User } from "jsr:@supabase/supabase-js@2";
 import { entorno } from "./entorno.ts";
 
 export const CORS = {
