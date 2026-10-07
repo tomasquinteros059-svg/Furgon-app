@@ -7,6 +7,8 @@ schemas = ["public"]
 [auth]
 site_url = "furgonapp://"
 enable_signup = true
+# «Entrar con código de familia»: sesión anónima que solo crea perfil con un código válido.
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true

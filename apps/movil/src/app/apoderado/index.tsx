@@ -30,7 +30,9 @@ const hora = (iso: string) =>
   new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
 
 export default function InicioApoderado() {
-  const { perfil, cerrarSesion, recargarPerfil } = useSesion();
+  const { perfil, sesion, cerrarSesion, recargarPerfil } = useSesion();
+  // Entró con código de familia (sesión anónima): su cuenta solo vive en este teléfono.
+  const sinProteger = !!sesion?.user.is_anonymous;
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [estados, setEstados] = useState<EstadoHoy[]>([]);
   const [noViaja, setNoViaja] = useState<Set<string>>(new Set());
@@ -110,7 +112,20 @@ export default function InicioApoderado() {
   }
 
   return (
-    <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`} accion={<Boton titulo="Salir" variante="texto" onPress={cerrarSesion} />}>
+    <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`} accion={<Boton titulo="Salir" variante="texto" onPress={() => {
+      if (!sinProteger) return cerrarSesion();
+      Alert.alert("¿Salir sin proteger tu cuenta?", "Entraste con un código: si sales ahora, no podrás volver a entrar. Protégela primero con tu correo.", [
+        { text: "Proteger mi cuenta", onPress: () => router.push("/apoderado/proteger-cuenta") },
+        { text: "Salir igual", style: "destructive", onPress: cerrarSesion },
+      ]);
+    }} />}>
+      {sinProteger ? (
+        <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>🔒 Protege tu cuenta</Text>
+          <Text style={estilos.textoSuave}>Entraste con un código. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.</Text>
+          <Boton titulo="Agregar correo y contraseña" variante="secundario" onPress={() => router.push("/apoderado/proteger-cuenta")} />
+        </Tarjeta>
+      ) : null}
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {!perfil?.empresa_id ? (
         <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>

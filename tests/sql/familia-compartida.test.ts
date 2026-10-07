@@ -61,11 +61,26 @@ describe("familia compartida", () => {
     await expect(E.como("authenticated", ids.abuela, () => E.db.query(`select compartir_familia($1::uuid[])`, [[ids.sofia]]))).rejects.toThrow(/No autorizado|Primero registra/);
   });
 
+  it("entrar con código: sesión anónima que queda directo en el perfil compartido", async () => {
+    const codigo = await comoMama(async () => (await E.uno<{ c: string }>(`select compartir_familia($1::uuid[], 'Abuelo') as c`, [[ids.sofia]])).c);
+    const abuelo = await E.crearUsuarioAnonimo({ codigo_invitacion: codigo, nombre: "Pedro (abuelo)", telefono: "+56944445555" });
+    expect(await E.como("authenticated", abuelo, () => E.filas<{ nombre: string }>(`select nombre from alumnos`))).toEqual([{ nombre: "Sofía" }]);
+    // Una sesión anónima no puede crear cuentas de conductora ni familias sin código.
+    await E.db.query(`insert into invitaciones (codigo, empresa_id, rol) values ('TIA00001', $1, 'conductor')`, [ids.empresa]);
+    await expect(E.crearUsuarioAnonimo({ codigo_invitacion: "TIA00001", nombre: "X" })).rejects.toThrow(/correo y contraseña/);
+    const sinCodigo = await E.crearUsuarioAnonimo({ sin_codigo: "familia", nombre: "Y" });
+    expect(await E.filas(`select id from perfiles where id = $1`, [sinCodigo])).toHaveLength(0);
+  });
+
   it("quien invitó puede dejar de compartir; un hijo nunca queda sin apoderado", async () => {
     await expect(E.como("authenticated", ids.papa, () => E.db.query(`select dejar_de_compartir($1, $2)`, [ids.sofia, ids.mama]))).rejects.toThrow(/quien tú invitaste/);
     await comoMama(() => E.db.query(`select dejar_de_compartir($1, $2)`, [ids.sofia, ids.papa]));
     expect(await E.como("authenticated", ids.papa, () => E.filas<{ nombre: string }>(`select nombre from alumnos`))).toEqual([{ nombre: "Isidora" }]);
-    expect(await E.filas(`select prioridad from contactos where alumno_id = $1`, [ids.sofia])).toEqual([{ prioridad: 1 }]);
+    // Se quitó el teléfono del papá; quedan la mamá y el abuelo.
+    expect(await E.filas(`select prioridad from contactos where alumno_id = $1 order by prioridad`, [ids.sofia])).toEqual([{ prioridad: 1 }, { prioridad: 3 }]);
+    // Quita también al abuelo: queda solo la mamá, que no puede dejar a Sofía sin nadie.
+    const abuelo = (await E.uno<{ apoderado_id: string }>(`select apoderado_id from apoderado_alumno where alumno_id = $1 and apoderado_id <> $2`, [ids.sofia, ids.mama])).apoderado_id;
+    await comoMama(() => E.db.query(`select dejar_de_compartir($1, $2)`, [ids.sofia, abuelo]));
     await expect(comoMama(() => E.db.query(`select dejar_de_compartir($1, $2)`, [ids.sofia, ids.mama]))).rejects.toThrow(/único apoderado/);
   });
 });

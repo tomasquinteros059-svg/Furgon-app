@@ -396,7 +396,43 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <div class="campo"><label for="em">Correo</label><input id="em" type="email" value="${AP.email}" autocomplete="email"></div>
       <div class="campo"><label for="pw">Contraseña</label><input id="pw" type="password" value="demo-furgon" autocomplete="current-password"></div>
       <button class="btn xl" data-a="entrar">Ingresar</button>
-      <p class="nota">Cuenta de demostración. Para registrarte necesitas el código de invitación que te entrega el dueño del furgón.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px;text-align:center">
+        <span class="muted" style="font-size:14px">¿La mamá o el papá te compartió a los hijos?</span>
+        <button class="btn sec xl" data-a="loginCodigo">👨‍👩‍👧 Entrar con código de familia</button>
+      </div>
+      <p class="nota">Cuenta de demostración (Ana, la mamá). Con el código de familia entras como Rodrigo, el papá.</p>
+    </div>`;
+  }
+
+  // Entrar con código de familia: directo al perfil compartido, sin correo ni contraseña.
+  const CODIGO_DEMO = "F7K2Q9M3";
+  function vLoginCodigo() {
+    const f = app.form ?? (app.form = { codigo: "", nombre: "", tel: "" });
+    const valido = (c) => [CODIGO_DEMO, FAMILIA.codigo].includes(String(c).trim().toUpperCase());
+    const c = String(f.codigo).trim();
+    return `<div class="vista" style="justify-content:center">
+      <button class="volver" data-a="volverLogin">‹ Volver</button>
+      <h1>Entrar con código</h1>
+      <span class="muted" style="font-size:14px">Escribe el código que te compartió la mamá o el papá. Entrarás directo a la familia: verás a los mismos hijos y recibirás los avisos del furgón en este teléfono.</span>
+      <div class="campo"><label for="f-codigo">Código de familia</label><input id="f-codigo" data-f="codigo" value="${esc(f.codigo)}" placeholder="F1A2B3C4" autocapitalize="characters" autocomplete="off"><small>Código de prueba: <b class="mono">${FAMILIA.codigo ?? CODIGO_DEMO}</b></small></div>
+      <div class="campo"><label for="f-nombre">Tu nombre</label><input id="f-nombre" data-f="nombre" value="${esc(f.nombre)}" placeholder="Ej: Rodrigo Pérez"></div>
+      <div class="campo"><label for="f-tel">Tu teléfono</label><input id="f-tel" data-f="tel" value="${esc(f.tel)}" inputmode="tel" placeholder="9 3333 4444"><small>Para llamarte si no contestan el aviso.</small></div>
+      ${app.errorCodigo ? `<p class="nota" style="color:var(--alert);margin:0">${esc(app.errorCodigo)}</p>` : c.length >= 6 && valido(c) ? `<p class="nota" style="color:var(--ok);margin:0">✓ Te unirás a la familia de Ana Pérez (${HIJOS.filter((h) => !FAMILIA.hijos || FAMILIA.hijos.includes(h.id)).map((h) => h.nombre).join(" e ")}).</p>` : ""}
+      <button class="btn xl" data-a="entrarCodigo">Entrar</button>
+    </div>`;
+  }
+
+  // Quien entró con código protege su cuenta con correo y contraseña.
+  function vProteger() {
+    const f = app.form ?? (app.form = { email: "", pass: "" });
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <h1>Protege tu cuenta</h1>
+      <span class="muted" style="font-size:14px">Entraste con un código, así que tu cuenta solo vive en este teléfono. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.</span>
+      <div class="campo"><label for="f-email">Correo</label><input id="f-email" data-f="email" type="email" value="${esc(f.email)}" placeholder="rodrigo@correo.cl"></div>
+      <div class="campo"><label for="f-pass">Contraseña</label><input id="f-pass" data-f="pass" type="password" value="${esc(f.pass)}"><small>Mínimo 8 caracteres</small></div>
+      ${app.errorCodigo ? `<p class="nota" style="color:var(--alert);margin:0">${esc(app.errorCodigo)}</p>` : ""}
+      <button class="btn xl" data-a="guardarProteger">Proteger mi cuenta</button>
     </div>`;
   }
 
@@ -458,6 +494,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     }).join("");
     return `<div class="vista">
       <div><span class="muted">Martes 7 de octubre</span><h1>Hola, ${AP.corto}</h1></div>
+      ${AP.sinProteger ? `<button class="card invita" data-a="proteger" style="border-color:var(--bus)">🔒 <b>Protege tu cuenta</b><span class="muted" style="font-size:13px">Entraste con un código: agrega tu correo y una contraseña para no perderla si cambias de teléfono.</span></button>` : ""}
       ${demo}
       ${FAMILIA.unido ? `<div class="card"><div class="fila"><b>👨‍👩‍👧 Ver la app como</b></div>
           <span class="seg" role="group" aria-label="Ver la app como">${Object.values(PERSONAS).map((x) => `<button data-a="verComo" data-v="${x.id}" aria-pressed="${AP.id === x.id}">${x.corto} (${x.rol})</button>`).join("")}</span>
@@ -780,6 +817,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   function construir() {
     let cuerpo;
     if (app.vista === "login") cuerpo = vLogin();
+    else if (app.vista === "loginCodigo") cuerpo = vLoginCodigo();
+    else if (app.sub === "proteger") cuerpo = vProteger();
     else if (app.sub === "ficha") cuerpo = vFicha();
     else if (app.sub === "agregar") cuerpo = vAgregar();
     else if (app.sub === "seguir") cuerpo = vSeguir();
@@ -789,7 +828,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     const b = app.banner && app.banner.hasta > performance.now() ? app.banner : null;
     const banner = b && !(R && R.llamada && R.llamada.fase === "sonando") ? `<div class="banner ${b.tipo === "aviso" ? "vibra" : "ok"}" data-a="banner" role="status">
       <span class="app-n">${b.tipo === "aviso" ? "🔊 Furgón Escolar · alarma" : "Furgón Escolar"}</span><b>${esc(b.titulo)}</b><span>${esc(b.cuerpo)}</span></div>` : "";
-    return barraSis() + cuerpo + (app.vista === "login" || app.sub === "seguir" ? "" : tabs()) + banner + (app.vista === "login" ? "" : vLlamada());
+    return barraSis() + cuerpo + (app.vista === "login" || app.vista === "loginCodigo" || app.sub === "seguir" ? "" : tabs()) + banner + (app.vista === "login" || app.vista === "loginCodigo" ? "" : vLlamada());
   }
 
   function render(forzar = false) {
@@ -830,6 +869,12 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       const inp = $tel.querySelector("#buscar"); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
       return;
     }
+    if (k === "codigo" && app.form) {
+      // Al escribir el código se muestra de qué familia es (y vuelve el foco al campo).
+      app.form.codigo = e.target.value; app.errorCodigo = null; previo = ""; render(true);
+      const inp = $tel.querySelector("#f-codigo"); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+      return;
+    }
     if (k && app.form) { app.form[k] = e.target.value; previo = construir(); }
   });
   document.addEventListener("change", (e) => {
@@ -858,7 +903,36 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-a]"); if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.a;
-    if (a === "entrar") { app.vista = "app"; app.tab = "inicio"; }
+    if (a === "entrar") { app.vista = "app"; app.tab = "inicio"; AP = PERSONAS.ana; }
+    else if (a === "loginCodigo") { app.vista = "loginCodigo"; app.form = null; app.errorCodigo = null; }
+    else if (a === "volverLogin") { app.vista = "login"; app.form = null; }
+    else if (a === "entrarCodigo") {
+      const f = app.form, c = String(f.codigo).trim().toUpperCase();
+      if (![CODIGO_DEMO, FAMILIA.codigo].includes(c)) app.errorCodigo = "Código no válido, vencido o ya usado.";
+      else if (!f.nombre.trim()) app.errorCodigo = "Escribe tu nombre.";
+      else if (!normalizarTelefono(f.tel)) app.errorCodigo = "Revisa tu teléfono (ej: 9 3333 4444).";
+      else {
+        // Se une a la familia y entra directo, con su propia sesión.
+        Object.assign(PERSONAS.rodrigo, { nombre: f.nombre.trim(), corto: f.nombre.trim().split(" ")[0], tel: formatear(normalizarTelefono(f.tel)), sinProteger: true });
+        FAMILIA.unido = true; FAMILIA.codigo = null;
+        HIJOS.filter((h) => !FAMILIA.hijos || FAMILIA.hijos.includes(h.id)).forEach((h) => {
+          if (h.contactos.length < 3 && !h.contactos.some((x) => x.papa)) h.contactos.push({ nombre: `${PERSONAS.rodrigo.corto} (papá)`, tel: PERSONAS.rodrigo.tel, papa: true });
+        });
+        AP = PERSONAS.rodrigo; app.vista = "app"; app.tab = "inicio"; app.sub = null; app.form = null; app.errorCodigo = null;
+        app.banner = { tipo: "ok", titulo: "👨‍👩‍👧 Entraste a la familia", cuerpo: "Desde ahora recibes en este teléfono los avisos del furgón.", hasta: performance.now() + 5000 };
+      }
+    }
+    else if (a === "proteger") { app.sub = "proteger"; app.form = null; app.errorCodigo = null; }
+    else if (a === "guardarProteger") {
+      const f = app.form;
+      if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) app.errorCodigo = "Revisa el correo.";
+      else if (f.pass.length < 8) app.errorCodigo = "La contraseña debe tener al menos 8 caracteres.";
+      else {
+        Object.assign(AP, { email: f.email.trim(), sinProteger: false });
+        app.sub = null; app.form = null; app.errorCodigo = null;
+        app.banner = { tipo: "ok", titulo: "🔒 Cuenta protegida", cuerpo: "Ya puedes entrar con tu correo en cualquier teléfono.", hasta: performance.now() + 4500 };
+      }
+    }
     else if (a === "tab") { app.tab = el.dataset.id; app.sub = null; }
     else if (a === "simular") { nuevaSimulacion(); app.corriendo = true; app.llamGratis = 0; app.llamPagadas = 0; app.pendientes = []; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (x) {} }
     else if (a === "reiniciar") { nuevaSimulacion(); app.corriendo = true; app.notifs = []; app.llamGratis = 0; app.llamPagadas = 0; app.pendientes = []; }

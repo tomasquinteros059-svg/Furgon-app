@@ -119,6 +119,9 @@ if (!soloMigraciones) {
   await programar();
   console.log("4) Valores públicos para las apps");
   await valoresPublicos();
+  // «Entrar con código de familia» usa sesiones anónimas (solo crean perfil con un código válido).
+  await api("PATCH", "/config/auth", { external_anonymous_users_enabled: true });
+  console.log("✓ Entrar con código de familia habilitado (sesiones anónimas).");
   if (sinConfirmarCorreo) {
     await api("PATCH", "/config/auth", { mailer_autoconfirm: true });
     console.log("✓ Las cuentas nuevas no necesitan confirmar el correo (piloto).");

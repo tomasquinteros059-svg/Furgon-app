@@ -51,6 +51,7 @@ function Navegacion() {
       <Stack.Protected guard={!sesion}>
         <Stack.Screen name="ingresar" />
         <Stack.Screen name="registro" />
+        <Stack.Screen name="entrar-codigo" />
       </Stack.Protected>
       <Stack.Protected guard={!!sesion && !perfil}>
         <Stack.Screen name="sin-perfil" />

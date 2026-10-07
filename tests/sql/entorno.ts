@@ -28,5 +28,10 @@ export async function crearBaseDeDatos() {
     const r = await uno<{ id: string }>(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`, [email, JSON.stringify(meta)]);
     return r.id;
   }
-  return { db, como, uno, filas, crearUsuario };
+  /** Sesión anónima de Supabase Auth (entrar con código, sin correo). */
+  async function crearUsuarioAnonimo(meta: Record<string, string>): Promise<string> {
+    const r = await uno<{ id: string }>(`insert into auth.users (is_anonymous, raw_user_meta_data) values (true, $1) returning id`, [JSON.stringify(meta)]);
+    return r.id;
+  }
+  return { db, como, uno, filas, crearUsuario, crearUsuarioAnonimo };
 }

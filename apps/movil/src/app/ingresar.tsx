@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
@@ -29,6 +29,10 @@ export default function Ingresar() {
       <Campo etiqueta="Correo" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
       <Campo etiqueta="Contraseña" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
       <Boton titulo="Ingresar" onPress={ingresar} cargando={cargando} deshabilitado={!email || !password} />
+      <View style={{ marginTop: 28, gap: 8 }}>
+        <Text style={[estilos.textoSuave, { textAlign: "center" }]}>¿La mamá o el papá te compartió a los hijos?</Text>
+        <Boton titulo="👨‍👩‍👧 Entrar con código de familia" variante="secundario" grande onPress={() => router.push("/entrar-codigo")} />
+      </View>
       <Link href="/registro" style={{ marginTop: 20, textAlign: "center", color: colores.azul, fontWeight: "600" }}>
         ¿Tienes un código de invitación? Crea tu cuenta
       </Link>
