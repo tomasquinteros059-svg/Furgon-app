@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import { Text } from "../componentes/icono";
 import { Boton, estilos, Pantalla } from "../componentes/ui";
 import { useSesion } from "../lib/sesion";
 

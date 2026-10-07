@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { datos } from "../datos";
 import { Cargando, Chip, Encabezado, ErrorCaja, useCarga, Vacio } from "../componentes/ui";
 import { pesos } from "../formato";
+import { Icono } from "../componentes/Icono";
 
 type Filtro = "activos" | "sin_ruta" | "sin_app" | "bajas";
 
@@ -41,7 +42,7 @@ export function Alumnos() {
                   <td><a href={`#/alumnos/${a.id}`}><b>{a.nombre}</b></a><br /><small className="tenue">{a.curso} · {a.colegio}</small></td>
                   <td>{a.domicilio?.direccion ?? <Chip tono="alerta">Sin dirección</Chip>}</td>
                   <td>{a.rutas.length ? <div className="chips">{a.rutas.map((r) => <Chip key={r.id}>{r.nombre}</Chip>)}</div> : a.activo ? <Chip tono="aviso">Sin ruta</Chip> : "—"}</td>
-                  <td>{a.apoderados.length ? <Chip tono="ok">✓ {a.apoderados.map((p) => p.nombre).join(", ")}</Chip> : a.activo ? <Chip tono="aviso">Sin app</Chip> : "—"}</td>
+                  <td>{a.apoderados.length ? <Chip tono="ok"><Icono n="check" /> {a.apoderados.map((p) => p.nombre).join(", ")}</Chip> : a.activo ? <Chip tono="aviso">Sin app</Chip> : "—"}</td>
                   <td className="num">{pesos(a.mensualidad ?? empresa?.mensualidad_defecto ?? 0)}{a.mensualidad == null ? <small className="tenue"> *</small> : null}</td>
                 </tr>
               ))}

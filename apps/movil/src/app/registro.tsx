@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";

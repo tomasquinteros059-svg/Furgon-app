@@ -2,6 +2,7 @@ import { datos } from "../datos";
 import { ChipLicencia } from "./Furgones";
 import { Cargando, Chip, Encabezado, ErrorCaja, useCarga } from "../componentes/ui";
 import { hora, nombreMes, mesActual, pesos } from "../formato";
+import { Icono } from "../componentes/Icono";
 
 export function Panel() {
   const { valor: r, error } = useCarga(() => datos.resumen());
@@ -43,7 +44,7 @@ export function Panel() {
             <ul className="lista-tareas">
               {pendientes.map((p) => <li key={p.txt}><span><Chip tono={p.tono}>!</Chip> {p.txt}</span><a className="btn sec chico" href={`#/${p.ir}`}>Ver</a></li>)}
             </ul>
-          ) : <p className="caja-ok">Todo al día. 🎉</p>}
+          ) : <p className="caja-ok"><Icono n="celebrar" /> Todo al día.</p>}
         </section>
         <section className="tarjeta" aria-label="Recorridos de hoy">
           <header><h2>Recorridos de hoy</h2>{r.recorridos_activos ? <Chip tono="ok">● {r.recorridos_activos} en curso</Chip> : null}</header>

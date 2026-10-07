@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { datos, type EstadoLicencia, type Furgon, type FurgonEditable, type Licencia } from "../datos";
 import { Cargando, Chip, Encabezado, ErrorCaja, Modal, useCarga, Vacio } from "../componentes/ui";
+import { Icono } from "../componentes/Icono";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(`${iso}T12:00:00`));
 
@@ -9,12 +10,12 @@ export function ChipLicencia({ estado, vence, dias }: { estado: EstadoLicencia |
   if (!estado) return <Chip>Sin conductora</Chip>;
   const d = dias ?? (vence ? Math.round((new Date(`${vence}T12:00:00`).getTime() - Date.now()) / 86_400_000) : null);
   switch (estado) {
-    case "vigente": return <Chip tono="ok">✓ Licencia vigente{vence ? ` hasta ${fechaLarga(vence)}` : ""}</Chip>;
-    case "por_vencer": return <Chip tono="aviso">⚠ Licencia vence en {d} día{d === 1 ? "" : "s"}</Chip>;
-    case "vencida": return <Chip tono="alerta">✗ Licencia vencida</Chip>;
-    case "por_verificar": return <Chip tono="info">⏳ Licencia por verificar</Chip>;
-    case "rechazada": return <Chip tono="alerta">Licencia rechazada</Chip>;
-    default: return <Chip tono="alerta">Sin licencia</Chip>;
+    case "vigente": return <Chip tono="ok"><Icono n="confirmado" /> Licencia vigente{vence ? ` hasta ${fechaLarga(vence)}` : ""}</Chip>;
+    case "por_vencer": return <Chip tono="aviso"><Icono n="alerta" /> Licencia vence en {d} día{d === 1 ? "" : "s"}</Chip>;
+    case "vencida": return <Chip tono="alerta"><Icono n="error" /> Licencia vencida</Chip>;
+    case "por_verificar": return <Chip tono="info"><Icono n="pendiente" /> Licencia por verificar</Chip>;
+    case "rechazada": return <Chip tono="alerta"><Icono n="prohibido" /> Licencia rechazada</Chip>;
+    default: return <Chip tono="alerta"><Icono n="licencia" /> Sin licencia</Chip>;
   }
 }
 
@@ -41,7 +42,7 @@ export function Furgones() {
 
       {atencion.length ? (
         <section className="tarjeta" aria-label="Licencias que requieren atención" style={{ borderLeft: "4px solid var(--alert)" }}>
-          <header><h2>🪪 Licencias que requieren atención</h2></header>
+          <header><h2><Icono n="licencia" /> Licencias que requieren atención</h2></header>
           <ul className="lista-tareas">
             {atencion.map((l) => (
               <li key={l.conductor_id}>
@@ -68,7 +69,7 @@ export function Furgones() {
                 </header>
                 <div>
                   <b>{f.modelo ?? "Furgón"}</b>
-                  <div className="tenue">{f.conductor ? `🧑‍✈️ ${f.conductor}` : "Sin tía o tío asignado"}</div>
+                  <div className="tenue">{f.conductor ? <><Icono n="conductora" /> {f.conductor}</> : "Sin tía o tío asignado"}</div>
                 </div>
                 <div>
                   <div className="fila-sep"><span>Niños</span><b className="mono">{f.alumnos}{f.capacidad ? ` / ${f.capacidad}` : ""}</b></div>
@@ -119,7 +120,7 @@ function ModalFurgon({ f, conductoras, rutas, onCerrar, onGuardar }: {
       <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}><span>Rutas que hace este furgón</span>
         <div className="filtros">{rutas.map((r) => (
           <label key={r.id} className="chk"><input type="checkbox" checked={v.ruta_ids.includes(r.id)}
-            onChange={(e) => setV({ ...v, ruta_ids: e.target.checked ? [...v.ruta_ids, r.id] : v.ruta_ids.filter((x) => x !== r.id) })} /> {r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}</label>
+            onChange={(e) => setV({ ...v, ruta_ids: e.target.checked ? [...v.ruta_ids, r.id] : v.ruta_ids.filter((x) => x !== r.id) })} /> <Icono n={r.tipo === "ida" ? "ida" : "casa"} /> {r.nombre}</label>
         ))}</div></fieldset>
       {f.id ? <label className="chk"><input type="checkbox" checked={v.activo ?? true} onChange={(e) => setV({ ...v, activo: e.target.checked })} /> Furgón activo</label> : null}
       <div className="acciones"><button className="btn ok" disabled={!v.patente.trim()} onClick={() => onGuardar(v)}>Guardar</button><button className="btn sec" onClick={onCerrar}>Cancelar</button></div>
@@ -149,7 +150,7 @@ function ModalLicencia({ l, onCerrar, onRevisar }: { l: Licencia; onCerrar: () =
           <div className="acciones"><button className="btn peligro" disabled={!motivo.trim()} onClick={() => onRevisar(false, motivo)}>Rechazar licencia</button><button className="btn sec" onClick={() => setRechazando(false)}>Volver</button></div>
         </>
       ) : (
-        <div className="acciones"><button className="btn ok" onClick={() => onRevisar(true, "")}>✓ Aprobar licencia</button><button className="btn sec" onClick={() => setRechazando(true)}>Rechazar…</button></div>
+        <div className="acciones"><button className="btn ok" onClick={() => onRevisar(true, "")}><Icono n="check" /> Aprobar licencia</button><button className="btn sec" onClick={() => setRechazando(true)}>Rechazar…</button></div>
       )) : <div className="acciones"><button className="btn sec" onClick={onCerrar}>Cerrar</button></div>}
     </Modal>
   );

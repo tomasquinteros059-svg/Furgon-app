@@ -2,7 +2,8 @@
 // familia por su correo o teléfono para invitarla, y responder las solicitudes que llegan.
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Switch, View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { type Conexion, misConexiones } from "../../lib/conexiones";
 import { useSesion } from "../../lib/sesion";

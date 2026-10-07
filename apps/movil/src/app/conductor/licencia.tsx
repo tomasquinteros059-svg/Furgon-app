@@ -3,7 +3,8 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Image, View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { aFecha, type EstadoLic, textoLicencia } from "../../lib/licencia";

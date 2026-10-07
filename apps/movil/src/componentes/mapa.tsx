@@ -1,6 +1,7 @@
 // Piezas del mapa (Google Maps vía react-native-maps): furgón escolar amarillo, casas numeradas,
 // estilo de mapa limpio y enlace a la navegación de Google Maps.
-import { Linking, Platform, Text, View } from "react-native";
+import { Linking, Platform, View } from "react-native";
+import { Text } from "./icono";
 import { PROVIDER_GOOGLE } from "react-native-maps";
 
 /** Google Maps en Android y también en iOS (clave en app.config.ts → react-native-maps). */

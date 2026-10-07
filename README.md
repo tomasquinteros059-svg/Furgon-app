@@ -116,6 +116,19 @@ docs/ARQUITECTURA.md             Diseño detallado
 La lógica crítica (`supabase/functions/_shared/core`) es TypeScript sin dependencias. La misma
 fuente la usan las Edge Functions (Deno), la app (Metro), el simulador (Node) y los tests.
 
+## Íconos propios
+
+La app no usa emojis genéricos: tiene su propio set de íconos (grilla de 24 × 24, trazo de 2 px
+redondeado y un acento en amarillo escolar), definido una sola vez en `diseno/iconos.ts`.
+
+- **App móvil:** `componentes/icono.tsx` exporta `<Icono>` y un `Text` que dibuja los íconos en
+  lugar de los emojis del texto (react-native-svg), igual en Android y iPhone.
+- **Panel web:** `componentes/Icono.tsx`.
+- **Maquetas HTML y hoja del set:** `npm run iconos` actualiza el bloque de íconos de las maquetas y
+  genera `docs/iconos.html`.
+- Las notificaciones del teléfono no admiten íconos propios: sus textos van sin emojis.
+- `tests/iconos.test.ts` falla si una pantalla muestra un emoji sin su ícono.
+
 ## Configuración de claves (variables de entorno)
 
 **Ninguna clave va en el código ni en el repositorio.** Cada componente lee las suyas desde

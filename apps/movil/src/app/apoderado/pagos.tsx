@@ -1,7 +1,8 @@
 // Mensualidades de los hijos (las registra la administración).
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { supabase } from "../../lib/supabase";
 

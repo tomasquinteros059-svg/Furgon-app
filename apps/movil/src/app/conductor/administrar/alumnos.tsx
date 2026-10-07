@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../../componentes/icono";
 import { Aviso, Boton, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { compartirCodigo } from "../../../lib/familia";
 import { mensajeError, supabase } from "../../../lib/supabase";

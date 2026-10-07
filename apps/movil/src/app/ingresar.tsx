@@ -1,6 +1,7 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
 import { mensajeError, supabase } from "../lib/supabase";
 

@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { Icono } from "./Icono";
 
 /** Carga datos asíncronos con estado de carga/error y una función para recargar. */
 export function useCarga<T>(cargar: () => Promise<T>, deps: unknown[] = []) {
@@ -47,7 +48,7 @@ export function Modal({ titulo, onCerrar, children }: { titulo: string; onCerrar
   return (
     <div className="modal-fondo" onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
       <div className="modal" role="dialog" aria-modal="true" aria-label={titulo}>
-        <div className="modal-cab"><h2>{titulo}</h2><button className="btn-icono" onClick={onCerrar} aria-label="Cerrar">✕</button></div>
+        <div className="modal-cab"><h2>{titulo}</h2><button className="btn-icono" onClick={onCerrar} aria-label="Cerrar"><Icono n="cerrar" /></button></div>
         {children}
       </div>
     </div>
@@ -61,7 +62,7 @@ export function Copiar({ texto, etiqueta = "Copiar" }: { texto: string; etiqueta
     <button className="btn sec" onClick={async () => {
       try { await navigator.clipboard.writeText(texto); setHecho(true); setTimeout(() => setHecho(false), 1800); }
       catch { window.prompt("Copia el texto:", texto); }
-    }}>{hecho ? "✓ Copiado" : etiqueta}</button>
+    }}>{hecho ? <><Icono n="check" /> Copiado</> : etiqueta}</button>
   );
 }
 

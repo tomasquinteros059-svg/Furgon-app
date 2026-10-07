@@ -1,7 +1,8 @@
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../componentes/icono";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../../componentes/ui";
 import { type Conexion, misConexiones } from "../../lib/conexiones";

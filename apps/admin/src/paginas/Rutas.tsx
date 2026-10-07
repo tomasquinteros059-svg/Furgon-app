@@ -2,6 +2,7 @@ import { useState } from "react";
 import { datos, type RecomendacionRuta, type Ruta } from "../datos";
 import { MapaRuta } from "../componentes/MapaRuta";
 import { Cargando, Chip, Encabezado, ErrorCaja, useCarga } from "../componentes/ui";
+import { Icono } from "../componentes/Icono";
 
 const km = (m: number) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
 /** Minutos aproximados que se ahorran a 25 km/h, velocidad típica en ciudad. */
@@ -41,7 +42,7 @@ function TarjetaRuta({ r, hacer, conductoras, disponibles }: {
   return (
     <section className="tarjeta" aria-label={r.nombre}>
       <header>
-        <div><h2>{r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}</h2>
+        <div><h2><Icono n={r.tipo === "ida" ? "ida" : "casa"} /> {r.nombre}</h2>
           <span className="tenue">{r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"}{r.hora_salida ? ` · sale ${r.hora_salida.slice(0, 5)}` : ""}{r.furgon ? ` · ${r.furgon}` : ""}</span></div>
         <label className="campo" style={{ minWidth: 240 }}><span>Conductora</span>
           <select value={r.conductor_id ?? ""} onChange={(e) => hacer(() => datos.asignarConductora(r.id, e.target.value || null))}>
@@ -51,7 +52,7 @@ function TarjetaRuta({ r, hacer, conductoras, disponibles }: {
       </header>
       {r.paradas.length >= 2 ? (
         <div className="acciones">
-          <button className="btn bus" disabled={calculando} onClick={recomendar}>{calculando ? "Calculando la mejor ruta…" : "✨ Recomendar ruta"}</button>
+          <button className="btn bus" disabled={calculando} onClick={recomendar}>{calculando ? "Calculando la mejor ruta…" : <><Icono n="chispa" /> Recomendar ruta</>}</button>
           {!r.colegio ? <span className="tenue">Sin ubicación del colegio: se ordena solo entre las casas.</span> : null}
         </div>
       ) : null}
@@ -97,13 +98,13 @@ function PanelRecomendacion({ r, ruta, porId, onAplicar, onDescartar }: {
     .map((p) => ({ id: p.alumno_id, nombre: p.nombre, lat: p.lat!, lng: p.lng! }));
   const fuente = r.fuente === "google" ? "Calculada por calles con Google Maps." : "Calculada por distancia entre las casas (aproximada).";
   if (!r.cambia) {
-    return <div className="recomendacion"><p className="caja-ok" role="status" style={{ margin: 0 }}>👍 El orden actual ya es el más corto (≈ {km(r.metrosActual)}). {fuente}</p>
+    return <div className="recomendacion"><p className="caja-ok" role="status" style={{ margin: 0 }}><Icono n="pulgar" /> El orden actual ya es el más corto (≈ {km(r.metrosActual)}). {fuente}</p>
       <div className="acciones"><button className="btn sec" onClick={onDescartar}>Cerrar</button></div></div>;
   }
   return (
     <div className="recomendacion" role="region" aria-label="Ruta recomendada">
       <div>
-        <h3 style={{ margin: 0 }}>✨ Ruta recomendada</h3>
+        <h3 style={{ margin: 0 }}><Icono n="chispa" /> Ruta recomendada</h3>
         <p style={{ margin: "4px 0 0" }}><b className="mono">{km(r.metros)}</b> en vez de <span className="mono">{km(r.metrosActual)}</span> · ahorras <b>{km(r.ahorroM)}</b> (≈ {minutos(r.ahorroM)} min por recorrido)</p>
         <small className="tenue">{fuente} Revisa el orden: tú conoces las calles y los horarios de cada familia.</small>
       </div>

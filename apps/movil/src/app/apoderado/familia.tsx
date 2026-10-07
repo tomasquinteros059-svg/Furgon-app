@@ -3,7 +3,8 @@
 // confirman avisos y marcan «hoy no viaja». También sirve para abuelos u otro cuidador.
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Share, Text, View } from "react-native";
+import { Alert, Share, View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
@@ -35,7 +36,7 @@ export default function Familia() {
     if (error) return setMsg({ ok: false, txt: mensajeError(error) });
     const nombres = hijos.filter(([id]) => !lista || lista.includes(id)).map(([, n]) => n.split(" ")[0]).join(" y ");
     await Share.share({
-      message: `Hola 👋 Te comparto a ${nombres} en la app «Furgón Escolar» para que también recibas los avisos del furgón y lo sigas en vivo.\n` +
+      message: `Hola. Te comparto a ${nombres} en la app «Furgón Escolar» para que también recibas los avisos del furgón y lo sigas en vivo.\n` +
         `1) Descarga la app.\n2) Si no tienes cuenta, toca «Crear cuenta» y escribe este código: ${data}\n` +
         `   Si ya tienes cuenta, ve a «Familia» → «Tengo un código».\nEl código sirve una vez y vence en 7 días.`,
     });

@@ -1,6 +1,7 @@
 // La administración (alumnos, rutas, conductoras, cobros, solicitudes) se hace en la app web
 // (apps/admin). La app móvil es para la tía o el tío del furgón y para las familias.
-import { Linking, Text } from "react-native";
+import { Linking } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, estilos, Pantalla } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 

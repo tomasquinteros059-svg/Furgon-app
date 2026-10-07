@@ -1,7 +1,8 @@
 // Ayuda: preguntas frecuentes, consultas a la administración y solicitud de cancelación.
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { mensajeError, supabase } from "../../lib/supabase";
 

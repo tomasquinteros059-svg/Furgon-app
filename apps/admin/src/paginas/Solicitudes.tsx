@@ -2,6 +2,7 @@ import { useState } from "react";
 import { datos, type Solicitud, type TipoSolicitud } from "../datos";
 import { Cargando, Chip, Encabezado, ErrorCaja, useCarga, Vacio } from "../componentes/ui";
 import { fechaHora } from "../formato";
+import { Icono } from "../componentes/Icono";
 
 const TIPO: Record<TipoSolicitud, [string, "alerta" | "info" | "aviso" | "neutro"]> = {
   cancelacion_servicio: ["Cancelación", "alerta"], pregunta: ["Pregunta", "info"], cambio_datos: ["Cambio de datos", "aviso"], reclamo: ["Reclamo", "alerta"], otro: ["Otro", "neutro"],
@@ -21,7 +22,7 @@ export function Solicitudes({ seleccion }: { seleccion: string | null }) {
       {!lista ? <Cargando /> : (
         <div className="bandeja">
           <div className="lista-sol">
-            {visibles.length === 0 ? <Vacio>No hay solicitudes por atender. 🎉</Vacio> : visibles.map((s) => (
+            {visibles.length === 0 ? <Vacio><Icono n="celebrar" /> No hay solicitudes por atender.</Vacio> : visibles.map((s) => (
               <a key={s.id} className="item-sol" href={`#/solicitudes/${s.id}`} aria-current={s.id === seleccion} style={{ color: "inherit", textDecoration: "none" }}>
                 <div className="chips"><Chip tono={TIPO[s.tipo][1]}>{TIPO[s.tipo][0]}</Chip><Chip tono={ESTADO[s.estado][1]}>{ESTADO[s.estado][0]}</Chip></div>
                 <b>{s.asunto}</b>

@@ -16,7 +16,8 @@
     "admin:demo": "npm run build:demo --workspace=apps/admin",
     "desplegar": "node scripts/desplegar-supabase.mjs",
     "crear-empresa": "node scripts/crear-empresa.mjs",
-    "verificar-google": "node scripts/verificar-google.mjs"
+    "verificar-google": "node scripts/verificar-google.mjs",
+    "iconos": "node --experimental-strip-types --no-warnings scripts/generar-iconos.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",

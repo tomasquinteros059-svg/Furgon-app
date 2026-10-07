@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
+import { Text } from "../../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla } from "../../../../componentes/ui";
 import { useSesion } from "../../../../lib/sesion";
 import { mensajeError, supabase } from "../../../../lib/supabase";

@@ -126,7 +126,7 @@ async function iniciarLlamadaApp(sb: SupabaseClient, llamada: { id: string; avis
   const textos = mensajeAviso({ tipo: recorrido.tipo, nombreAlumno: alumno.nombre, etaSeg: aviso.eta_seg ?? 300, motivo: aviso.motivo });
   return enviarLlamadaApp(sb, llamada.contacto_id, {
     tipo: "llamada",
-    titulo: "📞 Llamada del furgón escolar",
+    titulo: "Llamada del furgón escolar",
     cuerpo: textos.cuerpo,
     avisoId: llamada.aviso_id,
     data: { llamadaId: llamada.id, avisoId: llamada.aviso_id, alumnoId: aviso.alumno_id, alumno: alumno.nombre, voz: textos.voz },

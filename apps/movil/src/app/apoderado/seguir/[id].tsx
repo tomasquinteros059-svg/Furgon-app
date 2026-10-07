@@ -5,7 +5,8 @@
 // Las reglas de privacidad las aplica el servidor (seguimiento_furgon y RLS de posiciones).
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../componentes/icono";
 import MapView, { Circle, Marker, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ESTILO_MAPA, Furgon, PROVEEDOR_MAPA } from "../../../componentes/mapa";

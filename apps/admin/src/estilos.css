@@ -196,3 +196,8 @@ td.num, th.num { text-align: right; }
 .datos-lic { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 0; }
 .datos-lic dt { font-size: 12px; color: var(--muted); }
 .datos-lic dd { margin: 0; font-weight: 700; }
+
+/* Íconos propios (diseno/iconos.ts) */
+.ico { display: inline-flex; vertical-align: -0.2em; line-height: 0; flex-shrink: 0; }
+.ico svg { overflow: visible; }
+.btn.bus .ico, .btn.ok .ico, .btn.peligro .ico, .chip-aviso .ico { --ico-acento: rgba(255, 255, 255, .4); }

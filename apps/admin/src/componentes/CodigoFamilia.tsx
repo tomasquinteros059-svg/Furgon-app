@@ -2,7 +2,7 @@ import { Copiar } from "./ui";
 
 /** Código con el que la familia se registra en la app y queda ligada al alumno, con el mensaje listo para enviar. */
 export function CodigoFamilia({ codigo, alumno, telefono }: { codigo: string; alumno: string; telefono?: string | null }) {
-  const mensaje = `Hola 👋 Para recibir los avisos del furgón de ${alumno}:\n` +
+  const mensaje = `Hola. Para recibir los avisos del furgón de ${alumno}:\n` +
     `1) Descarga la app «Furgón Escolar».\n` +
     `2) Toca «Crear cuenta» y escribe este código: ${codigo}\n` +
     `¡Listo! Te avisaremos unos 5 minutos antes de que llegue el furgón.`;

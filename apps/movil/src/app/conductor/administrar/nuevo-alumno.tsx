@@ -2,7 +2,8 @@
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "../../../componentes/icono";
 import MapView, { Marker } from "react-native-maps";
 import { ESTILO_MAPA, PinCasa, PROVEEDOR_MAPA } from "../../../componentes/mapa";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../../../componentes/ui";

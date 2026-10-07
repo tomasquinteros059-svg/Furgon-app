@@ -13,6 +13,7 @@ import { Panel } from "./paginas/Panel";
 import { Preguntas } from "./paginas/Preguntas";
 import { Rutas } from "./paginas/Rutas";
 import { Solicitudes } from "./paginas/Solicitudes";
+import { Icono } from "./componentes/Icono";
 
 const SECCIONES = [
   { ruta: "panel", nombre: "Panel" },
@@ -82,7 +83,7 @@ export function App() {
         <div className="marca">
           <svg width="44" height="30" viewBox="0 0 84 56" aria-hidden="true"><rect x="4" y="8" width="76" height="36" rx="9" fill="var(--bus)" stroke="var(--bus-ink)" strokeWidth="3" /><rect x="12" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><rect x="34" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><rect x="56" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><circle cx="22" cy="46" r="7" fill="var(--lateral-ink)" /><circle cx="62" cy="46" r="7" fill="var(--lateral-ink)" /></svg>
           <div><b>Furgón Escolar</b><span>Administración</span></div>
-          <button className="btn-menu" aria-label="Menú" aria-expanded={menuAbierto} onClick={() => setMenuAbierto(!menuAbierto)}>☰</button>
+          <button className="btn-menu" aria-label="Menú" aria-expanded={menuAbierto} onClick={() => setMenuAbierto(!menuAbierto)}><Icono n="menu" /></button>
         </div>
         <nav aria-label="Secciones" onClick={() => setMenuAbierto(false)}>
           {SECCIONES.map((s) => (

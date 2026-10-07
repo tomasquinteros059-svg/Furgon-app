@@ -73,7 +73,7 @@ TaskManager.defineTask(TAREA_PUSH, async ({ data, error }) => {
 
 export async function configurarLlamadas(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(CATEGORIA_LLAMADA, [
-    { identifier: "confirmar", buttonTitle: "✅ Confirmar (1)", options: { opensAppToForeground: true } },
+    { identifier: "confirmar", buttonTitle: "Confirmar (1)", options: { opensAppToForeground: true } },
     { identifier: "rechazar", buttonTitle: "No puedo", options: { opensAppToForeground: false } },
   ]);
   try {

@@ -2,7 +2,8 @@
 import * as Speech from "expo-speech";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, Vibration, View } from "react-native";
+import { Pressable, StyleSheet, Vibration, View } from "react-native";
+import { Text } from "../../../componentes/icono";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { responderLlamada } from "../../../llamadas-app";
 

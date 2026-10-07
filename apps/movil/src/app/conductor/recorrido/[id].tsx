@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert, View } from "react-native";
+import { Text } from "../../../componentes/icono";
 import { navegarConGoogleMaps, navegarConWaze } from "../../../componentes/mapa";
 import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";

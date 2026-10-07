@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { datos } from "../datos";
 import { Cargando, Copiar, Encabezado, ErrorCaja, useCarga } from "../componentes/ui";
+import { Icono } from "../componentes/Icono";
 
 export function Conductoras({ principal }: { principal: boolean }) {
   const { valor: conductoras, error, recargar } = useCarga(() => datos.conductoras());
   const [err, setErr] = useState<string | null>(null);
   const { valor: rutas } = useCarga(() => datos.rutas());
   const [codigo, setCodigo] = useState<string | null>(null);
-  const mensaje = codigo ? `Hola 👋 Descarga la app «Furgón Escolar», toca «Crear cuenta» y usa el código ${codigo}. Tus rutas y alumnos ya están cargados: solo tienes que tocar «Iniciar recorrido».` : "";
+  const mensaje = codigo ? `Hola. Descarga la app «Furgón Escolar», toca «Crear cuenta» y usa el código ${codigo}. Tus rutas y alumnos ya están cargados: solo tienes que tocar «Iniciar recorrido».` : "";
   return (
     <>
       <Encabezado titulo="Conductoras" bajada="La tía solo instala la app y entra con su código. Los alumnos y el orden de la ruta los administras tú."
@@ -36,8 +37,8 @@ export function Conductoras({ principal }: { principal: boolean }) {
           ))}</tbody>
         </table></div>
       )}
-      <p className="nota">🧑‍💼 <b>Administra</b>: la tía puede agregar alumnos, ordenar su ruta, registrar pagos y responder a las familias desde su app (y entrar a este panel con su cuenta). Esa sección se bloquea mientras maneja. {principal ? "Solo tú puedes dar o quitar este permiso." : "Solo el administrador principal puede cambiar estos permisos."}</p>
-      <p className="nota">📡 La ubicación del furgón es la del celular de la conductora: no se necesita un GPS aparte. Se comparte solo mientras tiene un recorrido iniciado.</p>
+      <p className="nota"><Icono n="admin" /> <b>Administra</b>: la tía puede agregar alumnos, ordenar su ruta, registrar pagos y responder a las familias desde su app (y entrar a este panel con su cuenta). Esa sección se bloquea mientras maneja. {principal ? "Solo tú puedes dar o quitar este permiso." : "Solo el administrador principal puede cambiar estos permisos."}</p>
+      <p className="nota"><Icono n="gps" /> La ubicación del furgón es la del celular de la conductora: no se necesita un GPS aparte. Se comparte solo mientras tiene un recorrido iniciado.</p>
     </>
   );
 }

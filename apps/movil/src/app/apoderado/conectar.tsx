@@ -2,7 +2,8 @@
 // las invitaciones que le envían. Al aceptarse, la familia queda en ese furgón.
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { type Conexion, misConexiones } from "../../lib/conexiones";
 import { useSesion } from "../../lib/sesion";

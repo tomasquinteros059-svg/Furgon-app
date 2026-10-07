@@ -2,7 +2,7 @@
 // perder la cuenta si cambia de teléfono o cierra sesión.
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text } from "react-native";
+import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../../componentes/ui";
 import { mensajeError, supabase } from "../../lib/supabase";
 

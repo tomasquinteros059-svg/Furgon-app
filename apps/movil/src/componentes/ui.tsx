@@ -1,15 +1,6 @@
 import type { ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  type TextInputProps,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, type TextInputProps, View, type ViewStyle } from "react-native";
+import { Text } from "./icono";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export const colores = {

@@ -2,7 +2,8 @@
 // celular), las casas por visitar y la ruta por calles que entrega Google.
 import * as Location from "expo-location";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "./icono";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { decodificarPolilinea } from "../lib/core";
 import { llamarFuncion } from "../lib/supabase";
