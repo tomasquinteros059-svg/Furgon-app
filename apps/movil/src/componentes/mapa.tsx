@@ -46,21 +46,31 @@ export function PinCasa({ numero, color }: { numero: number | string; color: str
 }
 
 /** Estilo de Google Maps sin puntos de interés: deja ver bien las calles, las casas y el furgón. */
-export const ESTILO_MAPA = [
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.school", stylers: [{ visibility: "on" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { featureType: "landscape", stylers: [{ color: "#F1F3F5" }] },
-  { featureType: "water", stylers: [{ color: "#C9E3F2" }] },
-];
+export function estiloMapa(oscuro: boolean) {
+  const base = [
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "poi.school", stylers: [{ visibility: "on" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  ];
+  return oscuro ? [...base,
+    { elementType: "geometry", stylers: [{ color: "#1A1F27" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#9AA3AE" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#0E1116" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#2A313B" }] },
+    { featureType: "water", stylers: [{ color: "#0F2A3D" }] },
+  ] : [...base,
+    { featureType: "landscape", stylers: [{ color: "#F3F4F6" }] },
+    { featureType: "water", stylers: [{ color: "#C9E3F2" }] },
+  ];
+}
 
-/** Abre la navegación de Google Maps (app o web) hacia una casa. */
 /** Abre Waze con la navegación hacia el destino (o la web de Waze si no está instalado). */
 export function navegarConWaze(lat: number, lng: number): void {
   Linking.openURL(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`).catch(() => {});
 }
 
+/** Abre la navegación de Google Maps (app o web) hacia una casa. */
 export function navegarConGoogleMaps(lat: number, lng: number): void {
   const web = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
   const app = Platform.OS === "ios" ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving` : `google.navigation:q=${lat},${lng}&mode=d`;

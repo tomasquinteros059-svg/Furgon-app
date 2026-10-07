@@ -9,8 +9,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import MapView, { Circle, Marker, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ESTILO_MAPA, Furgon, PROVEEDOR_MAPA } from "../../../componentes/mapa";
+import { estiloMapa, Furgon, PROVEEDOR_MAPA } from "../../../componentes/mapa";
 import { Boton, colores } from "../../../componentes/ui";
+import { crearEstilos, esOscuro } from "../../../componentes/tema";
 import { supabase } from "../../../lib/supabase";
 
 interface Punto {
@@ -109,7 +110,7 @@ export default function SeguirFurgon() {
         ref={mapa}
         style={StyleSheet.absoluteFill}
         provider={PROVEEDOR_MAPA}
-        customMapStyle={ESTILO_MAPA}
+        customMapStyle={estiloMapa(esOscuro())}
         initialRegion={casa ? { ...casa, latitudeDelta: 0.03, longitudeDelta: 0.03 } : undefined}
         showsPointsOfInterests={false}
         toolbarEnabled={false}
@@ -199,7 +200,7 @@ export default function SeguirFurgon() {
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = crearEstilos((colores) => ({
   volver: { margin: 12, alignSelf: "flex-start", backgroundColor: colores.tarjeta, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, elevation: 3 },
   hoja: {
     position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colores.tarjeta, borderTopLeftRadius: 22, borderTopRightRadius: 22,
@@ -212,5 +213,5 @@ const estilos = StyleSheet.create({
   conductor: { flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: 1, borderColor: colores.borde, paddingTop: 12 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colores.amarillo, alignItems: "center", justifyContent: "center" },
   patente: { fontWeight: "800", borderWidth: 2, borderColor: colores.texto, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, color: colores.texto },
-  van: { backgroundColor: colores.amarillo, borderRadius: 18, padding: 4, borderWidth: 2, borderColor: "#2A2100" },
-});
+  van: { backgroundColor: colores.amarillo, borderRadius: 18, padding: 4, borderWidth: 2, borderColor: colores.sobreAmarillo },
+}));

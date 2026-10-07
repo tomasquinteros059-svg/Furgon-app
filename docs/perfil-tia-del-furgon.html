@@ -10,12 +10,12 @@
 <style>
 /* App de la conductora ("tía del furgón"): una sola columna móvil, barra de pestañas inferior, botones grandes para usar detenida. */
 :root {
-  --bg: #E7EBEF; --app: #F4F6F8; --surface: #FFFFFF; --surface-2: #EEF1F4;
-  --ink: #15202B; --muted: #5A6573; --line: #D3D9E0; --road: #C4CBD3;
-  --bus: #F5B700; --bus-ink: #2A2100; --bus-soft: #FFF4CC;
-  --navy: #16324F; --navy-ink: #FFFFFF;
-  --ok: #1D7F45; --ok-soft: #E4F3EA; --alert: #C4281C; --alert-soft: #FCE9E7;
-  --mapa-fondo: #E9EEF2; --mapa-manzana: #F6F8FA; --mapa-calle: #FFFFFF; --mapa-avenida: #FFE9A8; --mapa-parque: #D5EBCF; --mapa-agua: #BFDDF0;
+  --bg: #F3F4F6; --app: #FFFFFF; --surface: #FFFFFF; --surface-2: #F3F4F6;
+  --ink: #14181F; --muted: #5F6672; --line: #E3E5E8; --road: #D6D9DE;
+  --bus: #F5B700; --bus-ink: #1F1A00; --bus-soft: #FFF7DB;
+  --navy: #1E3A5F; --navy-ink: #FFFFFF;
+  --ok: #1E8E3E; --ok-soft: #E6F4EA; --alert: #D93025; --alert-soft: #FCE8E6;
+  --mapa-fondo: #EEF0F2; --mapa-manzana: #F8F9FA; --mapa-calle: #FFFFFF; --mapa-avenida: #E4E6EA; --mapa-parque: #DCEBD6; --mapa-agua: #C9E3F2;
   --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -30,10 +30,10 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
-  --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+  --bg: #07090C; --app: #0E1116; --surface: #161A21; --surface-2: #1E232B; --ink: #F3F4F6; --muted: #9AA3AE;
+  --line: #2A313B; --road: #3A414C; --bus: #F7C21A; --bus-ink: #1A1500; --bus-soft: #2E2810;
   --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
-  --mapa-fondo: #1A232C; --mapa-manzana: #212C36; --mapa-calle: #2D3A46; --mapa-avenida: #4A4220; --mapa-parque: #1F3324; --mapa-agua: #1C3446;
+  --mapa-fondo: #151A21; --mapa-manzana: #1C222A; --mapa-calle: #2A313B; --mapa-avenida: #343B45; --mapa-parque: #1D2B22; --mapa-agua: #13293A;
     color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -70,7 +70,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .chip.alerta { background: var(--alert-soft); color: var(--alert); }
 .chip.bus { background: var(--bus-soft); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--navy); color: var(--navy-ink); }
+.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--bus); color: var(--bus-ink); }
 .btn.bus { background: var(--bus); color: var(--bus-ink); }
 .btn.sec { background: transparent; border: 1px solid var(--line); color: var(--ink); }
 .btn.peligro { background: var(--alert); color: #fff; }
@@ -106,7 +106,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .parada .num { font-family: var(--font-display); font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .parada .nom { font-weight: 700; font-size: 19px; }
 .parada.hecha { opacity: .65; padding: 9px 12px; }
-.manejo { display: flex; gap: 10px; align-items: center; background: var(--navy); color: var(--navy-ink); border-radius: 14px; padding: 12px; }
+.manejo { display: flex; gap: 10px; align-items: center; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .manejo b { display: block; font-size: 16px; }
 .manejo span { font-size: 26px; }
 .demo { border: 1px dashed var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
@@ -117,7 +117,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--app); }
 .chk { display: inline-flex; gap: 6px; align-items: center; }
 .chk input { width: 17px; height: 17px; accent-color: var(--navy); }
-.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--bus); color: var(--bus-ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
 .dato { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .dato:last-child { border-bottom: 0; }
 .dato span:first-child { color: var(--muted); }
@@ -138,11 +138,15 @@ table.det { width: 100%; border-collapse: collapse; font-size: 13px; margin-top:
 table.det th, table.det td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); }
 table.det td.mono { font-size: 12px; }
 .volver-adm { border: 0; background: transparent; font-weight: 700; color: var(--navy); padding: 2px 0; align-self: flex-start; cursor: pointer; }
-.rec { border: 2px solid var(--bus); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bus-soft); }
+.rec { border: 2px solid var(--bus); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
 .rec-lista { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 2px; }
 .ejemplo { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
 .ico { width: 1.15em; height: 1.15em; vertical-align: -0.22em; flex-shrink: 0; display: inline-block; overflow: visible; }
-.btn.bus .ico, .chip.bus .ico, .btn.ok .ico, .grandes .ok .ico, .grandes .no .ico, .btn.peligro .ico { --ico-acento: rgba(255, 255, 255, .38); }
+.btn .ico, .chip.bus .ico, .btn.ok .ico, .grandes .ok .ico, .grandes .no .ico, .btn.peligro .ico { --ico-acento: rgba(255, 255, 255, .38); }
+.seg.tema { display: flex; padding: 3px; gap: 3px; background: var(--surface-2); border-radius: 12px; }
+.seg.tema button { flex: 1; min-height: 40px; border-radius: 9px; font-size: 14px; color: var(--muted); }
+.seg.tema button[aria-pressed="true"] { background: var(--bus); color: var(--bus-ink); }
+.btn.sec .ico { --ico-acento: var(--bus); }
 </style>
 </head>
 <body>
@@ -1028,6 +1032,12 @@ table.det td.mono { font-size: 12px; }
     </div>`;
   }
 
+  // Apariencia: automática (según el teléfono), clara u oscura.
+  const temaActual = () => document.documentElement.dataset.theme === "dark" ? "oscuro" : document.documentElement.dataset.theme === "light" ? "claro" : "sistema";
+  function cambiarTema(v) {
+    if (v === "sistema") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = v === "oscuro" ? "dark" : "light";
+  }
   function vPerfil() {
     return `<div class="vista">
       <div style="display:flex; gap:14px; align-items:center">
@@ -1052,6 +1062,9 @@ table.det td.mono { font-size: 12px; }
         <div class="dato"><span>Notificaciones</span><span style="color:var(--ok)">Activadas ✓</span></div>
         <div class="dato"><span>Ahorro de batería</span><span style="color:var(--ok)">Excluida ✓</span></div>
       </div>
+      <div class="card"><h3>Apariencia</h3>
+        <span class="seg tema" role="group" aria-label="Apariencia">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button data-a="tema" data-v="${v}" aria-pressed="${temaActual() === v}">${n}</button>`).join("")}</span>
+        <span class="muted" style="font-size:13px">Automático sigue el modo del teléfono.</span></div>
       <p class="nota">🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
     </div>`;
@@ -1217,6 +1230,7 @@ table.det td.mono { font-size: 12px; }
       if (diasLic() < 0) { app.toast = { txt: "🪪 Tu licencia está vencida: sube la renovada en «Mi licencia» para iniciar recorridos.", hasta: performance.now() + 5000 }; }
       else iniciarRecorrido(el.dataset.id);
     }
+    else if (a === "tema") cambiarTema(el.dataset.v);
     else if (a === "abrirLic") { app.vista = "licencia"; LIC.error = null; }
     else if (a === "cerrarLic") { app.vista = "hoy"; LIC.form = null; }
     else if (a === "renovarLic") { LIC.form = { numero: LIC.numero, clase: LIC.clase, vence: isoEn(5 * 365) }; LIC.fotos = { frente: null, reverso: null }; LIC.error = null; }

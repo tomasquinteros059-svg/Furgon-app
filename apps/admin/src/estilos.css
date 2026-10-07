@@ -1,23 +1,11 @@
-/* Panel de administración: barra lateral azul noche, contenido sobre gris asfalto claro,
-   amarillo de bus escolar solo como acento. */
+/* Panel de administración. Paleta 70 / 20 / 10 (diseno/colores.ts): 70 % blanco (o fondo oscuro),
+   20 % amarillo escolar para la acción principal y lo seleccionado, 10 % gris para bordes y textos
+   secundarios. Azul marino solo para enlaces y avisos informativos. */
 :root {
-  --bg: #EEF1F4;
-  --surface: #FFFFFF;
-  --surface-2: #F4F6F8;
-  --ink: #15202B;
-  --muted: #5A6573;
-  --line: #D6DCE2;
-  --bus: #F5B700;
-  --bus-ink: #2A2100;
-  --bus-soft: #FFF4CC;
-  --navy: #16324F;
-  --navy-ink: #FFFFFF;
-  --lateral: #13283F;
-  --lateral-ink: #E6EDF5;
-  --lateral-muted: #93A6BC;
-  --ok: #1D7F45; --ok-soft: #E4F3EA;
-  --alert: #C4281C; --alert-soft: #FCE9E7;
-  --info: #1F5F99; --info-soft: #E6F0FA;
+  --bg: #FFFFFF; --surface: #FFFFFF; --surface-2: #F3F4F6; --ink: #14181F; --muted: #5F6672; --line: #E3E5E8;
+  --bus: #F5B700; --bus-ink: #1F1A00; --bus-soft: #FFF7DB; --navy: #1E3A5F; --navy-ink: #FFFFFF;
+  --lateral: #FFFFFF; --lateral-ink: #14181F; --lateral-muted: #5F6672;
+  --ok: #1E8E3E; --ok-soft: #E6F4EA; --alert: #D93025; --alert-soft: #FCE8E6; --info: #1E3A5F; --info-soft: #EAF0F7;
   --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -25,18 +13,18 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0D1318; --surface: #161F28; --surface-2: #1C2731; --ink: #E7ECF1; --muted: #98A5B3; --line: #2B3743;
-    --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010; --navy: #8DB8E6; --navy-ink: #0B1622;
-    --lateral: #0A1520; --lateral-ink: #E6EDF5; --lateral-muted: #8193A8;
-    --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --info: #7DB5EE; --info-soft: #16283A;
+    --bg: #0E1116; --surface: #161A21; --surface-2: #1E232B; --ink: #F3F4F6; --muted: #9AA3AE; --line: #2A313B;
+    --bus: #F7C21A; --bus-ink: #1A1500; --bus-soft: #2E2810; --navy: #8DB8E6; --navy-ink: #0B1622;
+    --lateral: #161A21; --lateral-ink: #F3F4F6; --lateral-muted: #9AA3AE;
+    --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --info: #8DB8E6; --info-soft: #16283A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0D1318; --surface: #161F28; --surface-2: #1C2731; --ink: #E7ECF1; --muted: #98A5B3; --line: #2B3743;
-  --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010; --navy: #8DB8E6; --navy-ink: #0B1622;
-  --lateral: #0A1520; --lateral-ink: #E6EDF5; --lateral-muted: #8193A8;
-  --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --info: #7DB5EE; --info-soft: #16283A;
+  --bg: #0E1116; --surface: #161A21; --surface-2: #1E232B; --ink: #F3F4F6; --muted: #9AA3AE; --line: #2A313B;
+  --bus: #F7C21A; --bus-ink: #1A1500; --bus-soft: #2E2810; --navy: #8DB8E6; --navy-ink: #0B1622;
+  --lateral: #161A21; --lateral-ink: #F3F4F6; --lateral-muted: #9AA3AE;
+  --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A; --info: #8DB8E6; --info-soft: #16283A;
   color-scheme: dark;
 }
 
@@ -55,20 +43,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Marco */
 .marco { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100%; }
-.lateral { background: var(--lateral); color: var(--lateral-ink); display: flex; flex-direction: column; padding: 18px 12px; gap: 18px; position: sticky; top: 0; height: 100vh; }
+.lateral { background: var(--lateral); color: var(--lateral-ink); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 12px; gap: 18px; position: sticky; top: 0; height: 100vh; }
 .marca { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
 .marca b { display: block; font-family: var(--font-display); font-size: 20px; }
 .marca span { font-size: 12px; color: var(--lateral-muted); text-transform: uppercase; letter-spacing: .08em; }
 .btn-menu { display: none; margin-left: auto; background: transparent; border: 1px solid var(--lateral-muted); color: var(--lateral-ink); border-radius: 8px; padding: 4px 10px; font-size: 18px; }
 .lateral nav { display: flex; flex-direction: column; gap: 2px; }
 .lateral nav a { color: var(--lateral-ink); text-decoration: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 15px; }
-.lateral nav a:hover { background: rgba(255,255,255,.07); }
+.lateral nav a:hover { background: var(--surface-2); }
 .lateral nav a[aria-current="page"] { background: var(--bus); color: var(--bus-ink); }
 .pie-lateral { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 6px; font-size: 13px; color: var(--lateral-muted); }
 .btn-link { background: none; border: 0; padding: 0; color: var(--lateral-ink); text-decoration: underline; cursor: pointer; text-align: left; }
 main { overflow-y: auto; height: 100vh; }
 .contenido { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 18px; }
-.cinta-demo { background: var(--bus); color: var(--bus-ink); text-align: center; font-weight: 700; font-size: 13px; padding: 6px 16px; }
+.cinta-demo { background: var(--surface-2); color: var(--muted); border-bottom: 1px solid var(--line); text-align: center; font-weight: 700; font-size: 13px; padding: 6px 16px; }
 @media (max-width: 860px) {
   .marco { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
   .lateral { height: auto; position: static; padding: 10px 12px; gap: 8px; }
@@ -85,7 +73,7 @@ main { overflow-y: auto; height: 100vh; }
 .acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* Botones y formularios */
-.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; background: var(--navy); color: var(--navy-ink); cursor: pointer; white-space: nowrap; }
+.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; background: var(--bus); color: var(--bus-ink); cursor: pointer; white-space: nowrap; }
 .btn.bus { background: var(--bus); color: var(--bus-ink); }
 .btn.sec { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .btn.ok { background: var(--ok); color: #fff; }
@@ -102,7 +90,7 @@ main { overflow-y: auto; height: 100vh; }
 .campo textarea { min-height: 90px; resize: vertical; }
 .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .check { display: inline-flex; gap: 8px; align-items: center; font-size: 15px; cursor: pointer; }
-.check input { width: 18px; height: 18px; accent-color: var(--navy); }
+.check input { width: 18px; height: 18px; accent-color: var(--bus); }
 
 /* Tarjetas, tablas */
 .tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -174,7 +162,7 @@ td.num, th.num { text-align: right; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); align-self: flex-start; width: fit-content; }
 .seg button { border: 0; background: transparent; padding: 8px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
-.login { min-height: 100%; display: grid; place-items: center; padding: 20px; background: var(--lateral); }
+.login { min-height: 100%; display: grid; place-items: center; padding: 20px; background: var(--surface-2); }
 .login .tarjeta { width: min(400px, 100%); }
 
 /* Ruta recomendada y «hoy no va» */
@@ -200,4 +188,10 @@ td.num, th.num { text-align: right; }
 /* Íconos propios (diseno/iconos.ts) */
 .ico { display: inline-flex; vertical-align: -0.2em; line-height: 0; flex-shrink: 0; }
 .ico svg { overflow: visible; }
-.btn.bus .ico, .btn.ok .ico, .btn.peligro .ico, .chip-aviso .ico { --ico-acento: rgba(255, 255, 255, .4); }
+.btn .ico, .btn.ok .ico, .btn.peligro .ico, .chip-aviso .ico { --ico-acento: rgba(255, 255, 255, .4); }
+
+/* Selector de apariencia (Automático · Claro · Oscuro) */
+.tema { display: flex; border: 1px solid var(--line); border-radius: 10px; padding: 2px; gap: 2px; background: var(--surface-2); }
+.tema button { flex: 1; border: 0; background: transparent; color: var(--muted); font-weight: 700; font-size: 12px; padding: 5px 4px; border-radius: 8px; cursor: pointer; }
+.tema button[aria-pressed="true"] { background: var(--bus); color: var(--bus-ink); }
+.btn.sec .ico { --ico-acento: var(--bus); }

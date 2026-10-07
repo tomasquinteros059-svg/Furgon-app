@@ -5,8 +5,8 @@ import { alRecibir, alResponder } from "../llamadas-app";
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { ProveedorTema } from "../componentes/tema";
 import { ProveedorSesion, useSesion } from "../lib/sesion";
 import { supabase } from "../lib/supabase";
 
@@ -71,9 +71,10 @@ function Navegacion() {
 
 export default function RootLayout() {
   return (
-    <ProveedorSesion>
-      <StatusBar style="dark" />
-      <Navegacion />
-    </ProveedorSesion>
+    <ProveedorTema>
+      <ProveedorSesion>
+        <Navegacion />
+      </ProveedorSesion>
+    </ProveedorTema>
   );
 }

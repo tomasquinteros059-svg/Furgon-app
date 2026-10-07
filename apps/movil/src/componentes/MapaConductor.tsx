@@ -7,8 +7,9 @@ import { Text } from "./icono";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { decodificarPolilinea } from "../lib/core";
 import { llamarFuncion } from "../lib/supabase";
-import { ESTILO_MAPA, Furgon, PinCasa, PROVEEDOR_MAPA } from "./mapa";
+import { estiloMapa, Furgon, PinCasa, PROVEEDOR_MAPA } from "./mapa";
 import { colores } from "./ui";
+import { esOscuro } from "./tema";
 
 export interface CasaMapa {
   id: string;
@@ -68,7 +69,7 @@ export function MapaConductor({ recorridoId, casas, alto = 280 }: { recorridoId:
         ref={mapa}
         provider={PROVEEDOR_MAPA}
         style={{ flex: 1 }}
-        customMapStyle={ESTILO_MAPA}
+        customMapStyle={estiloMapa(esOscuro())}
         initialRegion={{ ...inicial, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
         showsTraffic
         showsPointsOfInterests={false}

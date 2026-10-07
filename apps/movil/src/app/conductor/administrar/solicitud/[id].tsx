@@ -35,7 +35,7 @@ export default function SolicitudAdmin() {
       {mensajes.map((m) => {
         const mio = m.autor_id === perfil?.id;
         return (
-          <View key={m.id} style={{ alignSelf: mio ? "flex-end" : "flex-start", maxWidth: "85%", backgroundColor: mio ? "#E6F0FA" : colores.tarjeta, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colores.borde }}>
+          <View key={m.id} style={{ alignSelf: mio ? "flex-end" : "flex-start", maxWidth: "85%", backgroundColor: mio ? colores.superficie2 : colores.superficie, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colores.borde }}>
             <Text style={estilos.texto}>{m.cuerpo}</Text>
           </View>
         );

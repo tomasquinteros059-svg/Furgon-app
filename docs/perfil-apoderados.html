@@ -10,11 +10,11 @@
 <style>
 /* App de los padres: una columna móvil, tarjeta por hijo con su estado en vivo, alarma y llamada a pantalla completa. */
 :root {
-  --bg: #E7EBEF; --app: #F4F6F8; --surface: #FFFFFF; --surface-2: #EEF1F4;
-  --ink: #15202B; --muted: #5A6573; --line: #D3D9E0; --road: #C4CBD3; --block: #E1E6EB;
-  --bus: #F5B700; --bus-ink: #2A2100; --bus-soft: #FFF4CC;
-  --navy: #16324F; --navy-ink: #FFFFFF;
-  --ok: #1D7F45; --ok-soft: #E4F3EA; --alert: #C4281C; --alert-soft: #FCE9E7;
+  --bg: #F3F4F6; --app: #FFFFFF; --surface: #FFFFFF; --surface-2: #F3F4F6;
+  --ink: #14181F; --muted: #5F6672; --line: #E3E5E8; --road: #D6D9DE; --block: #EEF0F2;
+  --bus: #F5B700; --bus-ink: #1F1A00; --bus-soft: #FFF7DB;
+  --navy: #1E3A5F; --navy-ink: #FFFFFF;
+  --ok: #1E8E3E; --ok-soft: #E6F4EA; --alert: #D93025; --alert-soft: #FCE8E6;
   --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -28,8 +28,8 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
-  --line: #2B3743; --road: #3A4754; --block: #222D37; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+  --bg: #07090C; --app: #0E1116; --surface: #161A21; --surface-2: #1E232B; --ink: #F3F4F6; --muted: #9AA3AE;
+  --line: #2A313B; --road: #3A414C; --block: #1A1F27; --bus: #F7C21A; --bus-ink: #1A1500; --bus-soft: #2E2810;
   --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
   color-scheme: dark;
 }
@@ -68,7 +68,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .chip.ok { background: var(--ok-soft); color: var(--ok); }
 .chip.alerta { background: var(--alert-soft); color: var(--alert); }
 .chip.bus { background: var(--bus-soft); }
-.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--navy); color: var(--navy-ink); }
+.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--bus); color: var(--bus-ink); }
 .btn.bus { background: var(--bus); color: var(--bus-ink); }
 .btn.ok { background: var(--ok); color: #fff; }
 .btn.sec { background: transparent; border: 1px solid var(--line); color: var(--ink); }
@@ -107,8 +107,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: transparent; padding: 6px 11px; font-size: 14px; font-weight: 700; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--app); }
-.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
-.avatar.chico { width: 42px; height: 42px; font-size: 19px; background: var(--bus); color: var(--bus-ink); }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
+.avatar.chico { width: 42px; height: 42px; font-size: 19px; background: var(--bus-soft); color: var(--ink); border: 1px solid var(--line); }
 .dato { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .dato:last-child { border-bottom: 0; }
 .dato span:first-child { color: var(--muted); }
@@ -167,7 +167,11 @@ ul.linea { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-di
 ul.linea li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
 ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12px; padding-top: 2px; }
 .ico { width: 1.15em; height: 1.15em; vertical-align: -0.22em; flex-shrink: 0; display: inline-block; overflow: visible; }
-.btn.bus .ico, .chip.bus .ico, .btn.ok .ico, .grandes .ok .ico, .grandes .no .ico, .btn.peligro .ico { --ico-acento: rgba(255, 255, 255, .38); }
+.btn .ico, .chip.bus .ico, .btn.ok .ico, .grandes .ok .ico, .grandes .no .ico, .btn.peligro .ico { --ico-acento: rgba(255, 255, 255, .38); }
+.seg.tema { display: flex; padding: 3px; gap: 3px; background: var(--surface-2); border-radius: 12px; }
+.seg.tema button { flex: 1; min-height: 40px; border-radius: 9px; font-size: 14px; color: var(--muted); }
+.seg.tema button[aria-pressed="true"] { background: var(--bus); color: var(--bus-ink); }
+.btn.sec .ico { --ico-acento: var(--bus); }
 </style>
 </head>
 <body>
@@ -670,6 +674,12 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     </div>`;
   }
 
+  // Apariencia: automática (según el teléfono), clara u oscura.
+  const temaActual = () => document.documentElement.dataset.theme === "dark" ? "oscuro" : document.documentElement.dataset.theme === "light" ? "claro" : "sistema";
+  function cambiarTema(v) {
+    if (v === "sistema") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = v === "oscuro" ? "dark" : "light";
+  }
   function vPerfil() {
     return `<div class="vista">
       <div style="display:flex; gap:14px; align-items:center"><div class="avatar">${AP.ini}</div><div style="min-width:0"><h1>${AP.nombre}</h1><span class="muted">${AP.rol === "mamá" ? "Apoderada" : "Apoderado"} de ${hijosVisibles().map((h) => h.nombre).join(" e ")}</span></div></div>
@@ -689,6 +699,9 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <div class="sw-fila"><span><b>Alarma sonora</b><br><span class="muted" style="font-size:13px">Suena aunque el teléfono esté en silencio (Android)</span></span><label class="sw"><input type="checkbox" data-a="optAlarma" ${app.alarma ? "checked" : ""} aria-label="Alarma sonora"><span></span></label></div>
         <div class="sw-fila"><span><b>Llamada automática</b><br><span class="muted" style="font-size:13px">Te llamamos con un mensaje de voz</span></span><label class="sw"><input type="checkbox" data-a="optLlamada" ${app.llamadaAuto ? "checked" : ""} aria-label="Llamada automática"><span></span></label></div>
       </div>
+      <div class="card"><h3>Apariencia</h3>
+        <span class="seg tema" role="group" aria-label="Apariencia">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button data-a="tema" data-v="${v}" aria-pressed="${temaActual() === v}">${n}</button>`).join("")}</span>
+        <span class="muted" style="font-size:13px">Automático sigue el modo del teléfono.</span></div>
       <p class="nota">🔒 Ves el furgón exacto mientras tu hijo/a va a bordo o desde tu aviso hasta que llega a su hogar. Nadie ve dónde vives.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
     </div>`;
@@ -978,6 +991,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       }
       app.sub = "seguir"; app.hijoId = h.id; cam.s = null;
     }
+    else if (a === "tema") cambiarTema(el.dataset.v);
     else if (a === "familia") app.sub = "familia";
     else if (a === "parentescoFam") FAMILIA.parentesco = el.dataset.v;
     else if (a === "hijoFam") {

@@ -7,6 +7,7 @@ import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
 import { iniciarSeguimiento } from "../../ubicacion/seguimiento";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
+import { SelectorTema } from "../../componentes/tema";
 
 interface Ruta {
   id: string;
@@ -128,6 +129,7 @@ export default function RutasConductor() {
           </Tarjeta>
         );
       })}
+      <Tarjeta><SelectorTema /></Tarjeta>
     </Pantalla>
   );
 }

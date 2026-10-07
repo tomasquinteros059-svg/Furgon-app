@@ -59,8 +59,8 @@ export default function Ayuda() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {TIPOS.map((t) => (
               <Pressable key={t.id} onPress={() => setNueva({ ...nueva, tipo: t.id })} accessibilityRole="button"
-                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.tipo === t.id ? colores.azul : colores.tarjeta }}>
-                <Text style={{ color: nueva.tipo === t.id ? "#fff" : colores.texto, fontWeight: "600" }}>{t.nombre}</Text>
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.tipo === t.id ? colores.amarillo : colores.superficie }}>
+                <Text style={{ color: nueva.tipo === t.id ? colores.sobreAmarillo : colores.texto, fontWeight: "600" }}>{t.nombre}</Text>
               </Pressable>
             ))}
           </View>

@@ -116,6 +116,22 @@ docs/ARQUITECTURA.md             Diseño detallado
 La lógica crítica (`supabase/functions/_shared/core`) es TypeScript sin dependencias. La misma
 fuente la usan las Edge Functions (Deno), la app (Metro), el simulador (Node) y los tests.
 
+## Colores y modo oscuro
+
+Paleta única en `diseno/colores.ts`, con proporción **70 / 20 / 10**:
+
+- **70 % blanco** (o fondo oscuro en modo oscuro): fondos y tarjetas.
+- **20 % amarillo escolar:** la acción principal (un botón por pantalla), lo seleccionado y el
+  acento de los íconos.
+- **10 % gris:** bordes, separadores y textos secundarios.
+- **Combinación extra:** azul marino solo para enlaces y avisos informativos. Verde y rojo, solo
+  para estados.
+
+**Modo oscuro:** las apps móviles tienen el selector «Apariencia» (Automático, Claro u Oscuro) en
+el inicio, y lo recuerdan en el teléfono (`componentes/tema.tsx`). El panel web lo tiene en la barra
+lateral y las maquetas en Perfil. `tests/colores.test.ts` verifica el contraste (WCAG AA) en ambos
+modos.
+
 ## Íconos propios
 
 La app no usa emojis genéricos: tiene su propio set de íconos (grilla de 24 × 24, trazo de 2 px

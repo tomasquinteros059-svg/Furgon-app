@@ -1,19 +1,11 @@
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, type TextInputProps, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, type TextInputProps, View, type ViewStyle } from "react-native";
 import { Text } from "./icono";
+import { colores, crearEstilos } from "./tema";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export const colores = {
-  amarillo: "#F2B705",
-  azul: "#1F3A5F",
-  fondo: "#F6F7F9",
-  tarjeta: "#FFFFFF",
-  texto: "#1B1F24",
-  suave: "#5B6573",
-  verde: "#1E8E3E",
-  rojo: "#C62828",
-  borde: "#DDE1E6",
-};
+// Colores y estilos del tema actual (paleta 70 / 20 / 10 con modo oscuro): ver componentes/tema.tsx.
+export { colores } from "./tema";
 
 export function Pantalla({ children, titulo, accion, desplazable = true }: {
   children: ReactNode;
@@ -54,14 +46,15 @@ export function Boton({ titulo, onPress, variante = "primario", cargando = false
   deshabilitado?: boolean;
   estilo?: ViewStyle;
 }) {
+  // Primario en amarillo (la acción principal); el resto blanco o gris para mantener la proporción.
   const fondo = {
-    primario: colores.azul,
-    secundario: colores.tarjeta,
+    primario: colores.amarillo,
+    secundario: colores.superficie,
     exito: colores.verde,
     peligro: colores.rojo,
     texto: "transparent",
   }[variante];
-  const colorTexto = variante === "secundario" || variante === "texto" ? colores.azul : "#fff";
+  const colorTexto = variante === "primario" ? colores.sobreAmarillo : variante === "secundario" ? colores.texto : variante === "texto" ? colores.marino : "#FFFFFF";
   return (
     <Pressable
       accessibilityRole="button"
@@ -88,7 +81,7 @@ export function Campo({ etiqueta, ayuda, ...props }: TextInputProps & { etiqueta
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={estilos.etiqueta}>{etiqueta}</Text>
-      <TextInput placeholderTextColor="#98A2B3" style={estilos.input} {...props} />
+      <TextInput placeholderTextColor={colores.suave} style={estilos.input} {...props} />
       {ayuda ? <Text style={estilos.ayuda}>{ayuda}</Text> : null}
     </View>
   );
@@ -99,7 +92,7 @@ export function Tarjeta({ children, estilo }: { children: ReactNode; estilo?: Vi
 }
 
 export function Aviso({ texto, tipo = "info" }: { texto: string; tipo?: "info" | "error" | "exito" }) {
-  const color = tipo === "error" ? colores.rojo : tipo === "exito" ? colores.verde : colores.azul;
+  const color = tipo === "error" ? colores.rojo : tipo === "exito" ? colores.verde : colores.marino;
   return (
     <View style={[estilos.aviso, { borderLeftColor: color }]}>
       <Text style={{ color: colores.texto }}>{texto}</Text>
@@ -110,12 +103,12 @@ export function Aviso({ texto, tipo = "info" }: { texto: string; tipo?: "info" |
 export function Cargando() {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colores.fondo }}>
-      <ActivityIndicator size="large" color={colores.azul} />
+      <ActivityIndicator size="large" color={colores.amarillo} />
     </View>
   );
 }
 
-export const estilos = StyleSheet.create({
+export const estilos = crearEstilos((colores) => ({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 16, paddingBottom: 40 },
   encabezado: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
@@ -137,6 +130,6 @@ export const estilos = StyleSheet.create({
     backgroundColor: colores.tarjeta, borderRadius: 14, padding: 14, marginBottom: 12,
     borderWidth: 1, borderColor: colores.borde,
   },
-  aviso: { backgroundColor: colores.tarjeta, borderLeftWidth: 4, padding: 12, borderRadius: 8, marginBottom: 12 },
+  aviso: { backgroundColor: colores.superficie2, borderLeftWidth: 4, padding: 12, borderRadius: 8, marginBottom: 12 },
   fila: { flexDirection: "row", alignItems: "center", gap: 8 },
-});
+}));

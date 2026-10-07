@@ -39,6 +39,27 @@ function useRuta(): string[] {
   return partes;
 }
 
+type Tema = "sistema" | "claro" | "oscuro";
+const leerTema = (): Tema => { try { const t = localStorage.getItem("tema"); return t === "claro" || t === "oscuro" ? t : "sistema"; } catch { return "sistema"; } };
+function aplicarTema(t: Tema) {
+  if (t === "sistema") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t === "oscuro" ? "dark" : "light";
+}
+aplicarTema(leerTema());
+
+/** Apariencia del panel: automática (según el equipo), clara u oscura. Se recuerda en este navegador. */
+function SelectorTema() {
+  const [tema, setTema] = useState<Tema>(leerTema);
+  const elegir = (t: Tema) => { setTema(t); aplicarTema(t); try { localStorage.setItem("tema", t); } catch { /* sin almacenamiento */ } };
+  return (
+    <div className="tema" role="group" aria-label="Apariencia">
+      {([["sistema", "Auto"], ["claro", "Claro"], ["oscuro", "Oscuro"]] as const).map(([v, n]) => (
+        <button key={v} type="button" aria-pressed={tema === v} onClick={() => elegir(v)}>{n}</button>
+      ))}
+    </div>
+  );
+}
+
 export function irA(ruta: string) {
   location.hash = `#/${ruta}`;
 }
@@ -81,7 +102,7 @@ export function App() {
     <div className="marco">
       <aside className={`lateral ${menuAbierto ? "abierto" : ""}`}>
         <div className="marca">
-          <svg width="44" height="30" viewBox="0 0 84 56" aria-hidden="true"><rect x="4" y="8" width="76" height="36" rx="9" fill="var(--bus)" stroke="var(--bus-ink)" strokeWidth="3" /><rect x="12" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><rect x="34" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><rect x="56" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75" /><circle cx="22" cy="46" r="7" fill="var(--lateral-ink)" /><circle cx="62" cy="46" r="7" fill="var(--lateral-ink)" /></svg>
+          <Icono n="furgon" tam={34} />
           <div><b>Furgón Escolar</b><span>Administración</span></div>
           <button className="btn-menu" aria-label="Menú" aria-expanded={menuAbierto} onClick={() => setMenuAbierto(!menuAbierto)}><Icono n="menu" /></button>
         </div>
@@ -91,6 +112,7 @@ export function App() {
           ))}
         </nav>
         <div className="pie-lateral">
+          <SelectorTema />
           <span>{usuario.nombre}{usuario.tipo === "conductora" ? " · conductora" : ""}</span>
           <button className="btn-link" onClick={async () => { await datos.salir(); setUsuario(null); }}>Cerrar sesión</button>
         </div>

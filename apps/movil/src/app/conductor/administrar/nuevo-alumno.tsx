@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import MapView, { Marker } from "react-native-maps";
-import { ESTILO_MAPA, PinCasa, PROVEEDOR_MAPA } from "../../../componentes/mapa";
+import { estiloMapa, PinCasa, PROVEEDOR_MAPA } from "../../../componentes/mapa";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../../../componentes/ui";
 import { normalizarTelefono } from "../../../lib/core";
 import { mensajeError, supabase } from "../../../lib/supabase";
 import { compartirCodigo } from "../../../lib/familia";
+import { esOscuro } from "../../../componentes/tema";
 
 export default function NuevoAlumnoAdmin() {
   const mapa = useRef<MapView>(null);
@@ -78,7 +79,7 @@ export default function NuevoAlumnoAdmin() {
       {campo("direccion", "Dirección", { placeholder: "Calle, número, comuna", onSubmitEditing: buscar, returnKeyType: "search" })}
       <Boton titulo="Buscar en el mapa" variante="secundario" onPress={buscar} />
       <View style={{ height: 260, borderRadius: 14, overflow: "hidden", marginVertical: 10 }}>
-        <MapView ref={mapa} provider={PROVEEDOR_MAPA} customMapStyle={ESTILO_MAPA} style={{ flex: 1 }}
+        <MapView ref={mapa} provider={PROVEEDOR_MAPA} customMapStyle={estiloMapa(esOscuro())} style={{ flex: 1 }}
           initialRegion={{ latitude: -33.4489, longitude: -70.6693, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
           onPress={(e) => setPin(e.nativeEvent.coordinate)}>
           {pin ? <Marker coordinate={pin} draggable onDragEnd={(e) => setPin(e.nativeEvent.coordinate)} anchor={{ x: 0.5, y: 1 }}><PinCasa numero="🏠" color={colores.rojo} /></Marker> : null}
@@ -97,8 +98,8 @@ export default function NuevoAlumnoAdmin() {
           return (
             <Pressable key={r.id} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
               onPress={() => setElegidas(on ? elegidas.filter((x) => x !== r.id) : [...elegidas, r.id])}
-              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: on ? colores.azul : colores.tarjeta }}>
-              <Text style={{ color: on ? "#fff" : colores.texto, fontWeight: "600" }}>{on ? "✓ " : ""}{r.nombre}</Text>
+              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: on ? colores.amarillo : colores.superficie }}>
+              <Text style={{ color: on ? colores.sobreAmarillo : colores.texto, fontWeight: "600" }}>{on ? "✓ " : ""}{r.nombre}</Text>
             </Pressable>
           );
         })}

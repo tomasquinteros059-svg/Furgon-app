@@ -5,6 +5,7 @@ import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
+import { SelectorTema } from "../../componentes/tema";
 
 interface Alumno {
   id: string;
@@ -156,7 +157,7 @@ export default function InicioApoderado() {
             {alumno.colegio ? <Text style={estilos.textoSuave}>{alumno.colegio}</Text> : null}
 
             {enCurso ? (
-              <View style={{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: "#FFF8E1" }}>
+              <View style={{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: colores.superficie2 }}>
                 <Text style={[estilos.texto, { fontWeight: "700" }]}>
                   {enCurso.recorrido.tipo === "ida" ? "🌅 Recorrido de ida en curso" : "🏠 Recorrido de vuelta en curso"}
                 </Text>
@@ -208,6 +209,7 @@ export default function InicioApoderado() {
       <Boton titulo="👨‍👩‍👧 Familia: compartir con papá o mamá" variante="secundario" onPress={() => router.push("/apoderado/familia")} />
       <Boton titulo="🤝 Conectar con mi tía o tío" variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
       {perfil?.empresa_id ? <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
+      <Tarjeta><SelectorTema /></Tarjeta>
     </Pantalla>
   );
 }
