@@ -2,7 +2,8 @@
 
 Esta guía deja funcionando el backend real (base de datos, usuarios, avisos, rutas, cobros,
 conexiones y familia compartida) y la clave de Google para el ETA con tráfico, la ruta por
-calles y la ruta recomendada. Las apps de Android e iPhone vienen después.
+calles y la ruta recomendada (pasos 1–6). Luego las llamadas con Twilio (7), las apps de
+Android e iPhone (8), el panel web en internet (9) y las tiendas (10).
 
 > **Regla de oro:** las claves secretas nunca se pegan en un chat, un correo ni el código.
 > Se guardan como variables de entorno (en la configuración del entorno de Claude Code, en
@@ -101,9 +102,72 @@ npm run admin          # http://localhost:5173 — usa apps/admin/.env (escrito 
 Entra con tu cuenta, agrega una conductora (código de invitación), alumnos y rutas.
 Publicarlo en internet (Vercel o Netlify) es un paso aparte.
 
+## 7. Llamadas telefónicas con Twilio (≈ 20 min, con costo)
+
+Sin este paso igual funcionan la alarma y la llamada gratis por la app. Twilio solo hace la
+llamada telefónica cuando el teléfono de la familia no tiene internet.
+
+1. Crea una cuenta en <https://www.twilio.com> y carga saldo (la cuenta de prueba solo llama a
+   números verificados, sirve para probar con tu propio teléfono).
+2. Compra un **número con voz** (*Phone Numbers → Buy a number*, capacidad *Voice*). Anótalo en
+   formato `+56…` o el país que ofrezca.
+3. En la consola de Twilio copia **Account SID** y **Auth Token** (secreto).
+4. Agrégalos al entorno (igual que en el paso 3) y vuelve a desplegar:
+
+| Variable | Valor |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Account SID |
+| `TWILIO_AUTH_TOKEN` | Auth Token (secreto) |
+| `TWILIO_NUMERO_ORIGEN` | el número comprado, p. ej. `+56221234567` |
+| `LLAMADAS_HABILITADAS` | `true` |
+
+```bash
+npm run desplegar
+```
+
+No hay que configurar nada en el número de Twilio: cada llamada le indica a Twilio la URL de
+`twilio-webhook`, y el webhook valida la firma de Twilio.
+
+## 8. Apps de Android e iPhone (≈ 1 h, la primera vez)
+
+1. **Expo / EAS**: crea una cuenta en <https://expo.dev>, y en `apps/movil` ejecuta
+   `npx eas-cli login` y `npx eas-cli init`. Copia el *project ID* a `EAS_PROJECT_ID` en
+   `apps/movil/.env` (necesario para las notificaciones y la llamada por la app).
+2. **Google Maps en las apps**: en Google Cloud habilita *Maps SDK for Android* y
+   *Maps SDK for iOS* y crea dos claves nuevas:
+   - `furgon-android`: restringida a apps Android, paquete `cl.furgonapp.movil` y la huella
+     SHA-1 que muestra `npx eas-cli credentials`;
+   - `furgon-ios`: restringida a apps iOS, bundle `cl.furgonapp.movil`.
+
+   Ponlas en `GOOGLE_MAPS_ANDROID_API_KEY` y `GOOGLE_MAPS_IOS_API_KEY` de `apps/movil/.env`.
+3. **Android** (gratis para probar): `npx eas-cli build --profile development --platform android`
+   genera un APK que se instala con el enlace o código QR que entrega EAS.
+4. **iPhone**: requiere la **Apple Developer Program** (USD 99 al año). Luego
+   `npx eas-cli device:create` (registra tu iPhone) y
+   `npx eas-cli build --profile development --platform ios`.
+5. **Notificaciones**: en Android, EAS pide subir la clave de Firebase (FCM v1); en iOS crea la
+   clave de push automáticamente. `npx eas-cli credentials` guía ambos pasos.
+6. Prueba en teléfonos reales: el recorrido con la app en segundo plano (ubicación), la alarma
+   con el teléfono bloqueado y la llamada gratis. En Android de Xiaomi, Huawei o Samsung, saca la
+   app de la optimización de batería.
+
+## 9. Publicar el panel web (≈ 15 min)
+
+1. Crea una cuenta en <https://vercel.com> (o Netlify) e importa el repositorio de GitHub.
+2. *Root directory*: `apps/admin`; *Build command*: `npm run build`; *Output*: `dist`.
+3. Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (las de `apps/admin/.env`; son públicas).
+4. Pon la dirección resultante en `EXPO_PUBLIC_PANEL_URL` de `apps/movil/.env`.
+5. En Supabase, *Authentication → URL Configuration*, agrega esa dirección como *Site URL*.
+
+## 10. Publicar en las tiendas
+
+1. **Google Play**: cuenta de desarrollador (USD 25, pago único). `npx eas-cli build --profile
+   production --platform android` y `npx eas-cli submit --platform android`. Requiere política de
+   privacidad publicada y justificar la **ubicación en segundo plano** (video corto del uso).
+2. **App Store**: con la cuenta de Apple, `npx eas-cli build --profile production --platform ios`
+   y `npx eas-cli submit --platform ios`; luego TestFlight para probar con familias reales y
+   enviar a revisión.
+
 ## Qué queda para después
 
-- **Android e iPhone**: claves de *Maps SDK for Android/iOS* restringidas a la app, proyecto de
-  Expo/EAS para las notificaciones y compilar las apps de prueba.
-- **Twilio** para las llamadas telefónicas con costo.
 - **Correo propio** (SMTP) para confirmaciones y recuperación de contraseña.

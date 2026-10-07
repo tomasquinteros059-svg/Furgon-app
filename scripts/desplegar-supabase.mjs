@@ -73,7 +73,9 @@ async function secretos() {
   poner("GOOGLE_MAPS_API_KEY", google);
   poner("ETA_PROVEEDOR", google ? "google" : "ninguno");
   poner("CRON_SECRET", await secretoCron()); // el mismo que guarda el Vault para pg_cron
-  poner("LLAMADAS_HABILITADAS", process.env.LLAMADAS_HABILITADAS?.trim() || "false", true);
+  // Si se pasa LLAMADAS_HABILITADAS se aplica siempre (para activarlas después); si no, queda "false" solo la primera vez.
+  const llamadas = process.env.LLAMADAS_HABILITADAS?.trim();
+  poner("LLAMADAS_HABILITADAS", llamadas || "false", !llamadas);
   poner("FUNCTIONS_PUBLIC_URL", `https://${REF()}.supabase.co/functions/v1`, true);
   for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN"]) poner(k, process.env[k]?.trim());
   if (nuevos.length) await api("POST", "/secrets", nuevos);
