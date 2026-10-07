@@ -213,6 +213,28 @@ describe("recorrido, avisos y privacidad de la ubicación", () => {
     expect([a, b]).toEqual([1, 0]);
   });
 
+  it("detecta qué contactos pueden recibir la llamada gratis por la app", async () => {
+    // Ana registró un dispositivo y su teléfono coincide con el contacto principal.
+    await db.query(`update perfiles set telefono = '+56911111111' where id = $1`, [ids.apoderadoA]);
+    const sinApp = await como("service_role", null, async () =>
+      (await db.query<{ tiene_app: boolean }>(`select tiene_app from contactos_llamada($1)`, [ids.alumnoA])).rows);
+    expect(sinApp).toEqual([{ tiene_app: false }]);
+    await como("authenticated", ids.apoderadoA, () => db.query(`select registrar_dispositivo('ExponentPushToken[ana]', 'android')`));
+    const r = await como("service_role", null, async () => [
+      (await db.query<{ tiene_app: boolean }>(`select tiene_app from contactos_llamada($1)`, [ids.alumnoA])).rows,
+      (await db.query<{ expo_push_token: string }>(
+        `select d.expo_push_token from contactos c, dispositivos_de_contacto(c.id) d where c.alumno_id = $1`, [ids.alumnoA])).rows,
+    ]);
+    expect(r[0]).toEqual([{ tiene_app: true }]);
+    expect(r[1]).toEqual([{ expo_push_token: "ExponentPushToken[ana]" }]);
+    await expect(
+      como("authenticated", ids.apoderadoA, () => db.query(`select * from contactos_llamada($1)`, [ids.alumnoA])),
+    ).rejects.toThrow(/permission denied/);
+    // Las llamadas guardan su canal y el acuse de la app.
+    await db.query(`insert into llamadas (aviso_id, telefono, intento, canal, estado) values ($1, '+56911111111', 9, 'app', 'sin_internet')`, [ids.aviso]);
+    expect((await uno<{ canal: string }>(`select canal from llamadas where intento = 9`)).canal).toBe("app");
+  });
+
   it("marcar entregado cancela llamadas pendientes y corta el acceso del apoderado al mapa", async () => {
     await db.query(
       `insert into llamadas (aviso_id, telefono, intento, programada_para) values ($1, '+56911111111', 2, now() + interval '30 seconds')`,

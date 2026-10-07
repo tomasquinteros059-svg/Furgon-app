@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  type CanalLlamada,
   type ContactoLlamada,
   type IntentoLlamada,
   resultadoDesdeTwilio,
   siguienteLlamada,
+  vencimientoLlamadaApp,
 } from "../supabase/functions/_shared/core/llamadas.ts";
 
 const principal: ContactoLlamada = { id: "mama", telefono: "+56911111111", prioridad: 1 };
@@ -15,7 +17,7 @@ const intento = (contactoId: string, resultado: IntentoLlamada["resultado"]): In
 describe("escalera de llamadas", () => {
   it("primero llama al contacto principal, sin espera", () => {
     expect(siguienteLlamada({ contactos, intentos: [] })).toEqual({
-      tipo: "llamar", contactoId: "mama", telefono: "+56911111111", intento: 1, esperaSeg: 0,
+      tipo: "llamar", contactoId: "mama", telefono: "+56911111111", intento: 1, esperaSeg: 0, canal: "telefono",
     });
   });
 
@@ -90,6 +92,67 @@ describe("escalera de llamadas", () => {
       intentos.push(intento(paso.contactoId, resultadoDesdeTwilio("no-answer", false)));
     }
     expect(llamados).toEqual(["mama+0s", "mama+30s", "papa+0s"]);
+  });
+});
+
+describe("primero gratis por la app, con costo solo si no hay internet", () => {
+  const mamaConApp = { ...principal, tieneApp: true };
+  const abueloSinApp = { ...secundario }; // no tiene la app: solo teléfono
+  const conApp = [mamaConApp, abueloSinApp];
+  const i = (contactoId: string, canal: CanalLlamada, resultado: IntentoLlamada["resultado"]): IntentoLlamada => ({ contactoId, canal, resultado });
+
+  it("si el contacto tiene la app, la primera llamada es por la app (sin costo)", () => {
+    expect(siguienteLlamada({ contactos: conApp, intentos: [] })).toMatchObject({ contactoId: "mama", canal: "app", intento: 1 });
+  });
+
+  it("si la llamada por la app no llega (sin internet), llama por teléfono al instante sin gastar el reintento", () => {
+    const intentos = [i("mama", "app", "sin_internet")];
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({
+      contactoId: "mama", canal: "telefono", intento: 2, esperaSeg: 0,
+    });
+    // la telefónica tampoco contesta: el reintento sigue por teléfono (ya sabemos que no tiene internet)
+    intentos.push(i("mama", "telefono", "no_contesto"));
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({
+      contactoId: "mama", canal: "telefono", intento: 3, esperaSeg: 30,
+    });
+    intentos.push(i("mama", "telefono", "no_contesto"));
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({ contactoId: "papa", canal: "telefono" });
+  });
+
+  it("si tiene internet pero no contesta por la app, reintenta por la app y luego pasa al secundario", () => {
+    const intentos = [i("mama", "app", "no_contesto")];
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({ contactoId: "mama", canal: "app", esperaSeg: 30 });
+    intentos.push(i("mama", "app", "no_contesto"));
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({ contactoId: "papa", canal: "telefono", esperaSeg: 0 });
+  });
+
+  it("confirmar en la llamada por la app termina la escalera sin ninguna llamada con costo", () => {
+    const intentos = [i("mama", "app", "confirmada")];
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toEqual({ tipo: "fin", motivo: "confirmada" });
+  });
+
+  it("un error de la llamada por la app no marca el número como malo", () => {
+    const intentos = [i("mama", "app", "fallida")];
+    expect(siguienteLlamada({ contactos: conApp, intentos })).toMatchObject({ contactoId: "mama", esperaSeg: 30 });
+  });
+
+  it("recorre la escalera completa de una mamá sin internet", () => {
+    const intentos: IntentoLlamada[] = [];
+    const pasos: string[] = [];
+    for (let n = 0; n < 10; n++) {
+      const paso = siguienteLlamada({ contactos: conApp, intentos });
+      if (paso.tipo !== "llamar") break;
+      pasos.push(`${paso.contactoId}:${paso.canal}+${paso.esperaSeg}s`);
+      intentos.push(i(paso.contactoId, paso.canal, paso.canal === "app" ? "sin_internet" : "no_contesto"));
+    }
+    expect(pasos).toEqual(["mama:app+0s", "mama:telefono+0s", "mama:telefono+30s", "papa:telefono+0s"]);
+  });
+
+  it("vencimiento de la llamada por la app: sin acuse en 15 s es sin internet; con acuse, 30 s de timbre", () => {
+    expect(vencimientoLlamadaApp({ iniciadaEnMs: 0, acuseEnMs: null, ahoraMs: 14_000 })).toBeNull();
+    expect(vencimientoLlamadaApp({ iniciadaEnMs: 0, acuseEnMs: null, ahoraMs: 15_000 })).toBe("sin_internet");
+    expect(vencimientoLlamadaApp({ iniciadaEnMs: 0, acuseEnMs: 2_000, ahoraMs: 30_000 })).toBeNull();
+    expect(vencimientoLlamadaApp({ iniciadaEnMs: 0, acuseEnMs: 2_000, ahoraMs: 45_000 })).toBe("no_contesto");
   });
 });
 

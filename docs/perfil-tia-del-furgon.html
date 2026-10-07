@@ -135,9 +135,9 @@ table.det td.mono { font-size: 12px; }
   const COLEGIO = { lat: -33.4565, lng: -70.5978, nombre: "Colegio (Plaza Ñuñoa)" };
   const BASE = { lat: -33.4705, lng: -70.6130, nombre: "Base" };
   const ALUMNOS = [
-    { id: "sofia", nombre: "Sofía Pérez", curso: "3° Básico", apoderado: "Ana (mamá)", direccion: "Av. Ossa 1200, La Reina", indic: "Portón verde", lat: -33.4495, lng: -70.5560, respuesta: "llamada1" },
-    { id: "matias", nombre: "Matías Soto", curso: "5° Básico", apoderado: "Luis (papá)", direccion: "Av. Tomás Moro 300, Las Condes", indic: "Depto 302, conserjería", lat: -33.4180, lng: -70.5540, respuesta: "llamada2" },
-    { id: "isidora", nombre: "Isidora Rojas", curso: "1° Básico", apoderado: "Ana (mamá)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina", lat: -33.4260, lng: -70.6100, respuesta: "app" },
+    { id: "sofia", nombre: "Sofía Pérez", curso: "3° Básico", apoderado: "Ana (mamá)", direccion: "Av. Ossa 1200, La Reina", indic: "Portón verde", lat: -33.4495, lng: -70.5560, respuesta: "app" },
+    { id: "matias", nombre: "Matías Soto", curso: "5° Básico", apoderado: "Luis (papá)", direccion: "Av. Tomás Moro 300, Las Condes", indic: "Depto 302, conserjería", lat: -33.4180, lng: -70.5540, respuesta: "sininternet" },
+    { id: "isidora", nombre: "Isidora Rojas", curso: "1° Básico", apoderado: "Ana (mamá)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina", lat: -33.4260, lng: -70.6100, respuesta: "recibido" },
   ];
   const RUTAS = [
     { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"] },
@@ -145,13 +145,18 @@ table.det td.mono { font-size: 12px; }
   ];
   const HISTORIAL = [
     { fecha: "Lun 6 oct", ruta: "Vuelta tarde", inicio: "16:31", fin: "17:02", km: 14.4, ejemplo: true,
-      det: [["Sofía Pérez", "16:34", "16:40", "Llamada"], ["Matías Soto", "16:42", "16:48", "App"], ["Isidora Rojas", "16:55", "17:01", "Llamada"]] },
+      det: [["Sofía Pérez", "16:34", "16:40", "Llamada app (gratis)"], ["Matías Soto", "16:42", "16:48", "Recibido en app"], ["Isidora Rojas", "16:55", "17:01", "Teléfono (con costo)"]] },
     { fecha: "Lun 6 oct", ruta: "Ida mañana", inicio: "07:00", fin: "07:34", km: 15.1, ejemplo: true,
-      det: [["Isidora Rojas", "07:01", "07:06", "Push"], ["Matías Soto", "07:10", "07:17", "Llamada"], ["Sofía Pérez", "07:20", "07:26", "App"]] },
+      det: [["Isidora Rojas", "07:01", "07:06", "Recibido en app"], ["Matías Soto", "07:10", "07:17", "Teléfono (con costo)"], ["Sofía Pérez", "07:20", "07:26", "Llamada app (gratis)"]] },
     { fecha: "Vie 3 oct", ruta: "Vuelta tarde", inicio: "16:30", fin: "16:58", km: 14.4, ejemplo: true,
-      det: [["Sofía Pérez", "16:33", "16:39", "Llamada"], ["Matías Soto", "—", "—", "No viajó"], ["Isidora Rojas", "16:50", "16:57", "Push"]] },
+      det: [["Sofía Pérez", "16:33", "16:39", "Llamada app (gratis)"], ["Matías Soto", "—", "—", "No viajó"], ["Isidora Rojas", "16:50", "16:57", "Llamada app (gratis)"]] },
   ];
-  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, sonando: 25, reintento: 30 };
+  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, acuseApp: 15 };
+  // Modo GPS real: parámetros según cómo te muevas en la prueba.
+  const MODOS = {
+    pie: { nombre: "a pie", kmh: 5, parada: 20, proximidad: 50, llegada: 25, casas: [[300, 0], [420, 380], [0, 760]] },
+    auto: { nombre: "en auto", kmh: 25, parada: 60, proximidad: 300, llegada: 60, casas: [[1500, 0], [2100, 1900], [0, 3800]] },
+  };
 
   // ---------- Geometría ----------
   const rad = (g) => g * Math.PI / 180;
@@ -164,7 +169,7 @@ table.det td.mono { font-size: 12px; }
   const px = (p) => ({ x: ox + (p.lng - lngMin) * mLng * k, y: oy + (latMax - p.lat) * mLat * k });
 
   // ---------- Estado de la app ----------
-  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [] };
+  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [], modoGps: "pie", errorGps: null, buscandoGps: false };
   let R = null; // recorrido activo
 
   function iniciarRecorrido(rutaId) {
@@ -176,7 +181,7 @@ table.det td.mono { font-size: 12px; }
     R = {
       ruta, puntos, acum, largo: acum.at(-1), t: 0, d: 0, cola: 0, enviadas: 0, detenido: null, fin: false,
       paradas: orden.map((a, j) => ({ ...a, dRuta: acum[2 * (j + 1)], estado: ruta.noViaja.includes(a.id) ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
-      llamadas: [], ev: [],
+      llamadas: [], ev: [], gratis: 0, pagadas: 0,
     };
     evento("▶️", `Recorrido iniciado. Compartiendo ubicación cada ${CFG.gps} s.`);
     R.paradas.filter((p) => p.estado === "no_viaja").forEach((p) => evento("📅", `${p.nombre} no viaja hoy (lo marcó su apoderado).`));
@@ -205,11 +210,17 @@ table.det td.mono { font-size: 12px; }
       if (p.avisoT !== null) continue;
       if (dist(pos, p) <= CFG.proximidad || p.eta <= 5 * 60 + CFG.margen) {
         p.avisoT = R.t;
-        evento("🔔", `Aviso automático a ${p.apoderado} de ${p.nombre}: alarma + llamada.`, "aviso");
-        R.llamadas.push({ p, intento: 1, fase: "sonando", hasta: R.t + CFG.sonando });
+        avisar(p);
         app.toast = { txt: `🔔 Se avisó a ${p.apoderado} que llegas en ~${Math.max(1, Math.round(p.eta / 60))} min con ${p.nombre.split(" ")[0]}.`, hasta: performance.now() + 5000 };
       }
     }
+  }
+
+  function avisar(p) {
+    evento("🔔", `Aviso automático a ${p.apoderado} de ${p.nombre}: alarma en su teléfono.`, "aviso");
+    evento("📲", `Llamada por la app a ${p.apoderado} (por internet, sin costo).`);
+    R.llamadas.push({ p, canal: "app", desde: R.t, fase: "sonando" });
+    R.gratis++;
   }
 
   function confirmar(p, como) {
@@ -219,21 +230,133 @@ table.det td.mono { font-size: 12px; }
     evento("✅", `${p.apoderado} confirmó el aviso de ${p.nombre.split(" ")[0]} (${como}).`, "ok");
   }
 
+  // Escalera de llamadas: primero gratis por la app; si el teléfono del apoderado no
+  // acusa recibo en 15 s (sin internet), llamada telefónica normal (con costo).
   function llamadas() {
     for (const l of R.llamadas) {
       if (l.fase === "fin") continue;
-      const p = l.p;
+      const p = l.p, t = R.t - l.desde;
       if (p.estado !== "pendiente") { l.fase = "fin"; continue; }
-      if (p.respuesta === "app" && R.t - p.avisoT >= 6) { confirmar(p, "tocó Recibido en la app"); continue; }
-      if (l.fase === "esperando" && R.t >= l.hasta) { l.fase = "sonando"; l.hasta = R.t + CFG.sonando; evento("📞", `Segunda llamada a ${p.apoderado}.`); }
-      if (l.fase !== "sonando") continue;
-      const contesta = (p.respuesta === "llamada1" && l.intento === 1) || (p.respuesta === "llamada2" && l.intento === 2);
-      if (contesta && R.t >= l.hasta - 15) confirmar(p, `contestó y presionó 1 en la llamada ${l.intento}`);
-      else if (R.t >= l.hasta) {
-        evento("✖️", `${p.apoderado} no contestó la llamada ${l.intento}. Reintento en 30 s.`);
-        Object.assign(l, { intento: l.intento + 1, fase: "esperando", hasta: R.t + CFG.reintento });
+      if (p.respuesta === "recibido" && t >= 6) { confirmar(p, "tocó Recibido en la app"); continue; }
+      if (l.canal === "app") {
+        if (p.respuesta === "sininternet" && t >= CFG.acuseApp) {
+          evento("📵", `El teléfono de ${p.apoderado} no tiene internet: la llamada por la app no llegó. Se llama por teléfono (con costo).`);
+          Object.assign(l, { canal: "telefono", desde: R.t });
+          R.pagadas++;
+        } else if (p.respuesta === "app" && t >= 10) {
+          confirmar(p, "contestó la llamada por la app y presionó 1 · sin costo");
+        }
+      } else if (t >= 12) {
+        confirmar(p, "contestó la llamada telefónica y presionó 1 · con costo");
       }
     }
+  }
+
+  // ---------- Prueba con GPS real del teléfono ----------
+  // Las casas de prueba se ubican cerca de ti; el ETA usa la misma geocerca de respaldo
+  // del servidor (distancia acumulada × 1,3 a la velocidad del modo elegido).
+  const desplazar = (o, norte, este) => ({ lat: o.lat + norte / mLat, lng: o.lng + este / mLng });
+  function iniciarGps() {
+    app.errorGps = null;
+    if (!("geolocation" in navigator)) { app.errorGps = "Este navegador no tiene GPS disponible."; return; }
+    if (!window.isSecureContext) { app.errorGps = "El navegador bloquea el GPS en esta página. Ábrela desde una dirección https (o desde Chrome en el computador)."; return; }
+    app.buscandoGps = true;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      app.buscandoGps = false;
+      const modo = MODOS[app.modoGps];
+      const yo = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, vel: pos.coords.speed };
+      const ahora = new Date();
+      R = {
+        gps: true, modo, ruta: { nombre: "Prueba con GPS real", tipo: "vuelta", inicio: ahora.getHours() * 3600 + ahora.getMinutes() * 60 + ahora.getSeconds() },
+        inicioMs: Date.now(), t: 0, d: 0, largo: 0, yo, trazo: [yo], cola: 0, enviadas: 0, detenido: null, fin: false, ultimaEval: 0,
+        paradas: ALUMNOS.map((a, j) => ({ ...a, ...desplazar(yo, modo.casas[j][0], modo.casas[j][1]), direccion: `Casa de prueba ${j + 1}`, indic: "Toca el mapa para moverla",
+          estado: "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
+        llamadas: [], ev: [], gratis: 0, pagadas: 0, mover: 0,
+      };
+      evento("📡", `Prueba con GPS real (${modo.nombre}). Precisión ±${Math.round(yo.acc)} m.`);
+      R.watch = navigator.geolocation.watchPosition(alPosicion, (e) => {
+        // Un timeout solo significa que no hubo lectura nueva (por ejemplo, estando quieta).
+        if (e.code === 3 || R.errorGpsVisto === e.code) return;
+        R.errorGpsVisto = e.code;
+        evento("⚠️", e.code === 1 ? "Se quitó el permiso de ubicación." : "Se perdió la señal de GPS.");
+      }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+      evaluarGps();
+      app.vista = "recorrido"; previo = ""; render(true);
+    }, (e) => {
+      app.buscandoGps = false;
+      app.errorGps = e.code === 1 ? "Permiso de ubicación denegado. Actívalo en los ajustes del navegador y vuelve a intentar." : "No pudimos obtener tu ubicación. Sal al aire libre y vuelve a intentar.";
+      previo = ""; render(true);
+    }, { enableHighAccuracy: true, timeout: 20000 });
+  }
+
+  function alPosicion(pos) {
+    if (!R || !R.gps || R.fin) return;
+    const nuevo = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, vel: pos.coords.speed };
+    const mov = dist(R.yo, nuevo);
+    R.yo = nuevo;
+    if (mov >= 5) { R.d += mov; R.trazo.push(nuevo); if (R.trazo.length > 600) R.trazo.shift(); }
+    // Igual que la app: se envía una posición cada ~10 s (5 s a pie, para que la prueba responda rápido).
+    if (Date.now() - R.ultimaEval >= (R.modo.kmh < 10 ? 5000 : 10000)) evaluarGps();
+  }
+
+  function evaluarGps() {
+    R.ultimaEval = Date.now();
+    if (!app.senal) { R.cola++; return; }
+    if (R.cola) evento("📶", `Señal recuperada: se enviaron ${R.cola + 1} posiciones guardadas.`);
+    R.enviadas += R.cola + 1; R.cola = 0;
+    const m = R.modo, v = m.kmh / 3.6;
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    let previo_ = R.yo, acum = 0;
+    pend.forEach((p, i) => { acum += dist(previo_, p); previo_ = p; p.eta = (acum * 1.3) / v + i * m.parada; });
+    for (const p of pend) {
+      if (p.avisoT !== null) continue;
+      if (dist(R.yo, p) <= m.proximidad || p.eta <= 5 * 60 + CFG.margen) {
+        p.avisoT = R.t;
+        avisar(p);
+        app.toast = { txt: `🔔 Se avisó a ${p.apoderado} que llegas en ~${Math.max(1, Math.round(p.eta / 60))} min.`, hasta: performance.now() + 5000 };
+      }
+    }
+    const sig = pend[0];
+    if (sig && !R.detenido && dist(R.yo, sig) <= m.llegada) { R.detenido = sig; evento("🅿️", `Llegaste a la casa de prueba de ${sig.nombre}. Marca la entrega.`); }
+  }
+
+  function moverCasa(e, svg) {
+    const r = svg.getBoundingClientRect(), T = R.mapaT;
+    if (!T) return;
+    const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    if (!pend.length) return;
+    const p = pend[R.mover % pend.length]; R.mover++;
+    p.lat = T.lat0 - (y - T.oy) / T.k / mLat; p.lng = T.lng0 + (x - T.ox) / T.k / mLng;
+    p.avisoT = p.avisoT; // el aviso ya enviado no se repite
+    evento("📍", `Moviste la casa de prueba de ${p.nombre}.`);
+    evaluarGps();
+  }
+
+  function mapaGps() {
+    const pts = [R.yo, ...R.paradas, ...R.trazo];
+    const lat0 = Math.max(...pts.map((p) => p.lat)), lat1 = Math.min(...pts.map((p) => p.lat));
+    const lng0 = Math.min(...pts.map((p) => p.lng)), lng1 = Math.max(...pts.map((p) => p.lng));
+    const anchoM = Math.max(80, (lng1 - lng0) * mLng), altoM = Math.max(80, (lat0 - lat1) * mLat);
+    const kk = Math.min((W - 50) / anchoM, (H - 50) / altoM);
+    const T = { lat0, lng0, k: kk, ox: (W - anchoM * kk) / 2, oy: (H - altoM * kk) / 2 };
+    R.mapaT = T;
+    const P = (p) => ({ x: T.ox + (p.lng - lng0) * mLng * kk, y: T.oy + (lat0 - p.lat) * mLat * kk });
+    const yo = P(R.yo), traz = R.trazo.map(P);
+    const casas = R.paradas.map((p, j) => {
+      const c = P(p);
+      const col = p.estado === "entregado" ? "var(--ok)" : p.estado === "pendiente" ? (p.avisoT !== null ? "var(--alert)" : "var(--navy)") : "var(--muted)";
+      return `<circle cx="${c.x}" cy="${c.y}" r="${Math.max(6, R.modo.proximidad * kk)}" fill="var(--bus)" fill-opacity=".18"/>
+        <circle cx="${c.x}" cy="${c.y}" r="10" fill="${col}" stroke="var(--surface)" stroke-width="2"/>
+        <text x="${c.x}" y="${c.y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--surface)" font-family="var(--font-body)">${j + 1}</text>`;
+    }).join("");
+    return `<div class="mapa"><svg viewBox="0 0 ${W} ${H}" data-a="moverCasa" role="img" aria-label="Tu ubicación real y las casas de prueba; toca para mover una casa" style="cursor:crosshair">
+      ${traz.length > 1 ? `<polyline points="${traz.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
+      ${casas}
+      <circle cx="${yo.x}" cy="${yo.y}" r="${Math.max(8, (R.yo.acc || 0) * kk)}" fill="var(--navy)" fill-opacity=".12"/>
+      <g transform="translate(${yo.x} ${yo.y})"><rect x="-15" y="-10" width="30" height="20" rx="5" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/><rect x="-10" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/><rect x="2" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/></g>
+      <text x="8" y="${H - 8}" font-size="11" fill="var(--muted)" font-family="var(--font-body)">Toca el mapa para mover la próxima casa de prueba</text>
+    </svg></div>`;
   }
 
   function paso() {
@@ -266,7 +389,9 @@ table.det td.mono { font-size: 12px; }
     const pend = R.paradas.filter((p) => p.estado === "pendiente").length;
     evento("🏁", "Recorrido finalizado. El GPS se detuvo.");
     const det = R.paradas.map((p) => [p.nombre, p.avisoT !== null ? hora(p.avisoT) : "—", p.marcaT !== null ? hora(p.marcaT) : "—",
-      p.estado === "no_viaja" ? "No viajó" : p.estado === "ausente" ? "Ausente" : p.confPor ? (p.confPor.includes("app") ? "App" : "Llamada") : pend ? "Pendiente" : "Push"]);
+      p.estado === "no_viaja" ? "No viajó" : p.estado === "ausente" ? "Ausente" : !p.confPor ? (pend ? "Pendiente" : "Sin confirmar")
+      : p.confPor.includes("telefónica") ? "Teléfono (con costo)" : p.confPor.includes("llamada por la app") ? "Llamada app (gratis)" : "Recibido en app"]);
+    if (R.watch !== undefined) navigator.geolocation.clearWatch(R.watch);
     app.terminados.unshift({ fecha: "Hoy", ruta: R.ruta.nombre, inicio: hora(0), fin: hora(R.t), km: +(R.d / 1000).toFixed(1), det, ejemplo: false });
     app.hoja = null; app.vista = "resumen";
   }
@@ -317,6 +442,13 @@ table.det td.mono { font-size: 12px; }
         <div class="chips"><span class="chip ok">✓ Ubicación “Siempre”</span><span class="chip ok">✓ Notificaciones</span><span class="chip ok">✓ Batería 82%</span><span class="chip ok">✓ Ahorro de batería desactivado</span></div>
       </div>
       ${rutas}
+      <div class="card">
+        <div class="fila"><h2>📡 Probar con GPS real</h2></div>
+        <span class="muted">Usa la ubicación real de este teléfono. Se ubican 3 casas de prueba cerca de ti; camina o maneja hacia ellas y verás los avisos dispararse solos.</span>
+        <span class="seg" role="group" aria-label="Cómo te moverás">${Object.entries(MODOS).map(([k, m]) => `<button data-a="modoGps" data-v="${k}" aria-pressed="${app.modoGps === k}">${m.nombre}</button>`).join("")}</span>
+        ${app.errorGps ? `<p class="nota" style="color:var(--alert)">${esc(app.errorGps)}</p>` : ""}
+        <button class="btn xl" data-a="gps" ${app.buscandoGps ? "disabled" : ""}>${app.buscandoGps ? "Buscando tu ubicación…" : "Iniciar prueba con mi GPS"}</button>
+      </div>
       <p class="nota">Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.</p>
     </div>`;
   }
@@ -353,16 +485,17 @@ table.det td.mono { font-size: 12px; }
       <div class="fila"><h1>${R.ruta.nombre}</h1><span class="mono muted">${hora(R.t)}</span></div>
       <div class="chips">
         ${app.senal ? `<span class="chip ok"><span class="dot"></span>Compartiendo ubicación</span>` : `<span class="chip alerta"><span class="dot"></span>Sin señal · ${R.cola} posiciones guardadas</span>`}
-        <span class="chip">${(R.d / 1000).toFixed(1)} de ${(R.largo / 1000).toFixed(1)} km</span>
+        ${R.gps ? `<span class="chip bus">📡 GPS real ±${Math.round(R.yo.acc || 0)} m${R.yo.vel != null && R.yo.vel >= 0 ? ` · ${Math.round(R.yo.vel * 3.6)} km/h` : ""}</span><span class="chip">${(R.d / 1000).toFixed(2)} km</span>`
+          : `<span class="chip">${(R.d / 1000).toFixed(1)} de ${(R.largo / 1000).toFixed(1)} km</span>`}
       </div>
       ${R.detenido ? "" : `<div class="manejo"><span>🚐</span><div><b>Conduce tranquila</b>Los avisos a los apoderados se envían solos. Marca a cada alumno cuando estés detenida.</div></div>`}
-      ${mapa()}
+      ${R.gps ? mapaGps() : mapa()}
       ${pend.map((p, i) => {
         const aqui = R.detenido === p;
         return `<div class="parada ${i === 0 ? "actual" : ""}">
           <span class="num">Parada ${R.paradas.indexOf(p) + 1}${aqui ? " · estás aquí" : p.eta != null ? ` · llegada en ~${Math.max(1, Math.round(p.eta / 60))} min` : ""}</span>
           <span class="nom">${esc(p.nombre)}</span>
-          <span class="muted">${esc(p.direccion)} · ${esc(p.indic)}</span>
+          <span class="muted">${esc(p.direccion)} · ${R.gps ? `a ${Math.round(dist(R.yo, p))} m` : esc(p.indic)}</span>
           <div class="chips">${estadoAviso(p)}</div>
           ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
         </div>`;
@@ -373,7 +506,7 @@ table.det td.mono { font-size: 12px; }
         <ul class="lista-ev">${R.ev.slice(0, 8).map((e) => `<li><span class="h">${hora(e.t)}</span><span>${e.i}</span><span>${esc(e.txt)}</span></li>`).join("")}</ul></div>
       <button class="btn sec" data-a="pedirFin">Finalizar recorrido</button>
       <div class="demo" aria-label="Controles de la demostración"><b>Demo</b>
-        <span class="seg">${[5, 20, 40].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("")}</span>
+        ${R.gps ? "" : `<span class="seg">`}${R.gps ? "" : [5, 20, 40].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("") + "</span>"}
         <label class="chk"><input type="checkbox" id="chkSenal" ${app.senal ? "" : "checked"}> Sin señal</label>
       </div>
     </div>`;
@@ -394,9 +527,11 @@ table.det td.mono { font-size: 12px; }
         <div class="cifra"><b>${r.km} km</b><span>Recorridos</span></div>
         <div class="cifra"><b>${entregados}/${R.paradas.length}</b><span>${R.ruta.tipo === "ida" ? "Subieron" : "Entregados"}</span></div>
         <div class="cifra"><b>${conf}/${avisos}</b><span>Avisos confirmados</span></div>
+        <div class="cifra"><b>${R.gratis}</b><span>Llamadas por la app (sin costo)</span></div>
+        <div class="cifra"><b>${R.pagadas}</b><span>Llamadas telefónicas (con costo)</span></div>
       </div>
       <div class="card"><h3>Detalle</h3>${tablaDet(r.det)}</div>
-      <p class="nota">Llamadas que hiciste mientras manejabas: <b>0</b>. Todos los avisos se enviaron solos.</p>
+      <p class="nota">Llamadas que hiciste mientras manejabas: <b>0</b>. Todos los avisos se enviaron solos. Solo se pagó una llamada telefónica cuando el apoderado no tenía internet.</p>
       <button class="btn xl" data-a="volver">Volver al inicio</button>
     </div>`;
   }
@@ -485,6 +620,9 @@ table.det td.mono { font-size: 12px; }
     else if (a === "finalizar") finalizar();
     else if (a === "volver") { app.vista = "hoy"; app.tab = "historial"; R = null; }
     else if (a === "vel") app.vel = Number(el.dataset.v);
+    else if (a === "modoGps") app.modoGps = el.dataset.v;
+    else if (a === "gps") iniciarGps();
+    else if (a === "moverCasa" && R && R.gps) moverCasa(e, el);
     else if (a === "salir") { app.vista = "login"; }
     previo = ""; render(true);
   });
@@ -499,7 +637,10 @@ table.det td.mono { font-size: 12px; }
   let ult = performance.now(), acc = 0;
   function bucle(ahora) {
     const dt = Math.min(0.25, (ahora - ult) / 1000); ult = ahora;
-    if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
+    if (app.vista === "recorrido" && R && !R.fin && R.gps) {
+      const t = Math.floor((Date.now() - R.inicioMs) / 1000);
+      while (R.t < t) { R.t++; llamadas(); }
+    } else if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
     render();
     requestAnimationFrame(bucle);
   }

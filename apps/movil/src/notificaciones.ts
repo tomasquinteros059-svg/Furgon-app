@@ -4,6 +4,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { supabase } from "./lib/supabase";
+import { configurarLlamadas } from "./llamadas-app";
 
 // Deben coincidir con supabase/functions/_shared/push.ts
 export const CANAL_ALARMA = "aviso-furgon";
@@ -47,6 +48,7 @@ export async function configurarCanales(): Promise<void> {
 export async function registrarParaPush(): Promise<string | null> {
   if (!Device.isDevice) return null; // los emuladores no reciben push
   await configurarCanales();
+  await configurarLlamadas();
 
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") {

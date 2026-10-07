@@ -142,6 +142,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .banner .app-n { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .banner b { font-size: 16px; }
 .llamada { position: absolute; inset: 0; z-index: 9; background: #0F2236; color: #fff; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; padding: 44px 20px 34px; gap: 16px; }
+.llamada.tel { background: #1B1F24; }
 .llamada .quien { font-family: var(--font-display); font-size: 34px; }
 .llamada .voz { background: rgba(255,255,255,.12); border-radius: 14px; padding: 12px 14px; font-size: 15px; }
 .teclas { display: flex; gap: 26px; justify-content: center; }
@@ -192,7 +193,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     { fecha: "Lun 6 oct · Ida", ejemplo: true, items: [["07:01", "🔔 Aviso: el furgón pasa por Isidora en ~5 min"], ["07:06", "✅ Isidora subió al furgón"], ["07:20", "🔔 Aviso: el furgón pasa por Sofía en ~5 min"], ["07:26", "✅ Sofía subió al furgón"]] },
     { fecha: "Vie 3 oct · Vuelta", ejemplo: true, items: [["16:33", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 No contestaste: llamamos a Pedro (abuelo), que confirmó"], ["16:39", "✅ Sofía llegó a casa"], ["16:50", "🔔 Aviso: Isidora llega en ~5 min"], ["16:57", "✅ Isidora llegó a casa"]] },
   ];
-  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, detencion: 40, timbreReal: 20, reintento: 30 };
+  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, detencion: 40, timbreReal: 20, reintento: 30, acuseApp: 15 };
 
   // ---------- Geometría ----------
   const rad = (g) => g * Math.PI / 180;
@@ -209,7 +210,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   const formatear = (e) => { const m = /^\+56(9)(\d{4})(\d{4})$/.exec(e); return m ? `+56 ${m[1]} ${m[2]} ${m[3]}` : e; };
 
   // ---------- Estado ----------
-  const app = { vista: "login", tab: "inicio", sub: null, hijoId: null, editPin: false, form: null, errores: {}, vel: 10, alarma: true, llamadaAuto: true, banner: null, notifs: [] };
+  const app = { vista: "login", tab: "inicio", sub: null, hijoId: null, editPin: false, form: null, errores: {}, vel: 10, alarma: true, llamadaAuto: true, banner: null, notifs: [], internet: true, pendientes: [], llamGratis: 0, llamPagadas: 0 };
   let R = null; // simulación de la vuelta de hoy
 
   function nuevaSimulacion() {
@@ -236,6 +237,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     return { lat: a.lat + (b.lat - a.lat) * f, lng: a.lng + (b.lng - a.lng) * f };
   }
   function notificar(n) {
+    // Sin internet la push no llega: queda pendiente hasta que vuelva la conexión.
+    if (!app.internet) { app.pendientes.push({ ...n, t: R.t }); return; }
     app.notifs.unshift({ ...n, t: R.t });
     app.banner = { ...n, hasta: performance.now() + 6000 };
     if (n.tipo === "aviso") sonar();
@@ -259,6 +262,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     }
     if (R.t % CFG.gps === 0) evaluar();
     if (R.llamada && R.llamada.fase === "esperando" && R.t >= R.llamada.reintentoT) iniciarLlamada(R.llamada.p, 2);
+    if (R.llamada && R.llamada.fase === "sin_acuse" && R.t >= R.llamada.hastaT) {
+      R.llamada.p.sinInternet = true;
+      linea("📵 Tu teléfono no tenía internet: la llamada por la app no llegó. Te llamamos por teléfono (con costo)");
+      llamarTelefono(R.llamada.p, R.llamada.intento);
+    }
   }
 
   function evaluar() {
@@ -278,10 +286,22 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     }
   }
 
+  // Primero gratis por la app; si el teléfono no acusa recibo en 15 s (sin internet),
+  // llamada telefónica normal (con costo). Si ya sabemos que no hay internet, directo al teléfono.
   function iniciarLlamada(p, intento) {
     if (p.confT !== null || p.estado !== "pendiente") { R.llamada = null; return; }
-    R.llamada = { p, intento, fase: "sonando", hastaReal: performance.now() + CFG.timbreReal * 1000 };
-    if (intento === 2) linea(`📞 Segunda llamada (no contestaste la primera)`);
+    if (p.sinInternet) { llamarTelefono(p, intento); return; }
+    app.llamGratis++;
+    linea(`📲 Llamada ${intento} por la app (por internet, sin costo)`);
+    R.llamada = app.internet
+      ? { p, intento, canal: "app", fase: "sonando", hastaReal: performance.now() + CFG.timbreReal * 1000 }
+      : { p, intento, canal: "app", fase: "sin_acuse", hastaT: R.t + CFG.acuseApp };
+  }
+
+  function llamarTelefono(p, intento) {
+    app.llamPagadas++;
+    linea(`📞 Llamada ${intento} telefónica (con costo)`);
+    R.llamada = { p, intento, canal: "telefono", fase: "sonando", hastaReal: performance.now() + CFG.timbreReal * 1000 };
   }
 
   function confirmar(p, como) {
@@ -300,6 +320,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       linea(`✖️ No contestaste la llamada 2: llamamos a ${h.contactos[1]?.nombre ?? "tu contacto secundario"}`);
       R.llamada = null;
       if (h.contactos[1]) {
+        app.llamPagadas++;
+        linea(`📞 Llamada telefónica (con costo) a ${h.contactos[1].nombre}, que no tiene la app`);
         confirmar(l.p, `✅ ${h.contactos[1].nombre} contestó y confirmó`);
         notificar({ tipo: "info", hijo: h.id, titulo: `📞 Avisamos a ${h.contactos[1].nombre}`, cuerpo: `No pudimos comunicarnos contigo. ${h.contactos[1].nombre} recibió el aviso de ${h.nombre} y lo confirmó.` });
       }
@@ -342,7 +364,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   addEventListener("pointerdown", () => { presionando = true; }, true);
   addEventListener("pointerup", () => setTimeout(() => { presionando = false; }, 0), true);
 
-  const barraSis = () => `<div class="estado-sis"><span>${R ? hora(R.t) : "16:28"}</span><span>4G ▮▮▮ · 64%</span></div>`;
+  const barraSis = () => `<div class="estado-sis"><span>${R ? hora(R.t) : "16:28"}</span><span>${app.internet ? "4G ▮▮▮" : "Sin internet"} · 64%</span></div>`;
 
   function vLogin() {
     return `<div class="vista" style="justify-content:center">
@@ -389,6 +411,9 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       ${!R ? `<span class="muted">Simula la vuelta de hoy: el furgón sale del colegio y deja a tus hijos en casa. Sube el volumen para oír la alarma.</span><button class="btn bus" data-a="simular">▶ Simular la vuelta de hoy</button>`
         : R.fin ? `<span class="muted">La vuelta terminó. Revisa el historial.</span><button class="btn sec" data-a="reiniciar">Simular de nuevo</button>`
         : `<span class="muted">${app.corriendo ? "El furgón va en camino. Cuando suene la llamada, contesta con 1 o cuelga para ver los reintentos." : "En pausa."}</span><button class="btn sec" data-a="pausa">${app.corriendo ? "⏸ Pausar" : "▶ Continuar"}</button>`}
+      <div class="sw-fila"><span><b>${app.internet ? "📶 Ana tiene internet" : "📵 Ana sin internet"}</b><br><span class="muted" style="font-size:12px">Sin internet, la llamada gratis no llega y se llama por teléfono (con costo).</span></span>
+        <label class="sw"><input type="checkbox" data-a="internet" ${app.internet ? "checked" : ""} aria-label="Internet en el teléfono de Ana"><span></span></label></div>
+      ${R ? `<span class="muted" style="font-size:12px">Llamadas hoy: <b>${app.llamGratis}</b> por la app (sin costo) · <b>${app.llamPagadas}</b> telefónicas (con costo)</span>` : ""}
     </div>`;
     const tarjetas = HIJOS.map((h) => {
       const p = parDe(h);
@@ -512,8 +537,10 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     if (!l || l.fase !== "sonando") return "";
     const h = hijoDe(l.p), m = Math.max(1, Math.round(l.p.eta / 60));
     const queda = Math.max(0, Math.ceil((l.hastaReal - performance.now()) / 1000));
-    return `<div class="llamada" role="dialog" aria-label="Llamada entrante">
-      <div><span style="opacity:.8">Llamada automática · intento ${l.intento}</span><div class="quien">Furgón Escolar</div><span class="mono" style="opacity:.8">+56 2 2123 4567</span></div>
+    return `<div class="llamada ${l.canal === "telefono" ? "tel" : ""}" role="dialog" aria-label="Llamada entrante">
+      <div>${l.canal === "app"
+        ? `<span class="pildora" style="background:var(--bus);color:var(--bus-ink)">📲 Llamada por internet · sin costo</span><div class="quien" style="margin-top:10px">Furgón Escolar</div><span style="opacity:.8">Llamada de la app · intento ${l.intento}</span>`
+        : `<span class="pildora">📞 Llamada telefónica · con costo</span><div class="quien" style="margin-top:10px">Furgón Escolar</div><span class="mono" style="opacity:.8">+56 2 2123 4567 · intento ${l.intento}</span>`}</div>
       <div class="voz">🗣️ “Hola. Le avisamos del furgón escolar. El furgón llegará en aproximadamente ${m} minutos con ${esc(h.nombre)} ${esc(h.apellido)}. Por favor, que alguien esté esperando en casa. Para confirmar, presione 1.”</div>
       <div><div class="teclas"><button class="tecla uno" data-a="uno">1</button><button class="tecla colgar" data-a="colgar">Colgar</button></div>
       <p style="opacity:.8; font-size:13px; margin:12px 0 0">Si no presionas 1 en ${queda} s, cuenta como no contestada.</p></div>
@@ -566,7 +593,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         : antes ? `Hora estimada ${hora(R.t + p.eta)} · faltan ${antes} parada${antes === 1 ? "" : "s"} antes de tu casa`
         : `Hora estimada ${hora(R.t + p.eta)} · tu casa es la próxima parada`;
     }
-    const chip = p.estado !== "pendiente" ? "" : exacta ? `<span class="pildora"><span class="vivo-dot"></span>En vivo</span>`
+    const chip = p.estado !== "pendiente" ? "" : !app.internet ? `<span class="pildora"><span class="vivo-dot aprox"></span>Sin internet · última posición</span>` : exacta ? `<span class="pildora"><span class="vivo-dot"></span>En vivo</span>`
       : `<span class="pildora"><span class="vivo-dot aprox"></span>Zona aproximada</span>`;
     const paso = (ok, ahora, txt) => `<div><i class="${ok ? "ok" : ahora ? "ahora" : ""}"></i>${txt}</div>`;
     return `<div class="seguir">
@@ -596,7 +623,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     const arriba = 64, abajo = H - altoHoja - 16;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
-    const d = dSuave(), van = puntoEn(d);
+    const d = !app.internet && R.dCongelado != null ? R.dCongelado : dSuave(), van = puntoEn(d);
     const exacta = p.avisoT !== null && p.estado === "pendiente";
     const casa = aMundo(p);
     const foco = p.estado === "pendiente" ? (exacta ? aMundo(van) : aMundo(zonaDe(van))) : casa;
@@ -699,6 +726,19 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     if (a === "noviaja") {
       const h = HIJOS.find((x) => x.id === el.dataset.id); h.noViaja[el.dataset.t] = el.checked;
       if (R) { const p = parDe(h); if (p && el.dataset.t === "vuelta") { if (el.checked && p.estado === "pendiente") { p.estado = "no_viaja"; linea(`📅 Marcaste que ${h.nombre} no viaja hoy`); if (R.llamada && R.llamada.p === p) R.llamada = null; } else if (!el.checked && p.estado === "no_viaja") p.estado = "pendiente"; } }
+    } else if (a === "internet") {
+      app.internet = el.checked;
+      if (R) {
+        linea(app.internet ? "📶 Volvió el internet a tu teléfono" : "📵 Tu teléfono se quedó sin internet");
+        if (!app.internet) R.dCongelado = R.d;
+        // La llamada por la app que estaba esperando acuse llega apenas vuelve la conexión.
+        if (app.internet && R.llamada && R.llamada.fase === "sin_acuse") Object.assign(R.llamada, { fase: "sonando", hastaReal: performance.now() + CFG.timbreReal * 1000 });
+      }
+      if (app.internet && app.pendientes.length) {
+        const pend = app.pendientes; app.pendientes = [];
+        pend.forEach((n) => app.notifs.unshift(n));
+        app.banner = { ...pend[pend.length - 1], hasta: performance.now() + 6000 };
+      }
     } else if (a === "optAlarma") app.alarma = el.checked;
     else if (a === "optLlamada") app.llamadaAuto = el.checked;
     previo = ""; render(true);
@@ -708,8 +748,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     const a = el.dataset.a;
     if (a === "entrar") { app.vista = "app"; app.tab = "inicio"; }
     else if (a === "tab") { app.tab = el.dataset.id; app.sub = null; }
-    else if (a === "simular") { nuevaSimulacion(); app.corriendo = true; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (x) {} }
-    else if (a === "reiniciar") { nuevaSimulacion(); app.corriendo = true; app.notifs = []; }
+    else if (a === "simular") { nuevaSimulacion(); app.corriendo = true; app.llamGratis = 0; app.llamPagadas = 0; app.pendientes = []; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (x) {} }
+    else if (a === "reiniciar") { nuevaSimulacion(); app.corriendo = true; app.notifs = []; app.llamGratis = 0; app.llamPagadas = 0; app.pendientes = []; }
     else if (a === "pausa") app.corriendo = !app.corriendo;
     else if (a === "vel") app.vel = Number(el.dataset.v);
     else if (a === "ficha") { app.sub = "ficha"; app.hijoId = el.dataset.id; app.editPin = false; }
@@ -726,7 +766,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (a === "guardar") guardar();
     else if (a === "recibido") { const p = R.paradas.find((x) => x.id === el.dataset.id); confirmar(p, "📱 Tocaste “Recibido”: se cancelan las llamadas"); }
     else if (a === "banner") { const b = app.banner; app.banner = null; if (b && b.tipo === "aviso" && R) { const p = R.paradas.find((x) => x.id === b.hijo); if (p && !(R.llamada && R.llamada.fase === "sonando")) confirmar(p, "📱 Abriste la notificación: se cancelan los reintentos"); app.sub = "seguir"; app.hijoId = b.hijo; cam.s = null; } }
-    else if (a === "uno") { const p = R.llamada.p; confirmar(p, `📞 Contestaste y presionaste 1 (llamada ${R.llamada.intento})`); }
+    else if (a === "uno") { const l = R.llamada; confirmar(l.p, `✅ Contestaste la llamada ${l.canal === "app" ? "por la app (sin costo)" : "telefónica (con costo)"} y presionaste 1`); }
     else if (a === "colgar") noContesto();
     else if (a === "salir") { app.vista = "login"; app.sub = null; }
     previo = ""; render(true);

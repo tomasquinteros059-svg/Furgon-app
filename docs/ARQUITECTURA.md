@@ -50,6 +50,19 @@ cuando el furgón está cerca de alguna casa.
 
 ## Escalera de llamadas
 
+Cada intento elige su **canal**:
+
+1. **App (sin costo).** Si el contacto tiene la app, el servidor envía una push de alta
+   prioridad. La app la muestra como llamada y lee el mensaje con la voz del teléfono
+   (`expo-speech`). La función `llamada-app` registra el acuse, la confirmación o el rechazo.
+2. **Sin internet → teléfono (con costo).** Si el teléfono no acusa recibo en 15 s, se llama al
+   mismo contacto por Twilio de inmediato, sin gastar el reintento. El resto de la escalera de
+   ese contacto sigue por teléfono, porque ya sabemos que no tiene internet.
+3. **Con internet pero sin respuesta** (30 s de timbre o colgó): cuenta como no contestada y la
+   escalera sigue (reintento a los 30 s, luego el secundario).
+
+La lógica está en `core/llamadas.ts` (`siguienteLlamada`, `vencimientoLlamadaApp`), con tests.
+
 ```
 aviso ──▶ llamada 1 (principal) ──StatusCallback──▶ ¿presionó 1?
                                                     ├─ sí → fin, aviso confirmado

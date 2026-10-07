@@ -8,6 +8,9 @@ export const CANAL_ALARMA = "aviso-furgon";
 export const CANAL_GENERAL = "general";
 export const SONIDO_ALARMA = "alarma.wav";
 
+/** Categoría con botones "Confirmar" / "No puedo" (definida en la app). */
+export const CATEGORIA_LLAMADA = "llamada-furgon";
+
 interface MensajeExpo {
   to: string;
   title: string;
@@ -18,12 +21,15 @@ interface MensajeExpo {
   priority: "default" | "normal" | "high";
   interruptionLevel?: "active" | "critical" | "passive" | "time-sensitive";
   ttl?: number;
+  categoryId?: string;
+  /** iOS: despierta la app en segundo plano para que acuse recibo. */
+  _contentAvailable?: boolean;
 }
 
 type TicketExpo = { status: "ok"; id: string } | { status: "error"; message: string; details?: { error?: string } };
 
 export interface Notificacion {
-  tipo: "aviso" | "entregado" | "ausente";
+  tipo: "aviso" | "entregado" | "ausente" | "llamada";
   titulo: string;
   cuerpo: string;
   data: Record<string, unknown>;
@@ -45,7 +51,23 @@ export async function notificarApoderados(sb: SupabaseClient, alumnoId: string, 
   });
   if (dispositivos.length === 0) return 0;
 
-  const esAlarma = n.tipo === "aviso";
+  return enviar(sb, dispositivos, n);
+}
+
+/**
+ * Llamada gratis por internet: push de alta prioridad con categoría de llamada a los
+ * teléfonos del contacto. Devuelve cuántos dispositivos la aceptaron (0 = no hay a quién).
+ */
+export async function enviarLlamadaApp(sb: SupabaseClient, contactoId: string, n: Notificacion): Promise<number> {
+  const { data, error } = await sb.rpc("dispositivos_de_contacto", { p_contacto: contactoId });
+  if (error) throw error;
+  const dispositivos = (data ?? []) as { id: string; expo_push_token: string }[];
+  if (dispositivos.length === 0) return 0;
+  return enviar(sb, dispositivos, n);
+}
+
+async function enviar(sb: SupabaseClient, dispositivos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {
+  const esAlarma = n.tipo === "aviso" || n.tipo === "llamada";
   const mensajes: MensajeExpo[] = dispositivos.map((d) => ({
     to: d.expo_push_token,
     title: n.titulo,
@@ -56,8 +78,9 @@ export async function notificarApoderados(sb: SupabaseClient, alumnoId: string, 
     priority: "high",
     // iOS 15+: atraviesa el modo Concentración. "critical" requiere permiso especial de Apple.
     interruptionLevel: esAlarma ? "time-sensitive" : "active",
-    // Un aviso de "llega en 5 min" no sirve de nada si llega 10 min tarde.
-    ttl: esAlarma ? 300 : 3600,
+    // Un aviso de "llega en 5 min" no sirve de nada si llega 10 min tarde; una llamada, menos.
+    ttl: n.tipo === "llamada" ? 30 : esAlarma ? 300 : 3600,
+    ...(n.tipo === "llamada" ? { categoryId: CATEGORIA_LLAMADA, _contentAvailable: true } : {}),
   }));
 
   const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };

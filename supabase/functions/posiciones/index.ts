@@ -11,7 +11,7 @@ import { esCoordenadaValida } from "../_shared/core/geo.ts";
 import { enSegundoPlano } from "../_shared/entorno.ts";
 import { clienteServicio, CORS, error, json, usuarioDeLaPeticion } from "../_shared/http.ts";
 import { cargarParadasPendientes, crearDepsFlujo } from "../_shared/servicio-aviso.ts";
-import { despacharLlamadasVencidas } from "../_shared/servicio-llamadas.ts";
+import { despacharLlamadasVencidas, vencerLlamadasApp } from "../_shared/servicio-llamadas.ts";
 
 interface PosicionEntrada {
   client_id: string;
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   });
 
   // Respaldo de los reintentos de llamada programados (ver servicio-llamadas.ts).
-  enSegundoPlano(despacharLlamadasVencidas(sb));
+  enSegundoPlano(vencerLlamadasApp(sb).then(() => despacharLlamadasVencidas(sb)));
 
   return json({
     insertadas,

@@ -1,5 +1,6 @@
 // La tarea de GPS debe definirse en el ámbito global, antes de montar cualquier pantalla.
 import "../ubicacion/tarea";
+import { alRecibir, alResponder } from "../llamadas-app";
 
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
@@ -20,7 +21,12 @@ function Navegacion() {
 
   // Tocar la notificación de aviso cuenta como "recibido": detiene los reintentos de llamada.
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((r) => {
+    // Llamada gratis por la app recibida con la app abierta: se muestra la pantalla de llamada.
+    const recibida = Notifications.addNotificationReceivedListener((n) => {
+      alRecibir(n).catch(() => {});
+    });
+    const sub = Notifications.addNotificationResponseReceivedListener(async (r) => {
+      if (await alResponder(r)) return;
       const data = r.notification.request.content.data as { tipo?: string; avisoId?: string; alumnoId?: string };
       if (data?.tipo === "aviso" && data.avisoId) {
         supabase.rpc("confirmar_aviso", { p_aviso: data.avisoId }).then(() => {});
@@ -29,7 +35,10 @@ function Navegacion() {
       if (data?.tipo === "aviso" && data.alumnoId) router.navigate(`/apoderado/seguir/${data.alumnoId}`);
       else if (data?.tipo) router.navigate("/");
     });
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      recibida.remove();
+    };
   }, []);
 
   if (cargando) return null;

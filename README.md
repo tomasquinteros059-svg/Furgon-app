@@ -6,8 +6,13 @@ de su casa, para que el conductor no tenga que llamar a nadie mientras maneja.
 Cuando el ETA real con tráfico hasta la casa de un alumno entra en su ventana de aviso, el sistema:
 
 1. envía una **notificación push con alarma** (canal de alarma en Android, *time-sensitive* en iOS), y
-2. hace una **llamada automática** con voz en español (Twilio). Si nadie presiona 1, reintenta una
-   vez y luego llama al contacto secundario.
+2. hace una **llamada automática** con voz en español:
+   - **primero gratis, por internet, dentro de la app.** El mensaje de voz se genera en el
+     propio teléfono de la mamá;
+   - **si su teléfono no tiene internet** (no acusa recibo en 15 s), una **llamada telefónica
+     normal** con Twilio, que tiene costo;
+   - si nadie presiona 1, reintenta una vez y luego llama al contacto secundario. Un contacto
+     sin la app recibe directamente la llamada telefónica.
 
 El aviso es **único por alumno y recorrido**, sirve para la ida (que el alumno esté listo) y para la
 vuelta (que alguien lo reciba).
@@ -72,6 +77,7 @@ supabase/
     _shared/                     Proveedores de ETA, push, Twilio, utilidades
     posiciones/                  Recibe posiciones y dispara avisos
     marcar-parada/               "Entregado"/"Ausente" + push de confirmación
+    llamada-app/                 Acuse, confirmación o rechazo de la llamada gratis por la app
     twilio-webhook/              TwiML de la llamada, confirmación y estado
     procesar-llamadas/           Respaldo para despachar reintentos (cron)
 tools/simulador/                 Demo de datos y recorrido con GPS falso
@@ -230,7 +236,7 @@ Para revisar los tipos de las Edge Functions: `cd supabase/functions && deno che
 supabase link --project-ref <ref>
 supabase db push
 supabase secrets set --env-file supabase/functions/.env
-supabase functions deploy posiciones marcar-parada twilio-webhook procesar-llamadas
+supabase functions deploy posiciones marcar-parada llamada-app twilio-webhook procesar-llamadas
 ```
 
 `twilio-webhook` y `procesar-llamadas` se despliegan sin verificación de JWT (ver `supabase/config.toml`):
@@ -288,7 +294,13 @@ Se trata de datos de menores. Las reglas viven en la base de datos (RLS), no sol
   - la ubicación en segundo plano en Android con ahorro de batería agresivo (Xiaomi, Huawei,
     Samsung), y guiar al conductor para excluir la app de la optimización;
   - el comportamiento en iOS con la app cerrada.
-- Botón de acción "Recibido" directamente en la notificación (hoy basta con tocarla).
+- Llamada gratis con pantalla de llamada nativa con la app cerrada (CallKit + PushKit en iOS,
+  ConnectionService en Android). Esto requiere un módulo nativo (p. ej. `react-native-callkeep`).
+  Hoy llega como notificación de alarma con botones "Confirmar (1)" / "No puedo", y con la app
+  abierta se muestra la pantalla de llamada con voz.
+- El acuse de recibo en segundo plano depende de que el sistema despierte la app. Si no la
+  despierta, el servidor asume que no hay internet y hace la llamada telefónica: falla hacia el
+  lado seguro, a costa de algunas llamadas pagadas de más.
 - Inicio de sesión por SMS (OTP) en lugar de correo y contraseña.
 - Que las Edge Functions se ejecuten contra un Supabase real: en este prototipo pasan `deno check`,
   pero no se han ejecutado contra un proyecto.

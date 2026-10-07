@@ -56,6 +56,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         color: "#F2B705",
         sounds: ["./assets/sonidos/alarma.wav"],
+        // Despierta la app al llegar la llamada gratis, para acusar recibo sin abrirla.
+        enableBackgroundRemoteNotifications: true,
       },
     ],
     [
