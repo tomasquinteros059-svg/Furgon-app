@@ -2,7 +2,7 @@
 // (supabase/migrations/20261009000001_administracion.sql), que exigen rol admin.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
-  Alumno, Cobro, Conductora, Datos, Empresa, LlamadaReporte, Mensaje, Pregunta, RecomendacionRuta, RecorridoHoy, Resumen, Ruta, Solicitud,
+  Alumno, Cobro, Conductora, Datos, Empresa, Furgon, Licencia, LlamadaReporte, Mensaje, Pregunta, RecomendacionRuta, RecorridoHoy, Resumen, Ruta, Solicitud,
 } from "./tipos";
 
 function ok<T>(r: { data: T; error: { message: string } | null }): T {
@@ -165,6 +165,24 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     },
     async asignarConductora(rutaId, conductoraId) {
       ok(await sb.from("rutas").update({ conductor_id: conductoraId }).eq("id", rutaId));
+    },
+
+    async furgones() {
+      return (ok(await sb.rpc("resumen_furgones")) ?? []) as Furgon[];
+    },
+    async guardarFurgon(f) {
+      return ok(await sb.rpc("guardar_furgon", { p_datos: f })) as string;
+    },
+    async licencias() {
+      return (ok(await sb.rpc("estado_licencias")) ?? []) as Licencia[];
+    },
+    async revisarLicencia(id, aprobar, motivo) {
+      ok(await sb.rpc("revisar_licencia", { p_licencia: id, p_aprobar: aprobar, p_motivo: motivo || null }));
+    },
+    async fotoLicencia(ruta) {
+      const { data, error } = await sb.storage.from("licencias").createSignedUrl(ruta, 300);
+      if (error) throw new Error(traducir(error.message));
+      return data.signedUrl;
     },
 
     async conductoras() {

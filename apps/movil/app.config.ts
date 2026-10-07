@@ -21,7 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       UIBackgroundModes: ["location", "remote-notification"],
       // Para abrir la navegación en la app de Google Maps si está instalada.
-      LSApplicationQueriesSchemes: ["comgooglemaps"],
+      LSApplicationQueriesSchemes: ["comgooglemaps", "waze"],
     },
     entitlements: {
       // Permite que el aviso atraviese el modo Concentración (iOS 15+).
@@ -60,6 +60,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: ["./assets/sonidos/alarma.wav"],
         // Despierta la app al llegar la llamada gratis, para acusar recibo sin abrirla.
         enableBackgroundRemoteNotifications: true,
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Para subir la foto de tu licencia de conducir y que la empresa la verifique.",
+        cameraPermission: "Para fotografiar tu licencia de conducir y que la empresa la verifique.",
       },
     ],
     [

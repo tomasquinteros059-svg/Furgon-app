@@ -222,8 +222,9 @@ genera `apps/admin/dist`, un sitio estático que se puede publicar en Vercel, Ne
 
 | Sección | Qué hace |
 |---|---|
-| Panel | Pendientes del día (solicitudes, alumnos sin ruta, familias sin app, morosos), recorridos de hoy, cobranza y llamadas del mes. |
-| Alumnos | Alta completa con pin en el mapa, ficha editable, código para la familia y baja. |
+| Furgones | Vista principal: cada furgón con patente, modelo, capacidad, tía o tío a cargo, rutas, niños (ocupación) y la **licencia de conducir** (vigente, por vencer, vencida, por verificar). Revisión de licencias con fotos: aprobar o rechazar con motivo. |
+| Panel | Furgones activos, licencias que requieren atención, pendientes del día (solicitudes, alumnos sin ruta, familias sin app, morosos), recorridos de hoy, cobranza y llamadas del mes. |
+| Alumnos | (Fuera del menú; se llega desde los pendientes y los enlaces) Alta completa con pin en el mapa, ficha editable, código para la familia y baja. |
 | Rutas | Conductora asignada, orden de paradas, agregar y quitar alumnos. **✨ Recomendar ruta** calcula el orden más corto con las direcciones de los alumnos (mapa, km ahorrados y "antes N°"); se aplica con un toque. **Hoy no va** saca a un alumno solo de la ruta de hoy. |
 | Conductoras | Invitación con código; la tía solo instala la app. Permiso **Administra** para la tía dueña del furgón. |
 | Cobros | La contabilidad de la tía. Genera las mensualidades del mes (idempotente), registra pagos (medio y nota), **cambia el monto** de un cobro pendiente, anula cobros y muestra los vencidos. En **Precios** se edita el precio mensual de cada alumno (también ajusta sus cobros pendientes). |
@@ -275,7 +276,7 @@ npx expo start --dev-client
 
 | Rol | Puede |
 |---|---|
-| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Subió" / "En su hogar" o "Ausente" con un toque (botones grandes) y ve cuando una familia confirmó que su hijo subió. Comparte el GPS solo mientras hay un recorrido activo. En **Conexiones** (`conductor/conexiones`) decide si aparece en la búsqueda de las familias, busca a una familia por correo o teléfono exactos para invitarla y acepta o rechaza solicitudes; al aceptar elige en qué rutas va y los hijos entran solos a ellas (y aparecen en «Se sumaron a tus rutas» del panel principal). |
+| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Subió" / "En su hogar" o "Ausente" con un toque (botones grandes), navega a la próxima casa con **Google Maps o Waze**, sube su **licencia** (fotos con la cámara) en `conductor/licencia` y recibe avisos antes de que venza y ve cuando una familia confirmó que su hijo subió. Comparte el GPS solo mientras hay un recorrido activo. En **Conexiones** (`conductor/conexiones`) decide si aparece en la búsqueda de las familias, busca a una familia por correo o teléfono exactos para invitarla y acepta o rechaza solicitudes; al aceptar elige en qué rutas va y los hijos entran solos a ellas (y aparecen en «Se sumaron a tus rutas» del panel principal). |
 | **Apoderado** | Se registra con un código de invitación **o sin código** ("Soy familia y no tengo código") y luego se conecta con su tía o tío desde la búsqueda (`apoderado/conectar`: nombre, furgón o comuna). **Perfil compartido (dúo):** en *Familia* (`apoderado/familia`) la mamá comparte a sus hijos con el papá (o un abuelo/a) con un código de un solo uso; cada uno entra con su cuenta y ambos reciben la alarma y las llamadas, siguen el furgón y marcan «Ya subió» u «hoy no viaja». Puede estar conectado con varias tías (hermanos en furgones distintos) y elige con quién va cada hijo al registrarlo. Recibe la alarma, toca **"Ya subió"** para seguir a su hijo en vivo mientras va a bordo, sigue al furgón en un **mapa en vivo** (`apoderado/seguir/[id]`), confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
 | **Administrador** | Usa solo la **app web** (`apps/admin`). Si entra a la app móvil, ve un aviso con el enlace al panel (`EXPO_PUBLIC_PANEL_URL`). |
 
@@ -304,6 +305,7 @@ npm run typecheck
 - `tests/recomendar-ruta.test.ts`: la ruta recomendada (ida termina en el colegio, vuelta parte
   de él, óptimo exacto hasta 8 casas comparado con fuerza bruta, heurística con 12 casas, no
   cambia el orden por menos de 50 m).
+- `tests/sql/furgones-y-licencias.test.ts`: furgones del administrador, licencia subida por la tía (solo fotos de su carpeta), aprobación/rechazo con motivo (nadie aprueba la propia), avisos de vencimiento una vez por umbral y bloqueo de recorridos con la licencia vencida.
 - `tests/sql/conexion-a-ruta.test.ts`: al aceptar a una familia con rutas elegidas, su hijo entra solo a ellas en la parada que menos alarga el recorrido, aparece como nuevo en el panel de la tía y se ignoran rutas de otra tía.
 - `tests/sql/familia-compartida.test.ts`: perfil de familia compartido (el papá se registra o se
   une con el código de la mamá y ve a los mismos hijos, su teléfono entra a la llamada
@@ -342,7 +344,7 @@ Manual, con la CLI:
 supabase link --project-ref <ref>
 supabase db push
 supabase secrets set --env-file supabase/functions/.env
-supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta recomendar-ruta twilio-webhook procesar-llamadas
+supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta recomendar-ruta avisos-licencias twilio-webhook procesar-llamadas
 ```
 
 `twilio-webhook` y `procesar-llamadas` se despliegan sin verificación de JWT (ver `supabase/config.toml`):

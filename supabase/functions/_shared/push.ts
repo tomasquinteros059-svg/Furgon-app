@@ -29,7 +29,7 @@ interface MensajeExpo {
 type TicketExpo = { status: "ok"; id: string } | { status: "error"; message: string; details?: { error?: string } };
 
 export interface Notificacion {
-  tipo: "aviso" | "entregado" | "ausente" | "llamada";
+  tipo: "aviso" | "entregado" | "ausente" | "llamada" | "licencia";
   titulo: string;
   cuerpo: string;
   data: Record<string, unknown>;
@@ -61,6 +61,14 @@ export async function notificarApoderados(sb: SupabaseClient, alumnoId: string, 
 export async function enviarLlamadaApp(sb: SupabaseClient, contactoId: string, n: Notificacion): Promise<number> {
   const { data, error } = await sb.rpc("dispositivos_de_contacto", { p_contacto: contactoId });
   if (error) throw error;
+  const dispositivos = (data ?? []) as { id: string; expo_push_token: string }[];
+  if (dispositivos.length === 0) return 0;
+  return enviar(sb, dispositivos, n);
+}
+
+/** Envía la notificación a todos los dispositivos de una persona (p. ej. la tía). */
+export async function notificarPerfil(sb: SupabaseClient, perfilId: string, n: Notificacion): Promise<number> {
+  const { data } = await sb.from("dispositivos").select("id, expo_push_token").eq("perfil_id", perfilId);
   const dispositivos = (data ?? []) as { id: string; expo_push_token: string }[];
   if (dispositivos.length === 0) return 0;
   return enviar(sb, dispositivos, n);

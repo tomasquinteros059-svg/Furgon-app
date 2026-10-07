@@ -2,7 +2,7 @@
 // Reproduce las mismas reglas que las RPC del servidor (cobros idempotentes, bajas, etc.).
 import { extremosDeRuta, recomendarRuta } from "../../../../supabase/functions/_shared/core/recomendar-ruta.ts";
 import type {
-  Alumno, Cobro, Conductora, Datos, Empresa, LlamadaReporte, Mensaje, MedioPago, Pregunta, Ruta, Solicitud,
+  Alumno, Cobro, Conductora, Datos, Empresa, Furgon, Licencia, LlamadaReporte, Mensaje, MedioPago, Pregunta, Ruta, Solicitud,
 } from "./tipos";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -50,6 +50,34 @@ export function crearDatosDemo(): Datos {
   [5, 4, 2, 1, 0, 3].forEach((i) => ponerEnRuta(rutas[0], alumnos[i]));
   [3, 0, 2, 1, 4, 5].forEach((i) => ponerEnRuta(rutas[1], alumnos[i]));
   rutas[1].paradas.find((p) => p.alumno_id === "a3")!.hoy_no_va = true; // la familia de Matías avisó que hoy no va
+
+  // Furgones y licencias de las conductoras.
+  const enDias = (n: number) => { const d = new Date(hoy); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const furgones: (Omit<Furgon, "conductor" | "rutas" | "alumnos" | "licencia" | "licencia_vence">)[] = [
+    { id: "f1", patente: "DEMO-11", modelo: "Hyundai H1 blanca", descripcion: null, capacidad: 12, activo: true, conductor_id: "c1" },
+    { id: "f2", patente: "DEMO-22", modelo: "Toyota Hiace amarilla", descripcion: null, capacidad: 15, activo: true, conductor_id: "c2" },
+  ];
+  const furgonDeRuta: Record<string, string | null> = { r1: "f1", r2: "f1" };
+  const fotoDemo = (titulo: string, lado: string) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="540" height="340" viewBox="0 0 540 340"><rect width="540" height="340" rx="22" fill="#E8F1FA" stroke="#16324F" stroke-width="4"/>
+    <rect x="0" y="0" width="540" height="64" rx="22" fill="#16324F"/><text x="24" y="42" font-family="Arial" font-size="24" font-weight="700" fill="#fff">LICENCIA DE CONDUCTOR · CHILE</text>
+    <rect x="28" y="92" width="130" height="160" rx="10" fill="#C9D6E3"/><circle cx="93" cy="150" r="34" fill="#9AAEC2"/><rect x="48" y="196" width="90" height="44" rx="20" fill="#9AAEC2"/>
+    <text x="186" y="118" font-family="Arial" font-size="22" font-weight="700" fill="#16324F">${titulo}</text>
+    <text x="186" y="160" font-family="Arial" font-size="18" fill="#16324F">${lado}</text>
+    <text x="186" y="200" font-family="Arial" font-size="18" fill="#16324F">Ejemplo de la demostración</text></svg>`);
+  const licencias: Licencia[] = [
+    { conductor_id: "c1", conductor: conductoras[0].nombre, licencia_id: "l1", numero: "12.345.678-9", clase: "A3", vence_en: enDias(24), dias_restantes: 24,
+      estado: "por_vencer", motivo_rechazo: null, revisada_en: iso(haceDias(300)), foto_frente: fotoDemo("MARCELA FUENTES · A3", "Frente"), foto_reverso: fotoDemo("MARCELA FUENTES · A3", "Reverso") },
+    { conductor_id: "c2", conductor: conductoras[1].nombre, licencia_id: "l2", numero: "15.222.333-4", clase: "A1", vence_en: enDias(410), dias_restantes: 410,
+      estado: "por_verificar", motivo_rechazo: null, revisada_en: null, foto_frente: fotoDemo("JORGE DÍAZ · A1", "Frente"), foto_reverso: fotoDemo("JORGE DÍAZ · A1", "Reverso") },
+  ];
+  const resumenFurgon = (f: (typeof furgones)[number]): Furgon => {
+    const rs = rutas.filter((r) => furgonDeRuta[r.id] === f.id);
+    const lic = licencias.find((l) => l.conductor_id === f.conductor_id);
+    return { ...f, conductor: conductoras.find((c) => c.id === f.conductor_id)?.nombre ?? null, rutas: rs.map((r) => r.nombre),
+      alumnos: new Set(rs.flatMap((r) => r.paradas.map((p) => p.alumno_id))).size,
+      licencia: f.conductor_id ? lic?.estado ?? "sin_licencia" : null, licencia_vence: lic?.vence_en ?? null };
+  };
 
   const codigos = new Map<string, string>();
   const cobros: Cobro[] = [];
@@ -216,6 +244,37 @@ export function crearDatosDemo(): Datos {
       await esperar(80);
       rutas.filter((r) => r.tipo === tipo).forEach((r) => r.paradas.forEach((p) => { if (p.alumno_id === alumnoId) p.hoy_no_va = valor; }));
     },
+
+    async furgones() { await esperar(); return furgones.map(resumenFurgon); },
+    async guardarFurgon(f) {
+      await esperar();
+      if (!f.patente.trim()) throw new Error("Falta la patente");
+      let id = f.id;
+      const datosF = { patente: f.patente.trim().toUpperCase(), modelo: f.modelo || null, capacidad: f.capacidad, conductor_id: f.conductor_id, activo: f.activo ?? true };
+      if (id) Object.assign(furgones.find((x) => x.id === id)!, datosF);
+      else { id = uid(); furgones.push({ id, descripcion: null, ...datosF }); }
+      for (const r of rutas) {
+        if (f.ruta_ids.includes(r.id)) furgonDeRuta[r.id] = id;
+        else if (furgonDeRuta[r.id] === id) furgonDeRuta[r.id] = null;
+        const fu = furgones.find((x) => x.id === furgonDeRuta[r.id]);
+        r.furgon = fu ? `${fu.modelo ?? ""} · ${fu.patente}` : null;
+      }
+      return id;
+    },
+    async licencias() {
+      await esperar();
+      return conductoras.map((c) => licencias.find((l) => l.conductor_id === c.id) ?? {
+        conductor_id: c.id, conductor: c.nombre, licencia_id: null, numero: null, clase: null, vence_en: null, dias_restantes: null,
+        estado: "sin_licencia" as const, motivo_rechazo: null, revisada_en: null, foto_frente: null, foto_reverso: null });
+    },
+    async revisarLicencia(id, aprobar, motivo) {
+      await esperar();
+      if (!aprobar && !motivo.trim()) throw new Error("Indica el motivo del rechazo para que la tía pueda corregirlo");
+      const l = licencias.find((x) => x.licencia_id === id)!;
+      Object.assign(l, { estado: !aprobar ? "rechazada" : (l.dias_restantes ?? 0) <= 30 ? "por_vencer" : "vigente",
+        motivo_rechazo: aprobar ? null : motivo.trim(), revisada_en: iso(new Date()) });
+    },
+    async fotoLicencia(ruta) { return ruta; },
 
     async conductoras() { await esperar(); return structuredClone(conductoras); },
     async invitarConductora() { await esperar(); return codigo(); },

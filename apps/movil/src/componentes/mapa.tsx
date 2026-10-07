@@ -55,6 +55,11 @@ export const ESTILO_MAPA = [
 ];
 
 /** Abre la navegación de Google Maps (app o web) hacia una casa. */
+/** Abre Waze con la navegación hacia el destino (o la web de Waze si no está instalado). */
+export function navegarConWaze(lat: number, lng: number): void {
+  Linking.openURL(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`).catch(() => {});
+}
+
 export function navegarConGoogleMaps(lat: number, lng: number): void {
   const web = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`;
   const app = Platform.OS === "ios" ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving` : `google.navigation:q=${lat},${lng}&mode=d`;

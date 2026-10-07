@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { navegarConGoogleMaps } from "../../../componentes/mapa";
+import { navegarConGoogleMaps, navegarConWaze } from "../../../componentes/mapa";
 import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
@@ -127,7 +127,10 @@ export default function RecorridoConductor() {
             {p.eta_seg !== null ? ` · llegada en ~${Math.max(1, Math.round(p.eta_seg / 60))} min` : ""}
           </Text>
           {i === 0 ? (
-            <Boton titulo="🧭 Navegar con Google Maps" variante="secundario" onPress={() => navegarConGoogleMaps(p.domicilio.lat, p.domicilio.lng)} />
+            <View style={estilos.fila}>
+              <Boton titulo="🧭 Google Maps" variante="secundario" estilo={{ flex: 1 }} onPress={() => navegarConGoogleMaps(p.domicilio.lat, p.domicilio.lng)} />
+              <Boton titulo="🚗 Waze" variante="secundario" estilo={{ flex: 1 }} onPress={() => navegarConWaze(p.domicilio.lat, p.domicilio.lng)} />
+            </View>
           ) : null}
           <View style={[estilos.fila, { marginTop: 10 }]}>
             <Boton titulo={textoEntregado} variante="exito" grande estilo={{ flex: 2 }}

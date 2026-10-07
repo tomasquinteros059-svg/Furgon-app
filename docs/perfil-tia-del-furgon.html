@@ -92,6 +92,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .nota-mapa { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .btn-nav { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; min-height: 48px; border-radius: 12px; font-weight: 700; border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
 .btn-nav b { color: #1A73E8; }
+.btn-nav.waze b { color: #0A9BD8; }
+.navs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.foto-lic { width: 100%; aspect-ratio: 1.6; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
 @media (prefers-reduced-motion: no-preference) { .halo { animation: halo 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; } }
 @keyframes halo { from { opacity: .55; transform: scale(.6); } to { opacity: 0; transform: scale(1.6); } }
 .lista-ev { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -147,7 +150,21 @@ table.det td.mono { font-size: 12px; }
 <script>
 (() => {
   // ---------- Datos de la demo ----------
-  const TIA = { nombre: "Marcela Fuentes", corto: "Marcela", email: "marcela@furgonesdemo.cl", tel: "+56 9 5555 1234", licencia: "Clase A1 · vence 03/2027" };
+  const TIA = { nombre: "Marcela Fuentes", corto: "Marcela", email: "marcela@furgonesdemo.cl", tel: "+56 9 5555 1234" };
+  // Licencia de conducir: la empresa la verifica y la app avisa antes de que venza.
+  const isoEn = (dias) => { const d = new Date(); d.setDate(d.getDate() + dias); return d.toISOString().slice(0, 10); };
+  const LIC = { numero: "12.345.678-9", clase: "A3", vence: isoEn(24), estado: "aprobada", motivo: null,
+    form: null, fotos: { frente: null, reverso: null } };
+  const diasLic = () => Math.round((new Date(`${LIC.vence}T12:00:00`) - new Date(new Date().toISOString().slice(0, 10) + "T12:00:00")) / 86400000);
+  const fechaCL = (iso) => iso.split("-").reverse().join("-");
+  function situacionLic() {
+    const d = diasLic();
+    if (LIC.estado === "pendiente") return { txt: "⏳ Enviada: la empresa la está verificando.", clase: "bus" };
+    if (LIC.estado === "rechazada") return { txt: `La empresa la rechazó: ${LIC.motivo}. Súbela de nuevo.`, clase: "alerta" };
+    if (d < 0) return { txt: `✗ Venció el ${fechaCL(LIC.vence)}. No puedes iniciar recorridos hasta subir la renovada.`, clase: "alerta" };
+    if (d <= 30) return { txt: `⚠ Vence en ${d} día${d === 1 ? "" : "s"} (${fechaCL(LIC.vence)}). Agenda la renovación y súbela aquí.`, clase: "alerta" };
+    return { txt: `✓ Vigente hasta el ${fechaCL(LIC.vence)} · verificada por la empresa`, clase: "ok" };
+  }
   const FURGON = { patente: "DEMO-11", modelo: "Hyundai H1 blanca", capacidad: 12, empresa: "Furgones Demo" };
   const COLEGIO = { lat: -33.4565, lng: -70.5978, nombre: "Colegio (Plaza Ñuñoa)" };
   const BASE = { lat: -33.4705, lng: -70.6130, nombre: "Base" };
@@ -214,6 +231,7 @@ table.det td.mono { font-size: 12px; }
     </svg>`;
   }
   const colorCasa = (p) => p.estado === "entregado" ? "#1D7F45" : p.estado === "pendiente" ? (p.avisoT !== null ? "#C4281C" : "#16324F") : "#8A95A1";
+  const urlWaze = (p) => `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
   const urlNavegar = (p) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving&dir_action=navigate`;
 
   // ---------- Google Maps (lo conecta la empresa; sin conexión se usa el mapa dibujado) ----------
@@ -809,6 +827,26 @@ table.det td.mono { font-size: 12px; }
     </div>`;
   }
 
+  function vLicencia() {
+    const s = situacionLic(), f = LIC.form;
+    const foto = (lado) => `<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:14px">Foto del ${lado}${lado === "reverso" ? " (opcional)" : ""}</b>
+      ${LIC.fotos[lado] ? `<img class="foto-lic" src="${LIC.fotos[lado]}" alt="Foto del ${lado}">` : ""}
+      <label class="btn sec" style="display:flex;align-items:center;justify-content:center;cursor:pointer">📷 ${LIC.fotos[lado] ? "Cambiar foto" : "Tomar o elegir foto"}<input type="file" accept="image/*" capture="environment" data-foto="${lado}" style="display:none"></label></div>`;
+    return `<div class="vista"><button class="volver-adm" data-a="cerrarLic">‹ Volver</button><h1>Mi licencia</h1>
+      <div class="card" style="border:2px solid ${s.clase === "ok" ? "var(--ok)" : s.clase === "bus" ? "var(--bus)" : "var(--alert)"}"><b>${s.txt}</b>
+        <span class="muted" style="font-size:14px">N° ${LIC.numero} · Clase ${LIC.clase} · vence el ${fechaCL(LIC.vence)}</span></div>
+      ${LIC.estado === "pendiente" ? `<p class="nota">Te avisaremos cuando la empresa la verifique.</p>` : f ? `<div class="card"><h3>Subir licencia renovada</h3>
+          <div class="campo"><label for="lic-numero">Número (RUT)</label><input id="lic-numero" data-l="numero" value="${esc(f.numero)}"></div>
+          <b style="font-size:14px">Clase</b><div class="chips">${["A1", "A3", "A2", "A4", "A5", "B"].map((c) => `<button class="chip ${f.clase === c ? "ok" : ""}" style="border:0;cursor:pointer;font-size:14px;padding:8px 12px" data-a="claseLic" data-v="${c}">${c}</button>`).join("")}</div>
+          <div class="campo"><label for="lic-vence">Vence el</label><input id="lic-vence" type="date" data-l="vence" value="${esc(f.vence)}"></div>
+          ${foto("frente")}${foto("reverso")}
+          ${LIC.error ? `<p class="nota" style="color:var(--alert);margin:0">${esc(LIC.error)}</p>` : ""}
+          <button class="btn xl" data-a="enviarLic">Enviar para verificar</button>
+          <span class="muted" style="font-size:13px">🔒 Las fotos solo las ve la empresa para verificarla.</span></div>`
+        : `<button class="btn xl" data-a="renovarLic">Subir licencia renovada</button>`}
+      <p class="nota">Te avisamos a los 60, 30, 15, 7 y 1 días del vencimiento. Con la licencia vencida no se pueden iniciar recorridos: así protegemos a los niños y a ti.</p></div>`;
+  }
+
   function vHoy() {
     const rutas = RUTAS.map((r) => {
       const hecha = app.terminados.find((x) => x.ruta === r.nombre);
@@ -833,6 +871,7 @@ table.det td.mono { font-size: 12px; }
       ${NUEVOS.length ? `<div class="card" style="border:2px solid var(--ok)"><h3>🆕 Se sumaron a tus rutas</h3>
         ${NUEVOS.map((x) => `<span>${x.tipo === "ida" ? "🌅" : "🏠"} <b>${esc(x.alumno)}</b> · ${esc(x.ruta)}, parada ${x.parada}</span>`).join("")}
         <span class="muted" style="font-size:13px">Quedaron donde menos alargan el recorrido. Su familia ya recibe los avisos.</span></div>` : ""}
+      ${(() => { const s = situacionLic(); return s.clase === "ok" ? "" : `<button class="card" style="text-align:left;cursor:pointer;border:2px solid ${s.clase === "bus" ? "var(--bus)" : "var(--alert)"}" data-a="abrirLic"><b>🪪 Mi licencia</b><span style="font-size:14px">${esc(s.txt)}</span></button>`; })()}
       ${conexPendientes().length ? `<button class="card" style="text-align:left;cursor:pointer;border:2px solid var(--ok)" data-a="irConexiones"><b>🤝 ${esc(famDe(conexPendientes()[0].familia).nombre)} quiere conectarse contigo</b><span class="muted" style="font-size:14px">Toca para responder</span></button>` : ""}
       ${rutas}
       <p class="nota">Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.</p>
@@ -906,7 +945,7 @@ table.det td.mono { font-size: 12px; }
           <span class="nom">${esc(p.nombre)}</span>
           <span class="muted">${esc(p.direccion)} · ${esc(p.indic)}</span>
           <div class="chips">${p.subioFamilia ? `<span class="chip ok">🙋 Su familia confirmó que subió</span>` : ""}${estadoAviso(p)}</div>
-          ${i === 0 && !aqui ? `<a class="btn-nav" href="${urlNavegar(p)}" target="_blank" rel="noopener">🧭 Navegar con <b>Google Maps</b></a>` : ""}
+          ${i === 0 && !aqui ? `<div class="navs"><a class="btn-nav" href="${urlNavegar(p)}" target="_blank" rel="noopener">🧭 <b>Google Maps</b></a><a class="btn-nav waze" href="${urlWaze(p)}" target="_blank" rel="noopener">🚗 <b>Waze</b></a></div>` : ""}
           ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
         </div>`;
       }).join("")}
@@ -971,7 +1010,8 @@ table.det td.mono { font-size: 12px; }
       <div class="card"><h3>Mis datos</h3>
         <div class="dato"><span>Teléfono</span><span class="mono">${TIA.tel}</span></div>
         <div class="dato"><span>Correo</span><span>${TIA.email}</span></div>
-        <div class="dato"><span>Licencia</span><span>${TIA.licencia}</span></div>
+        <div class="dato"><span>Licencia</span><span>Clase ${LIC.clase} · vence ${fechaCL(LIC.vence)}</span></div>
+        <button class="btn sec" data-a="abrirLic">🪪 Mi licencia</button>
         <div class="dato"><span>Empresa</span><span>${FURGON.empresa}</span></div>
       </div>
       <div class="card"><h3>Furgón asignado</h3>
@@ -1010,6 +1050,7 @@ table.det td.mono { font-size: 12px; }
     if (app.vista === "login") cuerpo = vLogin();
     else if (app.vista === "recorrido") cuerpo = vRecorrido();
     else if (app.vista === "resumen") cuerpo = vResumen();
+    else if (app.vista === "licencia") cuerpo = vLicencia();
     else cuerpo = { hoy: vHoy, admin: vAdmin, historial: vHistorial, perfil: vPerfil }[app.tab]();
     const conTabs = app.vista === "hoy";
     const toast = app.toast && app.toast.hasta > performance.now() ? `<div class="toast" role="status">${esc(app.toast.txt)}</div>` : "";
@@ -1145,7 +1186,29 @@ table.det td.mono { font-size: 12px; }
       } else { Object.assign(sol, { estado: "cerrada", resolucion: "rechazada" }); ADM.msg = { ok: true, txt: "Solicitud rechazada." }; }
       ADM.form = { resp: "" };
     }
-    else if (a === "iniciar") iniciarRecorrido(el.dataset.id);
+    else if (a === "iniciar") {
+      if (diasLic() < 0) { app.toast = { txt: "🪪 Tu licencia está vencida: sube la renovada en «Mi licencia» para iniciar recorridos.", hasta: performance.now() + 5000 }; }
+      else iniciarRecorrido(el.dataset.id);
+    }
+    else if (a === "abrirLic") { app.vista = "licencia"; LIC.error = null; }
+    else if (a === "cerrarLic") { app.vista = "hoy"; LIC.form = null; }
+    else if (a === "renovarLic") { LIC.form = { numero: LIC.numero, clase: LIC.clase, vence: isoEn(5 * 365) }; LIC.fotos = { frente: null, reverso: null }; LIC.error = null; }
+    else if (a === "claseLic") LIC.form.clase = el.dataset.v;
+    else if (a === "enviarLic") {
+      const f = LIC.form;
+      if (!f.numero.trim()) LIC.error = "Escribe el número de la licencia (tu RUT).";
+      else if (!f.vence || f.vence < new Date().toISOString().slice(0, 10)) LIC.error = "Revisa la fecha de vencimiento: debe ser futura.";
+      else if (!LIC.fotos.frente) LIC.error = "Falta la foto del frente de la licencia.";
+      else {
+        Object.assign(LIC, { numero: f.numero.trim(), clase: f.clase, vence: f.vence, estado: "pendiente", form: null, error: null });
+        // Demostración: la empresa la verifica a los pocos segundos.
+        setTimeout(() => {
+          LIC.estado = "aprobada";
+          app.toast = { txt: "🪪 La empresa verificó tu licencia. ¡Gracias!", hasta: performance.now() + 4500 };
+          previo = ""; render(true);
+        }, 4000);
+      }
+    }
     else if (a === "marcar") marcar(el.dataset.id, el.dataset.e);
     else if (a === "pedirFin") app.hoja = "fin";
     else if (a === "cerrarHoja") app.hoja = null;
@@ -1158,10 +1221,17 @@ table.det td.mono { font-size: 12px; }
     previo = ""; render(true);
   });
   document.addEventListener("input", (e) => {
+    if (e.target.dataset && e.target.dataset.l && LIC.form) { LIC.form[e.target.dataset.l] = e.target.value; previo = construirHtml(); return; }
     const k = e.target.dataset && e.target.dataset.f;
     if (k && ADM.form) { ADM.form[k] = e.target.value; previo = construirHtml(); }
   });
   document.addEventListener("change", (e) => {
+    if (e.target.dataset && e.target.dataset.foto) {
+      const archivo = e.target.files && e.target.files[0];
+      if (archivo) { LIC.fotos[e.target.dataset.foto] = URL.createObjectURL(archivo); LIC.error = null; previo = ""; render(true); }
+      return;
+    }
+    if (e.target.dataset && e.target.dataset.l && LIC.form) { LIC.form[e.target.dataset.l] = e.target.value; return; }
     if (e.target.id === "chkVisible") {
       CONEX.visible = e.target.checked;
       ADM.msg = { ok: true, txt: CONEX.visible ? "Las familias ya te pueden encontrar." : "Ya no apareces en la búsqueda de las familias." };

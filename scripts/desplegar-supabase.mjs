@@ -39,6 +39,30 @@ async function migrar() {
   console.log(n ? `✓ ${n} migración(es) aplicada(s).` : "✓ La base ya estaba al día.");
 }
 
+// El secreto de las tareas programadas vive en el Vault de Supabase (lo lee pg_cron) y se
+// copia a los secretos de las funciones. Se genera una sola vez.
+async function secretoCron() {
+  const [fila] = await sql("select decrypted_secret as s from vault.decrypted_secrets where name = 'cron_secret'");
+  if (fila?.s) return fila.s;
+  const nuevo = randomBytes(24).toString("hex");
+  await sql(`select vault.create_secret(${lit(nuevo)}, 'cron_secret')`);
+  return nuevo;
+}
+
+// Tareas programadas: avisos de vencimiento de licencias (diario, 9:00 de Chile ≈ 12:00 UTC)
+// y el respaldo de reintentos de llamadas (cada minuto).
+async function programar() {
+  const url = `https://${REF()}.supabase.co/functions/v1`;
+  const tarea = (nombre, cuando, funcion) => `select cron.schedule(${lit(nombre)}, ${lit(cuando)}, $$
+    select net.http_post(url := ${lit(`${url}/${funcion}`)},
+      headers := jsonb_build_object('x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')))
+  $$);`;
+  await sql(`create extension if not exists pg_net; create extension if not exists pg_cron;
+    ${tarea("furgon-avisos-licencias", "0 12 * * *", "avisos-licencias")}
+    ${tarea("furgon-procesar-llamadas", "* * * * *", "procesar-llamadas")}`);
+  console.log("✓ Tareas programadas: avisos de licencias (diario) y reintentos de llamadas (cada minuto).");
+}
+
 async function secretos() {
   const actuales = new Set((await api("GET", "/secrets")).map((s) => s.name));
   const nuevos = [];
@@ -48,7 +72,7 @@ async function secretos() {
   const google = process.env.GOOGLE_MAPS_API_KEY?.trim();
   poner("GOOGLE_MAPS_API_KEY", google);
   poner("ETA_PROVEEDOR", google ? "google" : "ninguno");
-  poner("CRON_SECRET", randomBytes(24).toString("hex"), true); // se genera una sola vez
+  poner("CRON_SECRET", await secretoCron()); // el mismo que guarda el Vault para pg_cron
   poner("LLAMADAS_HABILITADAS", process.env.LLAMADAS_HABILITADAS?.trim() || "false", true);
   poner("FUNCTIONS_PUBLIC_URL", `https://${REF()}.supabase.co/functions/v1`, true);
   for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN"]) poner(k, process.env[k]?.trim());
@@ -92,6 +116,7 @@ if (!soloMigraciones) {
   await secretos();
   console.log("3) Edge Functions");
   funciones();
+  await programar();
   console.log("4) Valores públicos para las apps");
   await valoresPublicos();
   if (sinConfirmarCorreo) {

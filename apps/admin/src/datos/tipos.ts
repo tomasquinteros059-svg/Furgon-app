@@ -99,6 +99,48 @@ export interface Conductora {
   puede_administrar: boolean;
 }
 
+export type EstadoLicencia = "sin_licencia" | "por_verificar" | "rechazada" | "vigente" | "por_vencer" | "vencida";
+
+export interface Licencia {
+  conductor_id: string;
+  conductor: string;
+  licencia_id: string | null;
+  numero: string | null;
+  clase: string | null;
+  vence_en: string | null; // YYYY-MM-DD
+  dias_restantes: number | null;
+  estado: EstadoLicencia;
+  motivo_rechazo: string | null;
+  revisada_en: string | null;
+  foto_frente: string | null;
+  foto_reverso: string | null;
+}
+
+export interface Furgon {
+  id: string;
+  patente: string;
+  modelo: string | null;
+  descripcion: string | null;
+  capacidad: number | null;
+  activo: boolean;
+  conductor_id: string | null;
+  conductor: string | null;
+  rutas: string[];
+  alumnos: number;
+  licencia: EstadoLicencia | null;
+  licencia_vence: string | null;
+}
+
+export interface FurgonEditable {
+  id?: string;
+  patente: string;
+  modelo: string;
+  capacidad: number | null;
+  conductor_id: string | null;
+  ruta_ids: string[];
+  activo?: boolean;
+}
+
 export interface RecorridoHoy {
   id: string;
   ruta: string;
@@ -202,6 +244,13 @@ export interface Datos {
   aplicarOrden(rutaId: string, orden: string[]): Promise<void>;
   /** «Hoy no va» (o deshacerlo) para la ida o la vuelta de hoy. */
   hoyNoVa(alumnoId: string, tipo: "ida" | "vuelta", valor: boolean): Promise<void>;
+
+  furgones(): Promise<Furgon[]>;
+  guardarFurgon(f: FurgonEditable): Promise<string>;
+  licencias(): Promise<Licencia[]>;
+  revisarLicencia(licenciaId: string, aprobar: boolean, motivo: string): Promise<void>;
+  /** URL temporal para ver una foto de licencia (bucket privado). */
+  fotoLicencia(ruta: string): Promise<string>;
 
   conductoras(): Promise<Conductora[]>;
   invitarConductora(): Promise<string>;

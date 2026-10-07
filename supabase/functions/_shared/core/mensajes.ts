@@ -44,3 +44,20 @@ export function mensajeEstadoParada(p: { tipo: TipoRecorrido; nombreAlumno: stri
 export function horaChile(fecha: Date, zona = "America/Santiago"): string {
   return new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: zona }).format(fecha);
 }
+
+/** Aviso a la tía de que su licencia de conducir vence (o venció). */
+export function mensajeVencimientoLicencia(p: { nombre: string; dias: number; venceEn: string }) {
+  const [a, m, d] = p.venceEn.split("-");
+  const fecha = `${d}-${m}-${a}`;
+  const nombre = p.nombre.split(" ")[0];
+  if (p.dias < 0) {
+    return { titulo: "🪪 Tu licencia venció", cuerpo: `${nombre}, tu licencia de conducir venció el ${fecha}. Sube la renovada en «Mi licencia» para seguir iniciando recorridos.` };
+  }
+  if (p.dias === 0) {
+    return { titulo: "🪪 Tu licencia vence hoy", cuerpo: `${nombre}, tu licencia de conducir vence hoy (${fecha}). Desde mañana no podrás iniciar recorridos hasta subir la renovada.` };
+  }
+  return {
+    titulo: `🪪 Tu licencia vence en ${p.dias} día${p.dias === 1 ? "" : "s"}`,
+    cuerpo: `${nombre}, tu licencia de conducir vence el ${fecha}. Agenda la renovación y súbela en «Mi licencia».`,
+  };
+}

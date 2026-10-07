@@ -20,3 +20,7 @@ verify_jwt = false
 # Pensada para pg_cron / un scheduler externo: se protege con CRON_SECRET.
 [functions.procesar-llamadas]
 verify_jwt = false
+
+# Diaria, desde pg_cron: avisa vencimientos de licencias. Se protege con CRON_SECRET.
+[functions.avisos-licencias]
+verify_jwt = false

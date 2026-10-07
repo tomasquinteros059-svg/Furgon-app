@@ -5,6 +5,7 @@ import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../compone
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
 import { iniciarSeguimiento } from "../../ubicacion/seguimiento";
+import { type EstadoLic, textoLicencia } from "../../lib/licencia";
 
 interface Ruta {
   id: string;
@@ -24,6 +25,7 @@ export default function RutasConductor() {
   const [error, setError] = useState<string | null>(null);
   const [porResponder, setPorResponder] = useState(0);
   const [nuevos, setNuevos] = useState<Nuevo[]>([]);
+  const [licencia, setLicencia] = useState<EstadoLic | null>(null);
 
   const cargar = useCallback(async () => {
     const [{ data: r }, { data: rec }] = await Promise.all([
@@ -33,6 +35,8 @@ export default function RutasConductor() {
     ]);
     setRutas((r as Ruta[]) ?? []);
     setActivos(Object.fromEntries((rec ?? []).map((x) => [x.ruta_id, x.id])));
+    const { data: l } = await supabase.rpc("estado_licencias");
+    setLicencia(((l as (EstadoLic & { conductor_id: string })[]) ?? []).find((x) => x.conductor_id === perfil?.id) ?? null);
     const { data: n } = await supabase.rpc("nuevos_en_mis_rutas", { p_dias: 3 });
     setNuevos((n as Nuevo[]) ?? []);
     const { data: c } = await supabase.rpc("mis_conexiones");
@@ -76,6 +80,14 @@ export default function RutasConductor() {
           ) : (
             <Boton titulo="Abrir administración" variante="secundario" onPress={() => router.push("/conductor/administrar")} />
           )}
+        </Tarjeta>
+      ) : null}
+      {licencia ? (
+        <Tarjeta estilo={licencia.estado === "vigente" ? undefined : { borderColor: licencia.estado === "por_verificar" ? colores.amarillo : colores.rojo, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>🪪 Mi licencia</Text>
+          <Text style={estilos.texto}>{textoLicencia(licencia).txt}</Text>
+          <Boton titulo={licencia.estado === "vigente" || licencia.estado === "por_verificar" ? "Ver mi licencia" : "Subir licencia"} variante="secundario"
+            onPress={() => router.push("/conductor/licencia")} />
         </Tarjeta>
       ) : null}
       {nuevos.length ? (

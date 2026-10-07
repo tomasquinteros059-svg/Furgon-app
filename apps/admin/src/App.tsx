@@ -5,6 +5,7 @@ import { Cobros } from "./paginas/Cobros";
 import { Conductoras } from "./paginas/Conductoras";
 import { Configuracion } from "./paginas/Configuracion";
 import { FichaAlumno } from "./paginas/FichaAlumno";
+import { Furgones } from "./paginas/Furgones";
 import { Ingresar } from "./paginas/Ingresar";
 import { Llamadas } from "./paginas/Llamadas";
 import { NuevoAlumno } from "./paginas/NuevoAlumno";
@@ -15,7 +16,7 @@ import { Solicitudes } from "./paginas/Solicitudes";
 
 const SECCIONES = [
   { ruta: "panel", nombre: "Panel" },
-  { ruta: "alumnos", nombre: "Alumnos" },
+  { ruta: "furgones", nombre: "Furgones" },
   { ruta: "rutas", nombre: "Rutas" },
   { ruta: "conductoras", nombre: "Conductoras" },
   { ruta: "cobros", nombre: "Cobros" },
@@ -64,6 +65,7 @@ export function App() {
   let pagina;
   switch (seccion) {
     case "alumnos": pagina = id === "nuevo" ? <NuevoAlumno /> : id ? <FichaAlumno id={id} /> : <Alumnos />; break;
+    case "furgones": pagina = <Furgones />; break;
     case "rutas": pagina = <Rutas />; break;
     case "conductoras": pagina = <Conductoras principal={usuario.tipo === "principal"} />; break;
     case "cobros": pagina = <Cobros />; break;
