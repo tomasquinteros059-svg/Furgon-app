@@ -57,6 +57,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); position: relative; }
 .tabs button span { font-size: 20px; line-height: 1; }
 .tabs button[aria-current="page"] { color: var(--ink); }
+/* Íconos de la barra inferior: solo en grises (sin acento amarillo). La pestaña activa, en gris oscuro con relleno gris claro. */
+.tabs .ico { --ico-acento: transparent; }
+.tabs button[aria-current="page"] .ico { --ico-acento: var(--line); }
 .codigo-fam { font-family: var(--font-mono); font-size: 28px; letter-spacing: .12em; text-align: center; background: var(--bus-soft); border: 2px dashed var(--bus); border-radius: 12px; padding: 10px; }
 .card.invita { border: 2px solid var(--ok); text-align: left; font: inherit; color: inherit; cursor: pointer; }
 .tia-res { display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 10px; }

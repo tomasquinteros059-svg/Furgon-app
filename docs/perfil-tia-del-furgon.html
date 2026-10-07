@@ -60,6 +60,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .tabs button span { font-size: 20px; line-height: 1; }
 .tabs button[aria-current="page"] { color: var(--ink); }
+/* Íconos de la barra inferior: solo en grises (sin acento amarillo). La pestaña activa, en gris oscuro con relleno gris claro. */
+.tabs .ico { --ico-acento: transparent; }
+.tabs button[aria-current="page"] .ico { --ico-acento: var(--line); }
 .tabs button[aria-current="page"] span { filter: none; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
