@@ -275,7 +275,7 @@ npx expo start --dev-client
 
 | Rol | Puede |
 |---|---|
-| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Subió" / "En su hogar" o "Ausente" con un toque (botones grandes) y ve cuando una familia confirmó que su hijo subió. Comparte el GPS solo mientras hay un recorrido activo. En **Conexiones** (`conductor/conexiones`) decide si aparece en la búsqueda de las familias, busca a una familia por correo o teléfono exactos para invitarla y acepta o rechaza solicitudes. |
+| **Conductor** | Inicia y finaliza recorridos y ve la lista ordenada. Marca "Subió" / "En su hogar" o "Ausente" con un toque (botones grandes) y ve cuando una familia confirmó que su hijo subió. Comparte el GPS solo mientras hay un recorrido activo. En **Conexiones** (`conductor/conexiones`) decide si aparece en la búsqueda de las familias, busca a una familia por correo o teléfono exactos para invitarla y acepta o rechaza solicitudes; al aceptar elige en qué rutas va y los hijos entran solos a ellas (y aparecen en «Se sumaron a tus rutas» del panel principal). |
 | **Apoderado** | Se registra con un código de invitación **o sin código** ("Soy familia y no tengo código") y luego se conecta con su tía o tío desde la búsqueda (`apoderado/conectar`: nombre, furgón o comuna). **Perfil compartido (dúo):** en *Familia* (`apoderado/familia`) la mamá comparte a sus hijos con el papá (o un abuelo/a) con un código de un solo uso; cada uno entra con su cuenta y ambos reciben la alarma y las llamadas, siguen el furgón y marcan «Ya subió» u «hoy no viaja». Puede estar conectado con varias tías (hermanos en furgones distintos) y elige con quién va cada hijo al registrarlo. Recibe la alarma, toca **"Ya subió"** para seguir a su hijo en vivo mientras va a bordo, sigue al furgón en un **mapa en vivo** (`apoderado/seguir/[id]`), confirma "recibido", marca "hoy no viaja" y elige los minutos de aviso. |
 | **Administrador** | Usa solo la **app web** (`apps/admin`). Si entra a la app móvil, ve un aviso con el enlace al panel (`EXPO_PUBLIC_PANEL_URL`). |
 
@@ -304,6 +304,7 @@ npm run typecheck
 - `tests/recomendar-ruta.test.ts`: la ruta recomendada (ida termina en el colegio, vuelta parte
   de él, óptimo exacto hasta 8 casas comparado con fuerza bruta, heurística con 12 casas, no
   cambia el orden por menos de 50 m).
+- `tests/sql/conexion-a-ruta.test.ts`: al aceptar a una familia con rutas elegidas, su hijo entra solo a ellas en la parada que menos alarga el recorrido, aparece como nuevo en el panel de la tía y se ignoran rutas de otra tía.
 - `tests/sql/familia-compartida.test.ts`: perfil de familia compartido (el papá se registra o se
   une con el código de la mamá y ve a los mismos hijos, su teléfono entra a la llamada
   automática, código de un solo uso, solo se comparten hijos propios, dejar de compartir).

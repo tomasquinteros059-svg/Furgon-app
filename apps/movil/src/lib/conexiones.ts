@@ -12,6 +12,8 @@ export interface Conexion {
   empresa: string | null;
   comunas: string | null;
   hijos: string[] | null;
+  /** Rutas elegidas por la tía (solo las ve la tía). */
+  rutas: string[] | null;
 }
 
 export async function misConexiones(): Promise<Conexion[]> {

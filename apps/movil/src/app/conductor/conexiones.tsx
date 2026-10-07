@@ -9,6 +9,7 @@ import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
 
 interface Familia { id: string; nombre: string; conexion: string | null }
+interface MiRuta { id: string; nombre: string; tipo: "ida" | "vuelta" }
 
 export default function Conexiones() {
   const { perfil } = useSesion();
@@ -19,11 +20,17 @@ export default function Conexiones() {
   const [texto, setTexto] = useState("");
   const [familias, setFamilias] = useState<Familia[] | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+  // Rutas a las que entrarán los hijos de la familia (se eligen al aceptar o al invitar).
+  const [misRutas, setMisRutas] = useState<MiRuta[]>([]);
+  const [eligiendo, setEligiendo] = useState<{ tipo: "aceptar" | "invitar"; id: string; nombre: string } | null>(null);
+  const [rutasElegidas, setRutasElegidas] = useState<Set<string>>(new Set());
 
   const cargar = useCallback(async () => {
     try { setConexiones(await misConexiones()); } catch (e) { setMsg({ ok: false, txt: mensajeError(e) }); }
     const { data } = await supabase.from("perfiles").select("visible_en_busqueda, comunas, presentacion").eq("id", perfil?.id ?? "").maybeSingle();
     if (data) { setVisible(data.visible_en_busqueda); setComunas(data.comunas ?? ""); setPresentacion(data.presentacion ?? ""); }
+    const { data: r } = await supabase.from("rutas").select("id, nombre, tipo").eq("conductor_id", perfil?.id ?? "").eq("activa", true).order("hora_salida");
+    setMisRutas((r as MiRuta[]) ?? []);
   }, [perfil?.id]);
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
@@ -41,6 +48,47 @@ export default function Conexiones() {
     if (error) setMsg({ ok: false, txt: mensajeError(error) }); else setFamilias((data as Familia[]) ?? []);
   }
 
+  function elegirRutas(tipo: "aceptar" | "invitar", id: string, nombre: string) {
+    setEligiendo({ tipo, id, nombre });
+    setRutasElegidas(new Set(misRutas.map((r) => r.id))); // por defecto, todas sus rutas
+  }
+
+  function confirmarRutas() {
+    if (!eligiendo) return;
+    const rutas = [...rutasElegidas];
+    const nombres = misRutas.filter((r) => rutasElegidas.has(r.id)).map((r) => r.nombre).join(" y ");
+    const destino = rutas.length ? `Sus hijos entrarán solos a ${nombres}, en el lugar que menos alarga el recorrido.` : "Sin rutas elegidas: agrégalos después en Rutas.";
+    const e = eligiendo;
+    setEligiendo(null);
+    if (e.tipo === "aceptar") {
+      ejecutar(supabase.rpc("responder_conexion", { p_conexion: e.id, p_aceptar: true, p_rutas: rutas }), `${e.nombre} quedó conectada a tu furgón. ${destino}`);
+    } else {
+      ejecutar(supabase.rpc("solicitar_conexion", { p_otro: e.id, p_mensaje: null, p_rutas: rutas }), `Invitación enviada a ${e.nombre}. Cuando acepte: ${destino.charAt(0).toLowerCase()}${destino.slice(1)}`);
+    }
+  }
+
+  const selectorRutas = (
+    <View style={{ gap: 6 }}>
+      <Text style={estilos.etiqueta}>¿En qué rutas va?</Text>
+      {misRutas.length === 0 ? <Text style={estilos.textoSuave}>Aún no tienes rutas asignadas.</Text> : (
+        <View style={[estilos.fila, { flexWrap: "wrap" }]}>
+          {misRutas.map((r) => {
+            const si = rutasElegidas.has(r.id);
+            return (
+              <Boton key={r.id} titulo={`${si ? "✓ " : ""}${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}`} variante={si ? "exito" : "secundario"}
+                estilo={{ minHeight: 40, paddingHorizontal: 12 }}
+                onPress={() => { const n = new Set(rutasElegidas); if (si) n.delete(r.id); else n.add(r.id); setRutasElegidas(n); }} />
+            );
+          })}
+        </View>
+      )}
+      <View style={estilos.fila}>
+        <Boton titulo={eligiendo?.tipo === "aceptar" ? "Aceptar" : "Enviar invitación"} variante="exito" estilo={{ flex: 1 }} onPress={confirmarRutas} />
+        <Boton titulo="Cancelar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setEligiendo(null)} />
+      </View>
+    </View>
+  );
+
   const guardarPerfil = (cambios: { visible_en_busqueda?: boolean; comunas?: string; presentacion?: string }, ok: string) =>
     ejecutar(supabase.from("perfiles").update(cambios).eq("id", perfil?.id ?? ""), ok);
 
@@ -56,12 +104,13 @@ export default function Conexiones() {
         <Tarjeta key={c.id} estilo={{ borderColor: colores.verde, borderWidth: 2 }}>
           <Text style={estilos.subtitulo}>🤝 {c.otro_nombre} quiere conectarse</Text>
           {c.mensaje ? <Text style={estilos.texto}>“{c.mensaje}”</Text> : null}
-          <View style={estilos.fila}>
-            <Boton titulo="Aceptar" variante="exito" estilo={{ flex: 1 }}
-              onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: true }), `${c.otro_nombre} quedó conectada a tu furgón. Cuando registre a sus hijos, aparecerán en «Alumnos sin ruta».`)} />
-            <Boton titulo="Rechazar" variante="secundario" estilo={{ flex: 1 }}
-              onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: false }), "Solicitud rechazada.")} />
-          </View>
+          {eligiendo?.tipo === "aceptar" && eligiendo.id === c.id ? selectorRutas : (
+            <View style={estilos.fila}>
+              <Boton titulo="Aceptar" variante="exito" estilo={{ flex: 1 }} onPress={() => elegirRutas("aceptar", c.id, c.otro_nombre)} />
+              <Boton titulo="Rechazar" variante="secundario" estilo={{ flex: 1 }}
+                onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: false }), "Solicitud rechazada.")} />
+            </View>
+          )}
         </Tarjeta>
       ))}
 
@@ -90,7 +139,8 @@ export default function Conexiones() {
             <Text style={[estilos.texto, { fontWeight: "700" }]}>{f.nombre}</Text>
             {f.conexion === "aceptada" ? <Text style={{ color: colores.verde, fontWeight: "700" }}>✓ Conectados</Text>
               : f.conexion === "pendiente" ? <Text style={estilos.textoSuave}>Solicitud pendiente</Text>
-              : <Boton titulo="🤝 Invitar a conectarse" onPress={() => ejecutar(supabase.rpc("solicitar_conexion", { p_otro: f.id, p_mensaje: null }), `Invitación enviada a ${f.nombre}.`)} />}
+              : eligiendo?.tipo === "invitar" && eligiendo.id === f.id ? selectorRutas
+              : <Boton titulo="🤝 Invitar a conectarse" onPress={() => elegirRutas("invitar", f.id, f.nombre)} />}
           </View>
         ))}
       </Tarjeta>
@@ -108,7 +158,8 @@ export default function Conexiones() {
       {conectadas.map((c) => (
         <Tarjeta key={c.id}>
           <Text style={[estilos.texto, { fontWeight: "700" }]}>✓ {c.otro_nombre}</Text>
-          <Text style={estilos.textoSuave}>{c.hijos?.length ? `Hijos: ${c.hijos.join(", ")}` : "Aún no registra a sus hijos"}</Text>
+          <Text style={estilos.textoSuave}>{c.hijos?.length ? `Hijos: ${c.hijos.join(", ")}` : "Aún no registra a sus hijos: entrarán solos a tus rutas"}</Text>
+          {c.rutas?.length ? <Text style={estilos.textoSuave}>Va en: {c.rutas.join(" y ")}</Text> : null}
         </Tarjeta>
       ))}
     </Pantalla>

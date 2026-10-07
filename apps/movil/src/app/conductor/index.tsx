@@ -12,7 +12,9 @@ interface Ruta {
   tipo: "ida" | "vuelta";
   hora_salida: string | null;
   colegio_nombre: string | null;
+  ruta_paradas: { alumno_id: string }[];
 }
+interface Nuevo { alumno: string; ruta: string; tipo: "ida" | "vuelta"; parada: number; agregado_en: string }
 
 export default function RutasConductor() {
   const { perfil, cerrarSesion } = useSesion();
@@ -21,15 +23,18 @@ export default function RutasConductor() {
   const [iniciando, setIniciando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [porResponder, setPorResponder] = useState(0);
+  const [nuevos, setNuevos] = useState<Nuevo[]>([]);
 
   const cargar = useCallback(async () => {
     const [{ data: r }, { data: rec }] = await Promise.all([
       // Solo sus rutas (con permiso de administrar vería también las de otras conductoras).
-      supabase.from("rutas").select("id, nombre, tipo, hora_salida, colegio_nombre").eq("activa", true).eq("conductor_id", perfil?.id ?? "").order("hora_salida"),
+      supabase.from("rutas").select("id, nombre, tipo, hora_salida, colegio_nombre, ruta_paradas(alumno_id)").eq("activa", true).eq("conductor_id", perfil?.id ?? "").order("hora_salida"),
       supabase.from("recorridos").select("id, ruta_id").eq("estado", "activo").eq("conductor_id", perfil?.id ?? ""),
     ]);
     setRutas((r as Ruta[]) ?? []);
     setActivos(Object.fromEntries((rec ?? []).map((x) => [x.ruta_id, x.id])));
+    const { data: n } = await supabase.rpc("nuevos_en_mis_rutas", { p_dias: 3 });
+    setNuevos((n as Nuevo[]) ?? []);
     const { data: c } = await supabase.rpc("mis_conexiones");
     setPorResponder(((c as { estado: string; iniciada_por: string }[] | null) ?? []).filter((x) => x.estado === "pendiente" && x.iniciada_por === "apoderado").length);
   }, [perfil?.id]);
@@ -73,6 +78,17 @@ export default function RutasConductor() {
           )}
         </Tarjeta>
       ) : null}
+      {nuevos.length ? (
+        <Tarjeta estilo={{ borderColor: colores.verde, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>🆕 Se sumaron a tus rutas</Text>
+          {nuevos.map((x, i) => (
+            <Text key={i} style={estilos.texto}>
+              {x.tipo === "ida" ? "🌅" : "🏠"} <Text style={{ fontWeight: "700" }}>{x.alumno}</Text> · {x.ruta}, parada {x.parada}
+            </Text>
+          ))}
+          <Text style={estilos.textoSuave}>Quedaron donde menos alargan el recorrido. Su familia ya recibe los avisos.</Text>
+        </Tarjeta>
+      ) : null}
       <Tarjeta estilo={porResponder ? { borderColor: colores.verde, borderWidth: 2 } : undefined}>
         <Text style={estilos.subtitulo}>🤝 Conexiones con familias</Text>
         <Text style={estilos.textoSuave}>{porResponder ? `${porResponder} familia(s) quieren conectarse contigo.` : "Busca familias o deja que te encuentren para sumarlas a tu furgón."}</Text>
@@ -88,6 +104,7 @@ export default function RutasConductor() {
               {ruta.tipo === "ida" ? "Casa → colegio" : "Colegio → casa"}
               {ruta.hora_salida ? ` · ${ruta.hora_salida.slice(0, 5)}` : ""}
               {ruta.colegio_nombre ? ` · ${ruta.colegio_nombre}` : ""}
+              {` · ${ruta.ruta_paradas.length} alumno${ruta.ruta_paradas.length === 1 ? "" : "s"}`}
             </Text>
             {activo ? (
               <Boton titulo="Continuar recorrido en curso" variante="exito" grande
