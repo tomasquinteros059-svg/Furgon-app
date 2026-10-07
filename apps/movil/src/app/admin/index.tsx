@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 // La administración (alumnos, rutas, conductoras, cobros, solicitudes) se hace en la app web
 // (apps/admin). La app móvil es para la tía o el tío del furgón y para las familias.
 import { Linking } from "react-native";
@@ -19,6 +20,7 @@ export default function AdminEnLaWeb() {
       {PANEL_URL ? <Boton titulo="Abrir el panel web" onPress={() => Linking.openURL(PANEL_URL)} /> : null}
       <Boton titulo="Cerrar sesión" variante="secundario" onPress={cerrarSesion} />
       <Tarjeta><SelectorTema /></Tarjeta>
+      <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
     </Pantalla>
   );
 }

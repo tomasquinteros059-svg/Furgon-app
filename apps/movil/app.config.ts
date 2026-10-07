@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
-  userInterfaceStyle: "light",
+  userInterfaceStyle: "automatic", // modo claro u oscuro según el teléfono (o lo que elija la persona)
   ios: {
     bundleIdentifier: "cl.furgonapp.movil",
     supportsTablet: false,
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "cl.furgonapp.movil",
     adaptiveIcon: {
-      backgroundColor: "#F2B705",
+      backgroundColor: "#F5B700",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -56,7 +56,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-notifications",
       {
-        color: "#F2B705",
+        color: "#F5B700",
         sounds: ["./assets/sonidos/alarma.wav"],
         // Despierta la app al llegar la llamada gratis, para acusar recibo sin abrirla.
         enableBackgroundRemoteNotifications: true,
@@ -80,7 +80,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-splash-screen",
       {
         image: "./assets/splash-icon.png",
-        backgroundColor: "#F2B705",
+        backgroundColor: "#F5B700",
         imageWidth: 160,
       },
     ],

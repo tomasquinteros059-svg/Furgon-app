@@ -41,6 +41,21 @@
   <div class="barra" aria-hidden="true"><i id="progreso"></i></div>
 
   <section>
+    <h2>Lo que falta de tu parte (7 de octubre)</h2>
+    <p class="meta">Lo demás ya está hecho. En orden:</p>
+    <ol>
+      <li><input type="checkbox"><div class="txt"><b>Expo:</b> tu correo de GitHub ya tiene cuenta. Restablece la contraseña con ese correo y entra.<br><a class="ir" href="https://expo.dev/forgot-password" target="_blank" rel="noopener">Restablecer contraseña</a> <a class="ir" href="https://expo.dev/settings/access-tokens" target="_blank" rel="noopener">Crear token</a><br>Guarda el token en el entorno como <code>EXPO_TOKEN</code>.</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Datos de la empresa</b> para la política de privacidad: razón social, RUT, dirección, un correo de privacidad y la fecha de publicación. Puedes escribirlos en el chat (no son secretos).</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Google Play Console</b> (USD 25): crea la cuenta y verifica tu identidad (tarda de 1 a 7 días).<br><a class="ir" href="https://play.google.com/console/signup" target="_blank" rel="noopener">Google Play Console</a><br>Si la cuenta es <b>personal</b>, junta desde ya <b>12 personas con Android</b> (tías y apoderados) para la prueba cerrada de 14 días que Google exige antes de publicar.</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Apple:</b> espera el correo de Apple (24 h) con la fecha de desbloqueo y luego inscríbete en Apple Developer (USD 99 al año).<br><a class="ir" href="https://iforgot.apple.com" target="_blank" rel="noopener">Estado de la recuperación</a> <a class="ir" href="https://developer.apple.com/programs/enroll/" target="_blank" rel="noopener">Apple Developer</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Sesión nueva de Claude Code</b> con todas las claves en el entorno, y escribe: «despliega Supabase y compila la app de Android».<br><span class="yo">Yo: despliego, creo cuentas de prueba para los revisores de las tiendas y te dejo el APK.</span></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Firebase</b> (notificaciones de Android), después de entrar a Expo: ver el bloque 5.<br><a class="ir" href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Video de ubicación</b> (30–45 s), cuando tengas la app instalada: el guion está en <code>docs/ficha-tiendas.md</code>, sección 7. Súbelo a YouTube como «No listado».</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Abogado:</b> que revise la política de privacidad antes de publicarla (datos de menores; la Ley 21.719 rige desde el 1 de diciembre de 2026).</div></li>
+    </ol>
+  </section>
+
+  <section>
     <h2>1. Supabase <span class="costo">Gratis</span></h2>
     <p class="meta">La base de datos y el servidor de la app. ≈ 10 min.</p>
     <ol>
@@ -143,11 +158,11 @@
 <script>
   const cajas = [...document.querySelectorAll('input[type=checkbox]')];
   let guardado = [];
-  try { guardado = JSON.parse(localStorage.getItem('furgon-tareas') || '[]'); } catch {}
+  try { guardado = JSON.parse(localStorage.getItem('furgon-tareas-v2') || '[]'); } catch {}
   const actualizar = () => {
     cajas.forEach((c) => c.closest('li').classList.toggle('hecho', c.checked));
     document.getElementById('progreso').style.width = (100 * cajas.filter((c) => c.checked).length / cajas.length) + '%';
-    try { localStorage.setItem('furgon-tareas', JSON.stringify(cajas.map((c) => c.checked))); } catch {}
+    try { localStorage.setItem('furgon-tareas-v2', JSON.stringify(cajas.map((c) => c.checked))); } catch {}
   };
   cajas.forEach((c, i) => { c.checked = !!guardado[i]; c.setAttribute('aria-label', 'Hecho'); c.addEventListener('change', actualizar); });
   actualizar();

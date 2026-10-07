@@ -71,7 +71,7 @@ npm run desplegar -- --sin-confirmar-correo
 2. carga los secretos de las funciones (clave de Google, `ETA_PROVEEDOR=google`, un
    `CRON_SECRET` aleatorio, `LLAMADAS_HABILITADAS=false` hasta configurar Twilio);
 3. despliega las Edge Functions (`posiciones`, `marcar-parada`, `llamada-app`,
-   `trazado-ruta`, `recomendar-ruta`, `avisos-licencias`, `twilio-webhook`, `procesar-llamadas`);
+   `trazado-ruta`, `recomendar-ruta`, `avisos-licencias`, `eliminar-cuenta`, `twilio-webhook`, `procesar-llamadas`);
 4. escribe la URL y la *anon key* (valores públicos) en `apps/movil/.env` y `apps/admin/.env`.
 5. programa con `pg_cron` los avisos diarios de vencimiento de licencias y el respaldo de
    reintentos de llamadas (el secreto queda en el Vault de Supabase).

@@ -373,7 +373,7 @@ Manual, con la CLI:
 supabase link --project-ref <ref>
 supabase db push
 supabase secrets set --env-file supabase/functions/.env
-supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta recomendar-ruta avisos-licencias twilio-webhook procesar-llamadas
+supabase functions deploy posiciones marcar-parada llamada-app trazado-ruta recomendar-ruta avisos-licencias eliminar-cuenta twilio-webhook procesar-llamadas
 ```
 
 `twilio-webhook` y `procesar-llamadas` se despliegan sin verificación de JWT (ver `supabase/config.toml`):

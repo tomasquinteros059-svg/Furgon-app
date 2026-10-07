@@ -130,6 +130,7 @@ export default function RutasConductor() {
         );
       })}
       <Tarjeta><SelectorTema /></Tarjeta>
+      <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
     </Pantalla>
   );
 }
