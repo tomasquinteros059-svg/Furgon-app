@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furgón Escolar · Tía del furgón</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* App de la conductora ("tía del furgón"): una sola columna móvil, barra de pestañas inferior, botones grandes para usar detenida. */
+:root {
+  --bg: #E7EBEF; --app: #F4F6F8; --surface: #FFFFFF; --surface-2: #EEF1F4;
+  --ink: #15202B; --muted: #5A6573; --line: #D3D9E0; --road: #C4CBD3;
+  --bus: #F5B700; --bus-ink: #2A2100; --bus-soft: #FFF4CC;
+  --navy: #16324F; --navy-ink: #FFFFFF;
+  --ok: #1D7F45; --ok-soft: #E4F3EA; --alert: #C4281C; --alert-soft: #FCE9E7;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
+    --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+    --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
+  --line: #2B3743; --road: #3A4754; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+  --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 10px; }
+.rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.telefono { width: min(410px, 100%); height: min(860px, calc(100vh - 60px)); min-height: 620px; background: var(--app); border: 10px solid var(--ink); border-radius: 38px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+@media (max-width: 520px) {
+  body { padding: 0; gap: 0; }
+  .rotulo { display: none; }
+  .telefono { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; }
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 { font-size: 30px; line-height: 1.05; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.estado-sis { display: flex; justify-content: space-between; padding: 8px 18px 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.vista { flex: 1; overflow-y: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.tabs button span { font-size: 20px; line-height: 1; }
+.tabs button[aria-current="page"] { color: var(--ink); }
+.tabs button[aria-current="page"] span { filter: none; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fila > * { min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.alerta { background: var(--alert-soft); color: var(--alert); }
+.chip.bus { background: var(--bus-soft); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--navy); color: var(--navy-ink); }
+.btn.bus { background: var(--bus); color: var(--bus-ink); }
+.btn.sec { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.btn.peligro { background: var(--alert); color: #fff; }
+.btn.xl { min-height: 64px; font-size: 19px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.grandes { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.grandes button { border: 0; border-radius: 14px; min-height: 72px; font-weight: 700; font-size: 20px; color: #fff; }
+.grandes .ok { background: var(--ok); }
+.grandes .no { background: var(--alert); font-size: 17px; }
+.campo { display: flex; flex-direction: column; gap: 5px; }
+.campo label { font-weight: 700; font-size: 14px; }
+.campo input { border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; font-size: 16px; background: var(--surface); color: var(--ink); }
+.nota { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 9px 11px; }
+.mapa svg { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--surface-2); }
+.lista-ev { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lista-ev li { display: grid; grid-template-columns: 46px 20px minmax(0, 1fr); gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.lista-ev li:last-child { border-bottom: 0; }
+.lista-ev .h { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
+.parada { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; }
+.parada.actual { border: 2px solid var(--bus); }
+.parada .num { font-family: var(--font-display); font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.parada .nom { font-weight: 700; font-size: 19px; }
+.parada.hecha { opacity: .65; padding: 9px 12px; }
+.manejo { display: flex; gap: 10px; align-items: center; background: var(--navy); color: var(--navy-ink); border-radius: 14px; padding: 12px; }
+.manejo b { display: block; font-size: 16px; }
+.manejo span { font-size: 26px; }
+.demo { border: 1px dashed var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 4px 9px; font-size: 13px; font-weight: 700; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--app); }
+.chk { display: inline-flex; gap: 6px; align-items: center; }
+.chk input { width: 17px; height: 17px; accent-color: var(--navy); }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--bus); color: var(--bus-ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
+.dato { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.dato:last-child { border-bottom: 0; }
+.dato span:first-child { color: var(--muted); }
+.dato span:last-child { text-align: right; font-weight: 700; }
+.cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cifra { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.cifra b { display: block; font-family: var(--font-mono); font-size: 20px; }
+.cifra span { font-size: 12px; color: var(--muted); }
+.hoja-fondo { position: absolute; inset: 0; background: rgba(0,0,0,.45); z-index: 10; display: flex; align-items: flex-end; }
+.hoja { background: var(--surface); width: 100%; border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.toast { position: absolute; left: 10px; right: 10px; top: 34px; z-index: 9; background: var(--surface); border: 2px solid var(--ok); border-radius: 14px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2); font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: baja .3s ease-out; } }
+@keyframes baja { from { transform: translateY(-130%); } to { transform: none; } }
+details.hist { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+details.hist summary { cursor: pointer; list-style: none; }
+details.hist summary::-webkit-details-marker { display: none; }
+table.det { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+table.det th, table.det td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); }
+table.det td.mono { font-size: 12px; }
+.ejemplo { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<span class="rotulo">Perfil · Tía del furgón (conductora)</span>
+<div class="telefono" id="tel"></div>
+
+<script>
+(() => {
+  // ---------- Datos de la demo ----------
+  const TIA = { nombre: "Marcela Fuentes", corto: "Marcela", email: "marcela@furgonesdemo.cl", tel: "+56 9 5555 1234", licencia: "Clase A1 · vence 03/2027" };
+  const FURGON = { patente: "DEMO-11", modelo: "Hyundai H1 blanca", capacidad: 12, empresa: "Furgones Demo" };
+  const COLEGIO = { lat: -33.4565, lng: -70.5978, nombre: "Colegio (Plaza Ñuñoa)" };
+  const BASE = { lat: -33.4705, lng: -70.6130, nombre: "Base" };
+  const ALUMNOS = [
+    { id: "sofia", nombre: "Sofía Pérez", curso: "3° Básico", apoderado: "Ana (mamá)", direccion: "Av. Ossa 1200, La Reina", indic: "Portón verde", lat: -33.4495, lng: -70.5560, respuesta: "llamada1" },
+    { id: "matias", nombre: "Matías Soto", curso: "5° Básico", apoderado: "Luis (papá)", direccion: "Av. Tomás Moro 300, Las Condes", indic: "Depto 302, conserjería", lat: -33.4180, lng: -70.5540, respuesta: "llamada2" },
+    { id: "isidora", nombre: "Isidora Rojas", curso: "1° Básico", apoderado: "Ana (mamá)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina", lat: -33.4260, lng: -70.6100, respuesta: "app" },
+  ];
+  const RUTAS = [
+    { id: "ida", nombre: "Ida mañana", tipo: "ida", hora: "07:00", inicio: 7 * 3600, noViaja: ["matias"] },
+    { id: "vuelta", nombre: "Vuelta tarde", tipo: "vuelta", hora: "16:30", inicio: 16 * 3600 + 30 * 60, noViaja: [] },
+  ];
+  const HISTORIAL = [
+    { fecha: "Lun 6 oct", ruta: "Vuelta tarde", inicio: "16:31", fin: "17:02", km: 14.4, ejemplo: true,
+      det: [["Sofía Pérez", "16:34", "16:40", "Llamada"], ["Matías Soto", "16:42", "16:48", "App"], ["Isidora Rojas", "16:55", "17:01", "Llamada"]] },
+    { fecha: "Lun 6 oct", ruta: "Ida mañana", inicio: "07:00", fin: "07:34", km: 15.1, ejemplo: true,
+      det: [["Isidora Rojas", "07:01", "07:06", "Push"], ["Matías Soto", "07:10", "07:17", "Llamada"], ["Sofía Pérez", "07:20", "07:26", "App"]] },
+    { fecha: "Vie 3 oct", ruta: "Vuelta tarde", inicio: "16:30", fin: "16:58", km: 14.4, ejemplo: true,
+      det: [["Sofía Pérez", "16:33", "16:39", "Llamada"], ["Matías Soto", "—", "—", "No viajó"], ["Isidora Rojas", "16:50", "16:57", "Push"]] },
+  ];
+  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, sonando: 25, reintento: 30 };
+
+  // ---------- Geometría ----------
+  const rad = (g) => g * Math.PI / 180;
+  const dist = (a, b) => { const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng); const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2; return 12742000 * Math.asin(Math.min(1, Math.sqrt(h))); };
+  const trazar = (p) => { const r = []; p.forEach((x, i) => { if (i) r.push({ lat: p[i - 1].lat, lng: x.lng }); r.push(x); }); return r; };
+  const mLng = 111195 * Math.cos(rad(-33.445)), mLat = 111195;
+  const lngMin = -70.6185, lngMax = -70.5480, latMin = -33.4745, latMax = -33.4130;
+  const W = 360, H = 250, k = Math.min((W - 20) / ((lngMax - lngMin) * mLng), (H - 20) / ((latMax - latMin) * mLat));
+  const ox = (W - (lngMax - lngMin) * mLng * k) / 2, oy = (H - (latMax - latMin) * mLat * k) / 2;
+  const px = (p) => ({ x: ox + (p.lng - lngMin) * mLng * k, y: oy + (latMax - p.lat) * mLat * k });
+
+  // ---------- Estado de la app ----------
+  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [] };
+  let R = null; // recorrido activo
+
+  function iniciarRecorrido(rutaId) {
+    const ruta = RUTAS.find((r) => r.id === rutaId);
+    const orden = ruta.tipo === "ida" ? [...ALUMNOS].reverse() : ALUMNOS;
+    const puntos = trazar(ruta.tipo === "ida" ? [BASE, ...orden, COLEGIO] : [COLEGIO, ...orden]);
+    const acum = [0];
+    for (let i = 1; i < puntos.length; i++) acum.push(acum[i - 1] + dist(puntos[i - 1], puntos[i]));
+    R = {
+      ruta, puntos, acum, largo: acum.at(-1), t: 0, d: 0, cola: 0, enviadas: 0, detenido: null, fin: false,
+      paradas: orden.map((a, j) => ({ ...a, dRuta: acum[2 * (j + 1)], estado: ruta.noViaja.includes(a.id) ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, confPor: null, marcaT: null })),
+      llamadas: [], ev: [],
+    };
+    evento("▶️", `Recorrido iniciado. Compartiendo ubicación cada ${CFG.gps} s.`);
+    R.paradas.filter((p) => p.estado === "no_viaja").forEach((p) => evento("📅", `${p.nombre} no viaja hoy (lo marcó su apoderado).`));
+    gps();
+    app.vista = "recorrido";
+  }
+
+  const hora = (t) => { const s = Math.floor(R.ruta.inicio + t); return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}`; };
+  const evento = (i, txt, tipo = "") => R.ev.unshift({ t: R.t, i, txt, tipo });
+
+  function puntoEn(d) {
+    let i = R.acum.findIndex((a) => a >= d); if (i <= 0) i = 1;
+    if (d >= R.largo) return R.puntos.at(-1);
+    const f = (d - R.acum[i - 1]) / ((R.acum[i] - R.acum[i - 1]) || 1), a = R.puntos[i - 1], b = R.puntos[i];
+    return { lat: a.lat + (b.lat - a.lat) * f, lng: a.lng + (b.lng - a.lng) * f };
+  }
+
+  function gps() {
+    if (!app.senal) { R.cola++; return; }
+    if (R.cola) evento("📶", `Señal recuperada: se enviaron ${R.cola + 1} posiciones guardadas.`);
+    R.enviadas += R.cola + 1; R.cola = 0;
+    const pos = puntoEn(R.d), v = CFG.kmh / 3.6;
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    pend.forEach((p, i) => { p.eta = Math.max(0, (p.dRuta - R.d) / v) + i * CFG.parada; });
+    for (const p of pend) {
+      if (p.avisoT !== null) continue;
+      if (dist(pos, p) <= CFG.proximidad || p.eta <= 5 * 60 + CFG.margen) {
+        p.avisoT = R.t;
+        evento("🔔", `Aviso automático a ${p.apoderado} de ${p.nombre}: alarma + llamada.`, "aviso");
+        R.llamadas.push({ p, intento: 1, fase: "sonando", hasta: R.t + CFG.sonando });
+        app.toast = { txt: `🔔 Se avisó a ${p.apoderado} que llegas en ~${Math.max(1, Math.round(p.eta / 60))} min con ${p.nombre.split(" ")[0]}.`, hasta: performance.now() + 5000 };
+      }
+    }
+  }
+
+  function confirmar(p, como) {
+    if (p.confT !== null) return;
+    p.confT = R.t; p.confPor = como;
+    R.llamadas.filter((l) => l.p === p).forEach((l) => { l.fase = "fin"; });
+    evento("✅", `${p.apoderado} confirmó el aviso de ${p.nombre.split(" ")[0]} (${como}).`, "ok");
+  }
+
+  function llamadas() {
+    for (const l of R.llamadas) {
+      if (l.fase === "fin") continue;
+      const p = l.p;
+      if (p.estado !== "pendiente") { l.fase = "fin"; continue; }
+      if (p.respuesta === "app" && R.t - p.avisoT >= 6) { confirmar(p, "tocó Recibido en la app"); continue; }
+      if (l.fase === "esperando" && R.t >= l.hasta) { l.fase = "sonando"; l.hasta = R.t + CFG.sonando; evento("📞", `Segunda llamada a ${p.apoderado}.`); }
+      if (l.fase !== "sonando") continue;
+      const contesta = (p.respuesta === "llamada1" && l.intento === 1) || (p.respuesta === "llamada2" && l.intento === 2);
+      if (contesta && R.t >= l.hasta - 15) confirmar(p, `contestó y presionó 1 en la llamada ${l.intento}`);
+      else if (R.t >= l.hasta) {
+        evento("✖️", `${p.apoderado} no contestó la llamada ${l.intento}. Reintento en 30 s.`);
+        Object.assign(l, { intento: l.intento + 1, fase: "esperando", hasta: R.t + CFG.reintento });
+      }
+    }
+  }
+
+  function paso() {
+    if (!R || R.fin) return;
+    R.t++;
+    const v = CFG.kmh / 3.6;
+    if (!R.detenido) {
+      const obj = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
+      const tope = obj ? obj.dRuta : R.largo;
+      R.d = Math.min(tope, R.d + v);
+      if (obj && R.d >= obj.dRuta) { R.detenido = obj; evento("🅿️", `Llegaste donde ${obj.nombre}. Marca la ${R.ruta.tipo === "ida" ? "subida" : "entrega"}.`); }
+    }
+    if (R.t % CFG.gps === 0) gps();
+    llamadas();
+  }
+
+  function marcar(id, estado) {
+    const p = R.paradas.find((x) => x.id === id);
+    if (!p || p.estado !== "pendiente") return;
+    p.estado = estado; p.marcaT = R.t;
+    R.llamadas.filter((l) => l.p === p).forEach((l) => { l.fase = "fin"; });
+    const txt = estado === "ausente" ? `${p.nombre} marcado ausente.` : R.ruta.tipo === "ida" ? `${p.nombre} subió al furgón.` : `${p.nombre} llegó a casa.`;
+    evento(estado === "ausente" ? "🚫" : "🏠", `${txt} Se avisó a ${p.apoderado}.`, "ok");
+    app.toast = { txt: `✅ ${txt} Su apoderado ya recibió la confirmación.`, hasta: performance.now() + 4000 };
+    if (R.detenido === p) R.detenido = null;
+  }
+
+  function finalizar() {
+    R.fin = true;
+    const pend = R.paradas.filter((p) => p.estado === "pendiente").length;
+    evento("🏁", "Recorrido finalizado. El GPS se detuvo.");
+    const det = R.paradas.map((p) => [p.nombre, p.avisoT !== null ? hora(p.avisoT) : "—", p.marcaT !== null ? hora(p.marcaT) : "—",
+      p.estado === "no_viaja" ? "No viajó" : p.estado === "ausente" ? "Ausente" : p.confPor ? (p.confPor.includes("app") ? "App" : "Llamada") : pend ? "Pendiente" : "Push"]);
+    app.terminados.unshift({ fecha: "Hoy", ruta: R.ruta.nombre, inicio: hora(0), fin: hora(R.t), km: +(R.d / 1000).toFixed(1), det, ejemplo: false });
+    app.hoja = null; app.vista = "resumen";
+  }
+
+  // ---------- Vistas ----------
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const $tel = document.getElementById("tel");
+  let previo = "", presionando = false;
+  addEventListener("pointerdown", () => { presionando = true; }, true);
+  addEventListener("pointerup", () => setTimeout(() => { presionando = false; }, 0), true);
+
+  function barraSis() {
+    const h = R && app.vista !== "hoy" ? hora(R.t) : (app.vista === "login" ? "16:25" : "16:28");
+    return `<div class="estado-sis"><span>${h}</span><span>${app.senal ? "4G ▮▮▮ · 82%" : "Sin señal · 82%"}</span></div>`;
+  }
+
+  function vLogin() {
+    return `<div class="vista" style="justify-content:center">
+      <div style="text-align:center; display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom: 18px;">
+        <svg width="84" height="56" viewBox="0 0 84 56" aria-hidden="true"><rect x="4" y="8" width="76" height="36" rx="9" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="3"/><rect x="12" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><rect x="34" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><rect x="56" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><circle cx="22" cy="46" r="7" fill="var(--ink)"/><circle cx="62" cy="46" r="7" fill="var(--ink)"/></svg>
+        <h1>Furgón Escolar</h1><span class="muted">Avisos automáticos de llegada</span>
+      </div>
+      <div class="campo"><label for="em">Correo</label><input id="em" type="email" value="${TIA.email}" autocomplete="email"></div>
+      <div class="campo"><label for="pw">Contraseña</label><input id="pw" type="password" value="demo-furgon" autocomplete="current-password"></div>
+      <button class="btn xl" data-a="entrar">Ingresar</button>
+      <p class="nota">Cuenta de demostración. Las cuentas de conductora las crea el dueño del furgón con un código de invitación.</p>
+    </div>`;
+  }
+
+  function vHoy() {
+    const rutas = RUTAS.map((r) => {
+      const hecha = app.terminados.find((x) => x.ruta === r.nombre);
+      const n = ALUMNOS.length - r.noViaja.length;
+      return `<div class="card">
+        <div class="fila"><h2>${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}</h2><span class="mono muted">${r.hora}</span></div>
+        <span class="muted">${r.tipo === "ida" ? "Casas → colegio" : "Colegio → casas"} · ${n} alumno${n === 1 ? "" : "s"}${r.noViaja.length ? ` · ${r.noViaja.length} no viaja hoy` : ""}</span>
+        ${hecha ? `<span class="chip ok">✓ Terminado ${hecha.inicio}–${hecha.fin}</span>` : `<button class="btn xl bus" data-a="iniciar" data-id="${r.id}">Iniciar recorrido</button>`}
+      </div>`;
+    }).join("");
+    return `<div class="vista">
+      <div><span class="muted">Martes 7 de octubre</span><h1>Hola, tía ${TIA.corto}</h1></div>
+      <div class="card" style="flex-direction:row; align-items:center; gap:12px">
+        <svg width="54" height="36" viewBox="0 0 84 56" aria-hidden="true"><rect x="4" y="8" width="76" height="36" rx="9" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="3"/><circle cx="22" cy="46" r="7" fill="var(--ink)"/><circle cx="62" cy="46" r="7" fill="var(--ink)"/></svg>
+        <div style="min-width:0"><b>${FURGON.modelo}</b><br><span class="mono muted">${FURGON.patente} · ${FURGON.capacidad} asientos</span></div>
+      </div>
+      <div class="card">
+        <h3>Antes de partir</h3>
+        <div class="chips"><span class="chip ok">✓ Ubicación “Siempre”</span><span class="chip ok">✓ Notificaciones</span><span class="chip ok">✓ Batería 82%</span><span class="chip ok">✓ Ahorro de batería desactivado</span></div>
+      </div>
+      ${rutas}
+      <p class="nota">Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.</p>
+    </div>`;
+  }
+
+  function mapa() {
+    const pts = R.puntos.map(px), van = px(puntoEn(R.d));
+    const i0 = R.acum.findIndex((a) => a >= R.d);
+    const hecho = pts.slice(0, i0 === -1 ? pts.length : i0).concat([van]);
+    const casas = R.paradas.map((p, j) => {
+      const c = px(p);
+      const col = p.estado === "entregado" ? "var(--ok)" : p.estado === "pendiente" ? (p.avisoT !== null ? "var(--alert)" : "var(--navy)") : "var(--muted)";
+      return `<circle cx="${c.x}" cy="${c.y}" r="${CFG.proximidad * k}" fill="var(--bus)" fill-opacity=".18"/>
+        <circle cx="${c.x}" cy="${c.y}" r="9" fill="${col}" stroke="var(--surface)" stroke-width="2"/>
+        <text x="${c.x}" y="${c.y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--surface)" font-family="var(--font-body)">${j + 1}</text>`;
+    }).join("");
+    const col = px(COLEGIO);
+    return `<div class="mapa"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa del recorrido">
+      <polyline points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--road)" stroke-width="5" stroke-dasharray="2 7" stroke-linecap="round"/>
+      <polyline points="${hecho.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="${col.x - 8}" y="${col.y - 8}" width="16" height="16" rx="3" fill="var(--ink)"/><text x="${col.x}" y="${col.y + 4}" text-anchor="middle" font-size="11" fill="var(--surface)" font-weight="700" font-family="var(--font-body)">C</text>
+      ${casas}
+      <g transform="translate(${van.x} ${van.y})"><rect x="-15" y="-10" width="30" height="20" rx="5" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/><rect x="-10" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/><rect x="2" y="-6" width="8" height="5" rx="1" fill="var(--bus-ink)" opacity=".7"/></g>
+    </svg></div>`;
+  }
+
+  function vRecorrido() {
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    const hechas = R.paradas.filter((p) => p.estado !== "pendiente");
+    const ok = R.ruta.tipo === "ida" ? "Subió ✅" : "Entregado ✅";
+    const estadoAviso = (p) => p.confT !== null ? `<span class="chip ok">✓ ${esc(p.apoderado)} confirmó</span>`
+      : p.avisoT !== null ? `<span class="chip alerta">🔔 Avisado ${hora(p.avisoT)} · esperando confirmación</span>`
+      : `<span class="chip">Se avisará ~5 min antes</span>`;
+    return `<div class="vista">
+      <div class="fila"><h1>${R.ruta.nombre}</h1><span class="mono muted">${hora(R.t)}</span></div>
+      <div class="chips">
+        ${app.senal ? `<span class="chip ok"><span class="dot"></span>Compartiendo ubicación</span>` : `<span class="chip alerta"><span class="dot"></span>Sin señal · ${R.cola} posiciones guardadas</span>`}
+        <span class="chip">${(R.d / 1000).toFixed(1)} de ${(R.largo / 1000).toFixed(1)} km</span>
+      </div>
+      ${R.detenido ? "" : `<div class="manejo"><span>🚐</span><div><b>Conduce tranquila</b>Los avisos a los apoderados se envían solos. Marca a cada alumno cuando estés detenida.</div></div>`}
+      ${mapa()}
+      ${pend.map((p, i) => {
+        const aqui = R.detenido === p;
+        return `<div class="parada ${i === 0 ? "actual" : ""}">
+          <span class="num">Parada ${R.paradas.indexOf(p) + 1}${aqui ? " · estás aquí" : p.eta != null ? ` · llegada en ~${Math.max(1, Math.round(p.eta / 60))} min` : ""}</span>
+          <span class="nom">${esc(p.nombre)}</span>
+          <span class="muted">${esc(p.direccion)} · ${esc(p.indic)}</span>
+          <div class="chips">${estadoAviso(p)}</div>
+          ${aqui || i === 0 ? `<div class="grandes"><button class="ok" data-a="marcar" data-id="${p.id}" data-e="entregado">${ok}</button><button class="no" data-a="marcar" data-id="${p.id}" data-e="ausente">Ausente</button></div>` : ""}
+        </div>`;
+      }).join("")}
+      ${pend.length === 0 ? `<div class="card"><h3>¡Listo! No quedan alumnos.</h3><span class="muted">Finaliza el recorrido para dejar de compartir tu ubicación.</span></div>` : ""}
+      ${hechas.map((p) => `<div class="parada hecha"><span>${R.paradas.indexOf(p) + 1}. ${esc(p.nombre)} · ${{ entregado: ok + " " + (p.marcaT !== null ? hora(p.marcaT) : ""), ausente: "Ausente", no_viaja: "Hoy no viaja" }[p.estado]}</span></div>`).join("")}
+      <div class="card"><h3>Avisos automáticos</h3>
+        <ul class="lista-ev">${R.ev.slice(0, 8).map((e) => `<li><span class="h">${hora(e.t)}</span><span>${e.i}</span><span>${esc(e.txt)}</span></li>`).join("")}</ul></div>
+      <button class="btn sec" data-a="pedirFin">Finalizar recorrido</button>
+      <div class="demo" aria-label="Controles de la demostración"><b>Demo</b>
+        <span class="seg">${[5, 20, 40].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("")}</span>
+        <label class="chk"><input type="checkbox" id="chkSenal" ${app.senal ? "" : "checked"}> Sin señal</label>
+      </div>
+    </div>`;
+  }
+
+  function vResumen() {
+    const r = app.terminados[0];
+    const entregados = R.paradas.filter((p) => p.estado === "entregado").length;
+    const avisos = R.paradas.filter((p) => p.avisoT !== null).length;
+    const conf = R.paradas.filter((p) => p.confT !== null).length;
+    const dur = Math.round(R.t / 60);
+    return `<div class="vista">
+      <span class="chip ok" style="align-self:flex-start">✓ GPS detenido</span>
+      <h1>Recorrido terminado</h1>
+      <span class="muted">${r.ruta} · ${r.inicio} a ${r.fin}</span>
+      <div class="cifras">
+        <div class="cifra"><b>${dur} min</b><span>Duración</span></div>
+        <div class="cifra"><b>${r.km} km</b><span>Recorridos</span></div>
+        <div class="cifra"><b>${entregados}/${R.paradas.length}</b><span>${R.ruta.tipo === "ida" ? "Subieron" : "Entregados"}</span></div>
+        <div class="cifra"><b>${conf}/${avisos}</b><span>Avisos confirmados</span></div>
+      </div>
+      <div class="card"><h3>Detalle</h3>${tablaDet(r.det)}</div>
+      <p class="nota">Llamadas que hiciste mientras manejabas: <b>0</b>. Todos los avisos se enviaron solos.</p>
+      <button class="btn xl" data-a="volver">Volver al inicio</button>
+    </div>`;
+  }
+
+  const tablaDet = (det) => `<table class="det"><thead><tr><th>Alumno</th><th>Aviso</th><th>${"Entrega"}</th><th>Confirmó</th></tr></thead><tbody>
+    ${det.map((d) => `<tr><td>${esc(d[0])}</td><td class="mono">${d[1]}</td><td class="mono">${d[2]}</td><td>${esc(d[3])}</td></tr>`).join("")}</tbody></table>`;
+
+  function vHistorial() {
+    const todos = [...app.terminados, ...HISTORIAL];
+    return `<div class="vista">
+      <h1>Historial</h1>
+      <span class="muted">Hora de cada aviso y de cada entrega. Toca un recorrido para ver el detalle.</span>
+      ${todos.map((h, i) => `<details class="hist" ${i === 0 ? "open" : ""}>
+        <summary><div class="fila"><b>${h.fecha} · ${esc(h.ruta)}</b>${h.ejemplo ? `<span class="ejemplo">Ejemplo</span>` : `<span class="chip ok">Hoy</span>`}</div>
+        <span class="muted mono" style="font-size:13px">${h.inicio}–${h.fin} · ${h.km} km</span></summary>
+        ${tablaDet(h.det)}
+      </details>`).join("")}
+    </div>`;
+  }
+
+  function vPerfil() {
+    return `<div class="vista">
+      <div style="display:flex; gap:14px; align-items:center">
+        <div class="avatar">MF</div>
+        <div style="min-width:0"><h1>Tía ${TIA.corto}</h1><span class="muted">${TIA.nombre} · Conductora</span></div>
+      </div>
+      <div class="card"><h3>Mis datos</h3>
+        <div class="dato"><span>Teléfono</span><span class="mono">${TIA.tel}</span></div>
+        <div class="dato"><span>Correo</span><span>${TIA.email}</span></div>
+        <div class="dato"><span>Licencia</span><span>${TIA.licencia}</span></div>
+        <div class="dato"><span>Empresa</span><span>${FURGON.empresa}</span></div>
+      </div>
+      <div class="card"><h3>Furgón asignado</h3>
+        <div class="dato"><span>Patente</span><span class="mono">${FURGON.patente}</span></div>
+        <div class="dato"><span>Vehículo</span><span>${FURGON.modelo}</span></div>
+        <div class="dato"><span>Rutas</span><span>Ida 07:00 · Vuelta 16:30</span></div>
+        <div class="dato"><span>Alumnos</span><span>${ALUMNOS.length}</span></div>
+      </div>
+      <div class="card"><h3>Permisos del teléfono</h3>
+        <div class="dato"><span>Ubicación</span><span style="color:var(--ok)">Siempre ✓</span></div>
+        <div class="dato"><span>Notificaciones</span><span style="color:var(--ok)">Activadas ✓</span></div>
+        <div class="dato"><span>Ahorro de batería</span><span style="color:var(--ok)">Excluida ✓</span></div>
+      </div>
+      <p class="nota">🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.</p>
+      <button class="btn sec" data-a="salir">Cerrar sesión</button>
+    </div>`;
+  }
+
+  function tabs() {
+    const t = [["hoy", "🚐", "Hoy"], ["historial", "🕘", "Historial"], ["perfil", "👤", "Perfil"]];
+    return `<nav class="tabs" aria-label="Secciones">${t.map(([id, ic, n]) => `<button data-a="tab" data-id="${id}" aria-current="${app.tab === id ? "page" : "false"}"><span>${ic}</span>${n}</button>`).join("")}</nav>`;
+  }
+
+  function render(forzar = false) {
+    let cuerpo;
+    if (app.vista === "login") cuerpo = vLogin();
+    else if (app.vista === "recorrido") cuerpo = vRecorrido();
+    else if (app.vista === "resumen") cuerpo = vResumen();
+    else cuerpo = { hoy: vHoy, historial: vHistorial, perfil: vPerfil }[app.tab]();
+    const conTabs = app.vista === "hoy";
+    const toast = app.toast && app.toast.hasta > performance.now() ? `<div class="toast" role="status">${esc(app.toast.txt)}</div>` : "";
+    const hoja = app.hoja === "fin" ? `<div class="hoja-fondo" data-a="cerrarHoja"><div class="hoja" role="dialog" aria-label="Finalizar recorrido">
+        <h2>¿Finalizar recorrido?</h2>
+        <span class="muted">${R.paradas.filter((p) => p.estado === "pendiente").length ? `Quedan ${R.paradas.filter((p) => p.estado === "pendiente").length} alumno(s) sin marcar.` : "Todos los alumnos están marcados."} Se dejará de compartir tu ubicación.</span>
+        <button class="btn peligro xl" data-a="finalizar">Finalizar</button><button class="btn sec" data-a="cerrarHoja">Seguir en el recorrido</button>
+      </div></div>` : "";
+    const html = barraSis() + cuerpo + (conTabs ? tabs() : "") + toast + hoja;
+    if (html !== previo && (forzar || !presionando)) {
+      const scroll = $tel.querySelector(".vista")?.scrollTop ?? 0;
+      previo = html; $tel.innerHTML = html;
+      const v = $tel.querySelector(".vista"); if (v) v.scrollTop = scroll;
+    }
+  }
+
+  // ---------- Eventos ----------
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-a]"); if (!el) return;
+    const a = el.dataset.a;
+    if (a === "cerrarHoja" && el !== e.target && el.classList.contains("hoja-fondo")) return;
+    if (a === "entrar") { app.vista = "hoy"; app.tab = "hoy"; }
+    else if (a === "tab") { app.tab = el.dataset.id; }
+    else if (a === "iniciar") iniciarRecorrido(el.dataset.id);
+    else if (a === "marcar") marcar(el.dataset.id, el.dataset.e);
+    else if (a === "pedirFin") app.hoja = "fin";
+    else if (a === "cerrarHoja") app.hoja = null;
+    else if (a === "finalizar") finalizar();
+    else if (a === "volver") { app.vista = "hoy"; app.tab = "historial"; R = null; }
+    else if (a === "vel") app.vel = Number(el.dataset.v);
+    else if (a === "salir") { app.vista = "login"; }
+    previo = ""; render(true);
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "chkSenal") {
+      app.senal = !e.target.checked;
+      if (R) evento(app.senal ? "📶" : "📵", app.senal ? "Señal de vuelta." : "Sin señal: las posiciones se guardan en el teléfono.");
+      previo = ""; render(true);
+    }
+  });
+
+  let ult = performance.now(), acc = 0;
+  function bucle(ahora) {
+    const dt = Math.min(0.25, (ahora - ult) / 1000); ult = ahora;
+    if (app.vista === "recorrido" && R && !R.fin && !app.hoja) { acc += dt * app.vel; while (acc >= 1) { paso(); acc--; } }
+    render();
+    requestAnimationFrame(bucle);
+  }
+  render(); requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>

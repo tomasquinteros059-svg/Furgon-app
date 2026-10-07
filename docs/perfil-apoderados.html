@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furgón Escolar · Apoderados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* App de los padres: una columna móvil, tarjeta por hijo con su estado en vivo, alarma y llamada a pantalla completa. */
+:root {
+  --bg: #E7EBEF; --app: #F4F6F8; --surface: #FFFFFF; --surface-2: #EEF1F4;
+  --ink: #15202B; --muted: #5A6573; --line: #D3D9E0; --road: #C4CBD3; --block: #E1E6EB;
+  --bus: #F5B700; --bus-ink: #2A2100; --bus-soft: #FFF4CC;
+  --navy: #16324F; --navy-ink: #FFFFFF;
+  --ok: #1D7F45; --ok-soft: #E4F3EA; --alert: #C4281C; --alert-soft: #FCE9E7;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
+    --line: #2B3743; --road: #3A4754; --block: #222D37; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+    --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #090D11; --app: #0F151B; --surface: #17212A; --surface-2: #1E2933; --ink: #E7ECF1; --muted: #95A2B0;
+  --line: #2B3743; --road: #3A4754; --block: #222D37; --bus: #F7C21A; --bus-ink: #1E1800; --bus-soft: #3A3010;
+  --navy: #8DB8E6; --navy-ink: #0B1622; --ok: #4DC47F; --ok-soft: #15301F; --alert: #FF6B5E; --alert-soft: #3A1C1A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 10px; }
+.rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.telefono { width: min(410px, 100%); height: min(860px, calc(100vh - 60px)); min-height: 620px; background: var(--app); border: 10px solid var(--ink); border-radius: 38px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+@media (max-width: 520px) {
+  body { padding: 0; gap: 0; }
+  .rotulo { display: none; }
+  .telefono { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; }
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 { font-size: 30px; line-height: 1.05; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.estado-sis { display: flex; justify-content: space-between; padding: 8px 18px 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.vista { flex: 1; overflow-y: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs button { border: 0; background: transparent; padding: 9px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); position: relative; }
+.tabs button span { font-size: 20px; line-height: 1; }
+.tabs button[aria-current="page"] { color: var(--ink); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fila > * { min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.alerta { background: var(--alert-soft); color: var(--alert); }
+.chip.bus { background: var(--bus-soft); }
+.btn { border: 0; border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 16px; background: var(--navy); color: var(--navy-ink); }
+.btn.bus { background: var(--bus); color: var(--bus-ink); }
+.btn.ok { background: var(--ok); color: #fff; }
+.btn.sec { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.btn.xl { min-height: 60px; font-size: 18px; }
+.btn.link { background: transparent; color: var(--navy); min-height: 0; padding: 4px 0; text-align: left; }
+.campo { display: flex; flex-direction: column; gap: 5px; }
+.campo label { font-weight: 700; font-size: 14px; }
+.campo input { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font: inherit; font-size: 16px; background: var(--surface); color: var(--ink); width: 100%; }
+.campo small { color: var(--muted); font-size: 12px; }
+.campo.error input { border-color: var(--alert); }
+.campo.error small { color: var(--alert); }
+.dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.nota { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 9px 11px; }
+.estado { border-radius: 10px; padding: 10px 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 2px; }
+.estado b { font-size: 16px; }
+.estado.bus { background: var(--bus-soft); }
+.estado.ok { background: var(--ok-soft); }
+.estado.no { background: var(--surface-2); color: var(--muted); }
+.sw-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; padding: 4px 0; }
+.sw { position: relative; width: 44px; height: 26px; flex: none; }
+.sw input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 1; }
+.sw span { position: absolute; inset: 0; background: var(--road); border-radius: 999px; pointer-events: none; transition: background .15s; }
+.sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.sw input:checked + span { background: var(--ok); }
+.sw.rojo input:checked + span { background: var(--alert); }
+.sw input:checked + span::after { transform: translateX(18px); }
+.mini svg, .barrio svg { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--surface-2); }
+.barrio svg { cursor: crosshair; }
+.privado { font-size: 13px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+.notif { border-radius: 10px; padding: 9px 11px; background: var(--surface-2); font-size: 14px; }
+.notif b { display: block; }
+.notif.alarma { background: var(--alert-soft); }
+.notif.ok { background: var(--ok-soft); }
+.notif small { color: var(--muted); font-family: var(--font-mono); }
+.demo { border: 1px dashed var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; background: var(--surface); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 6px 11px; font-size: 14px; font-weight: 700; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--app); }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 700; flex: none; }
+.avatar.chico { width: 42px; height: 42px; font-size: 19px; background: var(--bus); color: var(--bus-ink); }
+.dato { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.dato:last-child { border-bottom: 0; }
+.dato span:first-child { color: var(--muted); }
+.dato span:last-child { text-align: right; font-weight: 700; }
+.volver { border: 0; background: transparent; font-weight: 700; color: var(--navy); padding: 4px 0; align-self: flex-start; }
+.ejemplo { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+/* Alarma y llamada */
+.banner { position: absolute; left: 8px; right: 8px; top: 30px; z-index: 8; border-radius: 16px; padding: 12px 14px; background: var(--surface); border: 3px solid var(--alert); box-shadow: 0 12px 30px rgba(0,0,0,.3); cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.banner.ok { border-color: var(--ok); }
+.banner .app-n { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.banner b { font-size: 16px; }
+.llamada { position: absolute; inset: 0; z-index: 9; background: #0F2236; color: #fff; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; padding: 44px 20px 34px; gap: 16px; }
+.llamada .quien { font-family: var(--font-display); font-size: 34px; }
+.llamada .voz { background: rgba(255,255,255,.12); border-radius: 14px; padding: 12px 14px; font-size: 15px; }
+.teclas { display: flex; gap: 26px; justify-content: center; }
+.tecla { width: 80px; height: 80px; border-radius: 50%; border: 0; font-weight: 700; color: #fff; }
+.tecla.uno { background: #1D7F45; font-size: 30px; }
+.tecla.colgar { background: #C4281C; font-size: 15px; }
+@media (prefers-reduced-motion: no-preference) {
+  .banner { animation: baja .3s ease-out; }
+  .banner.vibra { animation: baja .3s ease-out, vibra .45s linear .3s 4; }
+  .llamada .quien { animation: pulso 1.4s ease-in-out infinite; }
+}
+@keyframes baja { from { transform: translateY(-130%); } to { transform: none; } }
+@keyframes vibra { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes pulso { 50% { opacity: .6; } }
+details.hist { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+details.hist summary { cursor: pointer; list-style: none; }
+details.hist summary::-webkit-details-marker { display: none; }
+ul.linea { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+ul.linea li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
+ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12px; padding-top: 2px; }
+</style>
+</head>
+<body>
+<span class="rotulo">Perfil · Padres y apoderados</span>
+<div class="telefono" id="tel"></div>
+
+<script>
+(() => {
+  // ---------- Datos de la demo ----------
+  const AP = { nombre: "Ana Pérez", corto: "Ana", email: "ana.perez@correo.cl", tel: "+56 9 1111 1111" };
+  const TIA = { nombre: "Tía Marcela", furgon: "Hyundai H1 blanca · DEMO-11", tel: "+56 9 5555 1234" };
+  const COLEGIO = { lat: -33.4565, lng: -70.5978 };
+  const PARADAS = [ // recorrido de vuelta completo (las casas de otras familias no se muestran)
+    { id: "sofia", lat: -33.4495, lng: -70.5560, mia: true },
+    { id: "matias", lat: -33.4180, lng: -70.5540, mia: false },
+    { id: "isidora", lat: -33.4260, lng: -70.6100, mia: true },
+  ];
+  let HIJOS = [
+    { id: "sofia", nombre: "Sofía", apellido: "Pérez", curso: "3° Básico", colegio: "Colegio Demo (Ñuñoa)", direccion: "Av. Ossa 1200, La Reina", indic: "Portón verde",
+      pin: { x: 0.56, y: 0.47 }, minutos: 5, noViaja: { ida: false, vuelta: false }, asignado: true,
+      contactos: [{ nombre: "Ana (mamá)", tel: "+56 9 1111 1111" }, { nombre: "Pedro (abuelo)", tel: "+56 9 2222 2222" }] },
+    { id: "isidora", nombre: "Isidora", apellido: "Rojas", curso: "1° Básico", colegio: "Colegio Demo (Ñuñoa)", direccion: "Av. Pedro de Valdivia 900, Providencia", indic: "Casa esquina",
+      pin: { x: 0.38, y: 0.58 }, minutos: 5, noViaja: { ida: false, vuelta: false }, asignado: true,
+      contactos: [{ nombre: "Ana (mamá)", tel: "+56 9 1111 1111" }, { nombre: "Pedro (abuelo)", tel: "+56 9 2222 2222" }] },
+  ];
+  const HISTORIAL = [
+    { fecha: "Lun 6 oct · Vuelta", ejemplo: true, items: [["16:34", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 Contestaste y presionaste 1"], ["16:40", "✅ Sofía llegó a casa"], ["16:55", "🔔 Aviso: Isidora llega en ~5 min"], ["16:55", "📱 Tocaste “Recibido”"], ["17:01", "✅ Isidora llegó a casa"]] },
+    { fecha: "Lun 6 oct · Ida", ejemplo: true, items: [["07:01", "🔔 Aviso: el furgón pasa por Isidora en ~5 min"], ["07:06", "✅ Isidora subió al furgón"], ["07:20", "🔔 Aviso: el furgón pasa por Sofía en ~5 min"], ["07:26", "✅ Sofía subió al furgón"]] },
+    { fecha: "Vie 3 oct · Vuelta", ejemplo: true, items: [["16:33", "🔔 Aviso: Sofía llega en ~5 min"], ["16:34", "📞 No contestaste: llamamos a Pedro (abuelo), que confirmó"], ["16:39", "✅ Sofía llegó a casa"], ["16:50", "🔔 Aviso: Isidora llega en ~5 min"], ["16:57", "✅ Isidora llegó a casa"]] },
+  ];
+  const CFG = { kmh: 30, margen: 30, parada: 60, proximidad: 300, gps: 10, detencion: 40, timbreReal: 20, reintento: 30 };
+
+  // ---------- Geometría ----------
+  const rad = (g) => g * Math.PI / 180;
+  const dist = (a, b) => { const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng); const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2; return 12742000 * Math.asin(Math.min(1, Math.sqrt(h))); };
+  const mLng = 111195 * Math.cos(rad(-33.445)), mLat = 111195;
+
+  // ---------- Teléfonos (misma regla que el prototipo) ----------
+  function normalizarTelefono(t) {
+    let s = t.trim().replace(/[\s().-]/g, ""); if (!s) return null;
+    let d = s.startsWith("+") ? s.slice(1) : s.startsWith("00") ? s.slice(2) : s.startsWith("56") && s.length > 9 ? s : "56" + s.replace(/^0+/, "");
+    if (!/^[1-9]\d{7,14}$/.test(d) || (d.startsWith("56") && d.length !== 11)) return null;
+    return `+${d}`;
+  }
+  const formatear = (e) => { const m = /^\+56(9)(\d{4})(\d{4})$/.exec(e); return m ? `+56 ${m[1]} ${m[2]} ${m[3]}` : e; };
+
+  // ---------- Estado ----------
+  const app = { vista: "login", tab: "inicio", sub: null, hijoId: null, editPin: false, form: null, errores: {}, vel: 10, alarma: true, llamadaAuto: true, banner: null, notifs: [] };
+  let R = null; // simulación de la vuelta de hoy
+
+  function nuevaSimulacion() {
+    const puntos = [COLEGIO]; const ruta = [COLEGIO];
+    PARADAS.forEach((p) => { ruta.push({ lat: ruta.at(-1).lat, lng: p.lng }, p); });
+    const acum = [0]; for (let i = 1; i < ruta.length; i++) acum.push(acum[i - 1] + dist(ruta[i - 1], ruta[i]));
+    R = {
+      t: 0, d: 0, ruta, acum, largo: acum.at(-1), detenidoHasta: null, fin: false,
+      paradas: PARADAS.map((p, j) => {
+        const hijo = HIJOS.find((h) => h.id === p.id);
+        return { ...p, dRuta: acum[2 * (j + 1)], estado: hijo && hijo.noViaja.vuelta ? "no_viaja" : "pendiente", eta: null, avisoT: null, confT: null, marcaT: null };
+      }),
+      llamada: null, linea: [],
+    };
+  }
+
+  const hora = (t) => { const s = Math.floor(16 * 3600 + 30 * 60 + t); return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}`; };
+  const hijoDe = (p) => HIJOS.find((h) => h.id === p.id);
+  const parDe = (h) => R && R.paradas.find((p) => p.id === h.id);
+  function puntoEn(d) {
+    let i = R.acum.findIndex((a) => a >= d); if (i <= 0) i = 1;
+    if (d >= R.largo) return R.ruta.at(-1);
+    const f = (d - R.acum[i - 1]) / ((R.acum[i] - R.acum[i - 1]) || 1), a = R.ruta[i - 1], b = R.ruta[i];
+    return { lat: a.lat + (b.lat - a.lat) * f, lng: a.lng + (b.lng - a.lng) * f };
+  }
+  function notificar(n) {
+    app.notifs.unshift({ ...n, t: R.t });
+    app.banner = { ...n, hasta: performance.now() + 6000 };
+    if (n.tipo === "aviso") sonar();
+  }
+  const linea = (txt) => R.linea.push([hora(R.t), txt]);
+
+  function paso() {
+    R.t++;
+    const v = CFG.kmh / 3.6;
+    if (R.detenidoHasta !== null) {
+      if (R.t >= R.detenidoHasta) {
+        const p = R.paradas.find((x) => x.estado === "pendiente" && Math.abs(x.dRuta - R.d) < 2);
+        if (p) entregar(p);
+        R.detenidoHasta = null;
+      }
+    } else {
+      const obj = R.paradas.find((p) => p.estado === "pendiente" && p.dRuta >= R.d - 1);
+      R.d = Math.min(obj ? obj.dRuta : R.largo, R.d + v);
+      if (obj && R.d >= obj.dRuta) R.detenidoHasta = R.t + CFG.detencion;
+      if (!obj && R.d >= R.largo) { R.fin = true; app.corriendo = false; guardarHistorial(); }
+    }
+    if (R.t % CFG.gps === 0) evaluar();
+    if (R.llamada && R.llamada.fase === "esperando" && R.t >= R.llamada.reintentoT) iniciarLlamada(R.llamada.p, 2);
+  }
+
+  function evaluar() {
+    const pos = puntoEn(R.d), v = CFG.kmh / 3.6;
+    const pend = R.paradas.filter((p) => p.estado === "pendiente");
+    pend.forEach((p, i) => { p.eta = Math.max(0, (p.dRuta - R.d) / v) + i * CFG.parada; });
+    for (const p of pend) {
+      if (p.avisoT !== null || !p.mia) continue;
+      const h = hijoDe(p);
+      if (dist(pos, p) <= CFG.proximidad || p.eta <= h.minutos * 60 + CFG.margen) {
+        p.avisoT = R.t;
+        const m = Math.max(1, Math.round(p.eta / 60));
+        notificar({ tipo: "aviso", hijo: h.id, titulo: `🚐 ${h.nombre} llega pronto a casa`, cuerpo: `El furgón llegará en aproximadamente ${m} minutos con ${h.nombre} ${h.apellido}. Por favor, que alguien esté esperando en casa.` });
+        linea(`🔔 Aviso: ${h.nombre} llega en ~${m} min`);
+        if (app.llamadaAuto) iniciarLlamada(p, 1);
+      }
+    }
+  }
+
+  function iniciarLlamada(p, intento) {
+    if (p.confT !== null || p.estado !== "pendiente") { R.llamada = null; return; }
+    R.llamada = { p, intento, fase: "sonando", hastaReal: performance.now() + CFG.timbreReal * 1000 };
+    if (intento === 2) linea(`📞 Segunda llamada (no contestaste la primera)`);
+  }
+
+  function confirmar(p, como) {
+    if (p.confT !== null) return;
+    p.confT = R.t; linea(como);
+    if (R.llamada && R.llamada.p === p) R.llamada = null;
+  }
+
+  function noContesto() {
+    const l = R.llamada; if (!l) return;
+    const h = hijoDe(l.p);
+    if (l.intento === 1) {
+      linea("✖️ No contestaste la llamada 1");
+      R.llamada = { ...l, fase: "esperando", reintentoT: R.t + CFG.reintento };
+    } else {
+      linea(`✖️ No contestaste la llamada 2: llamamos a ${h.contactos[1]?.nombre ?? "tu contacto secundario"}`);
+      R.llamada = null;
+      if (h.contactos[1]) {
+        confirmar(l.p, `✅ ${h.contactos[1].nombre} contestó y confirmó`);
+        notificar({ tipo: "info", hijo: h.id, titulo: `📞 Avisamos a ${h.contactos[1].nombre}`, cuerpo: `No pudimos comunicarnos contigo. ${h.contactos[1].nombre} recibió el aviso de ${h.nombre} y lo confirmó.` });
+      }
+    }
+  }
+
+  function entregar(p) {
+    p.estado = "entregado"; p.marcaT = R.t;
+    if (R.llamada && R.llamada.p === p) R.llamada = null;
+    if (!p.mia) return;
+    const h = hijoDe(p);
+    linea(`✅ ${h.nombre} llegó a casa`);
+    notificar({ tipo: "ok", hijo: h.id, titulo: `✅ ${h.nombre} llegó a casa`, cuerpo: `La tía Marcela marcó a ${h.nombre} ${h.apellido} como entregado/a a las ${hora(R.t)}.` });
+  }
+
+  function guardarHistorial() {
+    if (R.linea.length) HISTORIAL.unshift({ fecha: "Hoy · Vuelta", ejemplo: false, items: R.linea.slice() });
+  }
+
+  // ---------- Sonido ----------
+  let audio = null;
+  function sonar() {
+    if (!app.alarma) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audio.currentTime;
+      for (let r = 0; r < 3; r++) [880, 1175, 1568].forEach((f, i) => {
+        const o = audio.createOscillator(), g = audio.createGain(), t = t0 + r * 0.8 + i * 0.2;
+        o.type = "square"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.08, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+        o.connect(g).connect(audio.destination); o.start(t); o.stop(t + 0.2);
+      });
+    } catch (e) { /* sin audio */ }
+  }
+
+  // ---------- Vistas ----------
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const $tel = document.getElementById("tel");
+  let previo = "", presionando = false;
+  addEventListener("pointerdown", () => { presionando = true; }, true);
+  addEventListener("pointerup", () => setTimeout(() => { presionando = false; }, 0), true);
+
+  const barraSis = () => `<div class="estado-sis"><span>${R ? hora(R.t) : "16:28"}</span><span>4G ▮▮▮ · 64%</span></div>`;
+
+  function vLogin() {
+    return `<div class="vista" style="justify-content:center">
+      <div style="text-align:center; display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom: 18px;">
+        <svg width="84" height="56" viewBox="0 0 84 56" aria-hidden="true"><rect x="4" y="8" width="76" height="36" rx="9" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="3"/><rect x="12" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><rect x="34" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><rect x="56" y="15" width="16" height="12" rx="2" fill="var(--bus-ink)" opacity=".75"/><circle cx="22" cy="46" r="7" fill="var(--ink)"/><circle cx="62" cy="46" r="7" fill="var(--ink)"/></svg>
+        <h1>Furgón Escolar</h1><span class="muted">Sabe cuándo llega el furgón, sin llamadas del conductor</span>
+      </div>
+      <div class="campo"><label for="em">Correo</label><input id="em" type="email" value="${AP.email}" autocomplete="email"></div>
+      <div class="campo"><label for="pw">Contraseña</label><input id="pw" type="password" value="demo-furgon" autocomplete="current-password"></div>
+      <button class="btn xl" data-a="entrar">Ingresar</button>
+      <p class="nota">Cuenta de demostración. Para registrarte necesitas el código de invitación que te entrega el dueño del furgón.</p>
+    </div>`;
+  }
+
+  function miniMapa(p) {
+    const a = puntoEn(R.d), dx = (p.lng - a.lng) * mLng, dy = (p.lat - a.lat) * mLat;
+    const span = Math.max(700, Math.abs(dx) * 2.4, Math.abs(dy) * 2.4 * (300 / 150));
+    const k = 300 / span, cx = 150 - (dx * k) / 2, cy = 75 + (dy * k) / 2, hx = cx + dx * k, hy = cy - dy * k;
+    return `<div class="mini"><svg viewBox="0 0 300 150" role="img" aria-label="El furgón en camino a tu casa">
+      <line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="var(--road)" stroke-width="5" stroke-dasharray="3 7" stroke-linecap="round"/>
+      <path d="M${hx - 11} ${hy + 2} L${hx} ${hy - 10} L${hx + 11} ${hy + 2} L${hx + 8} ${hy + 2} L${hx + 8} ${hy + 11} L${hx - 8} ${hy + 11} L${hx - 8} ${hy + 2} Z" fill="var(--navy)"/>
+      <g transform="translate(${cx} ${cy})"><rect x="-17" y="-11" width="34" height="22" rx="6" fill="var(--bus)" stroke="var(--bus-ink)" stroke-width="2"/><rect x="-11" y="-6" width="9" height="6" rx="1" fill="var(--bus-ink)" opacity=".7"/><rect x="2" y="-6" width="9" height="6" rx="1" fill="var(--bus-ink)" opacity=".7"/></g>
+      <text x="10" y="142" font-size="12" fill="var(--muted)" font-family="var(--font-body)">En vivo · a ${(dist(a, p) / 1000).toFixed(1)} km de tu casa</text>
+    </svg></div>`;
+  }
+
+  function estadoHijo(h) {
+    if (!h.asignado) return `<div class="estado no"><b>Esperando asignación</b><span>El dueño del furgón debe agregar a ${esc(h.nombre)} a una ruta.</span></div>`;
+    const p = parDe(h);
+    if (!R) return h.noViaja.vuelta ? `<div class="estado no"><b>Hoy no viaja en la vuelta</b><span>La tía Marcela no pasará por tu casa.</span></div>`
+      : `<div class="estado"><b>Vuelta hoy · 16:30</b><span>Te avisaremos unos ${h.minutos} minutos antes de que llegue el furgón.</span></div>`;
+    if (p.estado === "no_viaja") return `<div class="estado no"><b>Hoy no viaja</b><span>Se saltó en la ruta.</span></div>`;
+    if (p.estado === "entregado") return `<div class="estado ok"><b>✅ Llegó a casa a las ${hora(p.marcaT)}</b><span>Entregado/a por la tía Marcela.</span></div>`;
+    if (p.avisoT !== null) {
+      const aqui = Math.abs(p.dRuta - R.d) < 2;
+      return `<div class="estado bus"><b>${aqui ? "🚐 El furgón está afuera de tu casa" : `🔔 Llega en ~${Math.max(1, Math.round(p.eta / 60))} min`}</b><span>Aviso enviado a las ${hora(p.avisoT)}${p.confT !== null ? " · ✓ confirmado" : ""}</span></div>`;
+    }
+    return `<div class="estado"><b>En camino</b><span>El furgón salió del colegio a las 16:30. Te avisaremos cuando falten ~${h.minutos} minutos.</span></div>`;
+  }
+
+  function vInicio() {
+    const demo = `<div class="demo" aria-label="Demostración">
+      <div class="fila"><b>Demostración</b>${R ? `<span class="seg">${[10, 30].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${app.vel === v}">×${v}</button>`).join("")}</span>` : ""}</div>
+      ${!R ? `<span class="muted">Simula la vuelta de hoy: el furgón sale del colegio y deja a tus hijos en casa. Sube el volumen para oír la alarma.</span><button class="btn bus" data-a="simular">▶ Simular la vuelta de hoy</button>`
+        : R.fin ? `<span class="muted">La vuelta terminó. Revisa el historial.</span><button class="btn sec" data-a="reiniciar">Simular de nuevo</button>`
+        : `<span class="muted">${app.corriendo ? "El furgón va en camino. Cuando suene la llamada, contesta con 1 o cuelga para ver los reintentos." : "En pausa."}</span><button class="btn sec" data-a="pausa">${app.corriendo ? "⏸ Pausar" : "▶ Continuar"}</button>`}
+    </div>`;
+    const tarjetas = HIJOS.map((h) => {
+      const p = parDe(h);
+      const verMapa = R && p && p.avisoT !== null && p.estado === "pendiente";
+      return `<div class="card">
+        <div class="fila"><div style="display:flex; gap:10px; align-items:center; min-width:0"><div class="avatar chico">${esc(h.nombre[0])}</div><div style="min-width:0"><h2>${esc(h.nombre)} ${esc(h.apellido)}</h2><span class="muted" style="font-size:13px">${esc(h.curso)} · ${esc(h.colegio)}</span></div></div>
+          <button class="btn link" data-a="ficha" data-id="${h.id}">Ficha ›</button></div>
+        ${estadoHijo(h)}
+        ${verMapa ? miniMapa(p) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Verás el furgón en el mapa desde tu aviso hasta que ${esc(h.nombre)} llegue a casa.</div>` : ""}
+        ${verMapa && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy atenta</button>` : ""}
+        ${h.asignado ? `<div><span style="font-weight:700; font-size:14px">Hoy no viaja</span>
+          ${["ida", "vuelta"].map((t) => {
+            const bloqueado = t === "ida" || (R && p && (p.estado === "entregado" || (p.estado === "pendiente" && p.avisoT !== null && Math.abs(p.dRuta - R.d) < 2)));
+            return `<div class="sw-fila"><span>${t === "ida" ? "Ida (07:00) · ya pasó" : "Vuelta (16:30)"}</span><label class="sw rojo"><input type="checkbox" data-a="noviaja" data-id="${h.id}" data-t="${t}" ${h.noViaja[t] ? "checked" : ""} ${bloqueado ? "disabled" : ""} aria-label="${esc(h.nombre)} no viaja en la ${t}"><span></span></label></div>`;
+          }).join("")}</div>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="vista">
+      <div><span class="muted">Martes 7 de octubre</span><h1>Hola, ${AP.corto}</h1></div>
+      ${demo}
+      ${tarjetas}
+      <button class="btn sec" data-a="agregar">+ Agregar hijo/a</button>
+      ${app.notifs.length ? `<h3>Notificaciones</h3>${app.notifs.slice(0, 6).map((n) => `<div class="notif ${n.tipo === "aviso" ? "alarma" : n.tipo === "ok" ? "ok" : ""}"><b>${esc(n.titulo)}</b>${esc(n.cuerpo)} <small>${hora(n.t)}</small></div>`).join("")}` : ""}
+    </div>`;
+  }
+
+  // Mapa de barrio estilizado para ubicar el pin.
+  function barrio(pin, editable) {
+    const W = 320, H = 210;
+    let calles = "";
+    for (let x = 18; x < W; x += 52) calles += `<rect x="${x}" y="0" width="9" height="${H}" fill="var(--road)"/>`;
+    for (let y = 22; y < H; y += 46) calles += `<rect x="0" y="${y}" width="${W}" height="9" fill="var(--road)"/>`;
+    const p = pin ? { x: pin.x * W, y: pin.y * H } : null;
+    return `<div class="barrio"><svg viewBox="0 0 ${W} ${H}" data-a="${editable ? "pin" : ""}" role="img" aria-label="Mapa del barrio${editable ? ": toca para ubicar el pin" : ""}">
+      <rect width="${W}" height="${H}" fill="var(--block)"/>${calles}
+      <rect x="0" y="${H / 2 - 7}" width="${W}" height="14" fill="var(--line)" transform="rotate(-14 ${W / 2} ${H / 2})"/>
+      ${p ? `<g transform="translate(${p.x} ${p.y})"><path d="M0 0 C -12 -16 -14 -22 -14 -28 A 14 14 0 1 1 14 -28 C 14 -22 12 -16 0 0 Z" fill="var(--alert)" stroke="var(--surface)" stroke-width="2"/><circle cx="0" cy="-28" r="5" fill="var(--surface)"/></g>` : ""}
+      ${editable ? `<text x="8" y="${H - 8}" font-size="12" fill="var(--ink)" font-family="var(--font-body)" font-weight="700">Toca la puerta de tu casa</text>` : ""}
+    </svg></div>`;
+  }
+  const coordsDe = (pin) => pin ? `${(-33.452 + (0.5 - pin.y) * 0.004).toFixed(5)}, ${(-70.558 + (pin.x - 0.5) * 0.006).toFixed(5)}` : "—";
+
+  function vFicha() {
+    const h = HIJOS.find((x) => x.id === app.hijoId);
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <div style="display:flex; gap:12px; align-items:center"><div class="avatar">${esc(h.nombre[0])}</div><div style="min-width:0"><h1>${esc(h.nombre)} ${esc(h.apellido)}</h1><span class="muted">${esc(h.curso)} · ${esc(h.colegio)}</span></div></div>
+      <div class="card"><div class="fila"><h3>Dirección</h3><button class="btn link" data-a="editPin">${app.editPin ? "Listo" : "Ajustar pin"}</button></div>
+        <span>${esc(h.direccion)}</span>
+        ${barrio(h.pin, app.editPin)}
+        <span class="muted mono" style="font-size:12px">Pin: ${coordsDe(h.pin)}</span>
+        <div class="dato"><span>Indicaciones</span><span>${esc(h.indic)}</span></div>
+        <p class="nota" style="margin:0">El aviso se calcula hasta este pin. Ubícalo justo en la puerta para que llegue a tiempo.</p>
+      </div>
+      <div class="card"><h3>Avisarme antes de que llegue</h3>
+        <span class="seg" role="group" aria-label="Minutos de anticipación">${[3, 5, 7, 10].map((m) => `<button data-a="minutos" data-v="${m}" aria-pressed="${h.minutos === m}">${m} min</button>`).join("")}</span>
+        <span class="muted" style="font-size:13px">Recibirás la alarma y la llamada cuando el furgón esté a unos ${h.minutos} minutos, según el tráfico.</span>
+      </div>
+      <div class="card"><h3>Teléfonos para la llamada</h3>
+        ${h.contactos.map((c, i) => `<div class="dato"><span>${i === 0 ? "Principal" : "Secundario"} · ${esc(c.nombre)}</span><span class="mono">${esc(c.tel)}</span></div>`).join("")}
+        <p class="nota" style="margin:0">Si el principal no contesta dos veces, llamamos al secundario. Presionar 1 confirma el aviso.</p>
+      </div>
+      <div class="card"><h3>Furgón</h3>
+        <div class="dato"><span>Conductora</span><span>${TIA.nombre}</span></div>
+        <div class="dato"><span>Vehículo</span><span>${TIA.furgon}</span></div>
+        <div class="dato"><span>Recorridos</span><span>Ida 07:00 · Vuelta 16:30</span></div>
+      </div>
+    </div>`;
+  }
+
+  function vAgregar() {
+    const f = app.form, e = app.errores;
+    const campo = (id, label, extra = "", ayuda = "") => `<div class="campo ${e[id] ? "error" : ""}"><label for="f-${id}">${label}</label><input id="f-${id}" data-f="${id}" value="${esc(f[id] ?? "")}" ${extra}>${e[id] ? `<small>${e[id]}</small>` : ayuda ? `<small>${ayuda}</small>` : ""}</div>`;
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <h1>Agregar hijo/a</h1>
+      ${campo("nombre", "Nombre", 'autocomplete="off"')}
+      ${campo("apellido", "Apellido", 'autocomplete="off"')}
+      <div class="dos">${campo("curso", "Curso", 'placeholder="2° Básico"')}${campo("colegio", "Colegio")}</div>
+      ${campo("direccion", "Dirección", 'placeholder="Calle, número, comuna"')}
+      ${barrio(f.pin, true)}
+      ${e.pin ? `<small style="color:var(--alert)">${e.pin}</small>` : `<small class="muted">Toca el mapa para marcar la puerta de tu casa.</small>`}
+      ${campo("indic", "Indicaciones para la tía (opcional)", 'placeholder="Ej: portón verde, depto 302"')}
+      <h3>Teléfonos para la llamada automática</h3>
+      <div class="dos">${campo("c1n", "Principal · nombre")}${campo("c1t", "Teléfono", 'inputmode="tel" placeholder="9 1234 5678"')}</div>
+      <div class="dos">${campo("c2n", "Secundario · nombre")}${campo("c2t", "Teléfono", 'inputmode="tel" placeholder="Opcional"')}</div>
+      <p class="nota">El dueño del furgón asignará a tu hijo/a a la ruta. Hasta entonces verás “Esperando asignación”.</p>
+      <button class="btn xl" data-a="guardar">Guardar</button>
+    </div>`;
+  }
+
+  function vHistorial() {
+    return `<div class="vista">
+      <h1>Historial</h1>
+      <span class="muted">Cada aviso, quién lo confirmó y a qué hora llegaron tus hijos.</span>
+      ${HISTORIAL.map((h, i) => `<details class="hist" ${i === 0 ? "open" : ""}><summary><div class="fila"><b>${esc(h.fecha)}</b>${h.ejemplo ? `<span class="ejemplo">Ejemplo</span>` : `<span class="chip ok">Hoy</span>`}</div></summary>
+        <ul class="linea">${h.items.map(([t, x]) => `<li><span class="h">${t}</span><span>${esc(x)}</span></li>`).join("")}</ul></details>`).join("")}
+    </div>`;
+  }
+
+  function vPerfil() {
+    return `<div class="vista">
+      <div style="display:flex; gap:14px; align-items:center"><div class="avatar">AP</div><div style="min-width:0"><h1>${AP.nombre}</h1><span class="muted">Apoderada de ${HIJOS.map((h) => h.nombre).join(" e ")}</span></div></div>
+      <div class="card"><h3>Mis datos</h3>
+        <div class="dato"><span>Teléfono</span><span class="mono">${AP.tel}</span></div>
+        <div class="dato"><span>Correo</span><span>${AP.email}</span></div>
+        <div class="dato"><span>Furgón</span><span>Furgones Demo</span></div>
+      </div>
+      <div class="card"><h3>Avisos</h3>
+        <div class="sw-fila"><span><b>Alarma sonora</b><br><span class="muted" style="font-size:13px">Suena aunque el teléfono esté en silencio (Android)</span></span><label class="sw"><input type="checkbox" data-a="optAlarma" ${app.alarma ? "checked" : ""} aria-label="Alarma sonora"><span></span></label></div>
+        <div class="sw-fila"><span><b>Llamada automática</b><br><span class="muted" style="font-size:13px">Te llamamos con un mensaje de voz</span></span><label class="sw"><input type="checkbox" data-a="optLlamada" ${app.llamadaAuto ? "checked" : ""} aria-label="Llamada automática"><span></span></label></div>
+      </div>
+      <p class="nota">🔒 Solo ves el furgón desde tu aviso hasta que tu hijo/a llega a casa. No puedes ver dónde viven los demás niños, ni ellos dónde vives tú.</p>
+      <button class="btn sec" data-a="salir">Cerrar sesión</button>
+    </div>`;
+  }
+
+  function vLlamada() {
+    const l = R && R.llamada;
+    if (!l || l.fase !== "sonando") return "";
+    const h = hijoDe(l.p), m = Math.max(1, Math.round(l.p.eta / 60));
+    const queda = Math.max(0, Math.ceil((l.hastaReal - performance.now()) / 1000));
+    return `<div class="llamada" role="dialog" aria-label="Llamada entrante">
+      <div><span style="opacity:.8">Llamada automática · intento ${l.intento}</span><div class="quien">Furgón Escolar</div><span class="mono" style="opacity:.8">+56 2 2123 4567</span></div>
+      <div class="voz">🗣️ “Hola. Le avisamos del furgón escolar. El furgón llegará en aproximadamente ${m} minutos con ${esc(h.nombre)} ${esc(h.apellido)}. Por favor, que alguien esté esperando en casa. Para confirmar, presione 1.”</div>
+      <div><div class="teclas"><button class="tecla uno" data-a="uno">1</button><button class="tecla colgar" data-a="colgar">Colgar</button></div>
+      <p style="opacity:.8; font-size:13px; margin:12px 0 0">Si no presionas 1 en ${queda} s, cuenta como no contestada.</p></div>
+    </div>`;
+  }
+
+  function tabs() {
+    const t = [["inicio", "🏠", "Inicio"], ["historial", "🕘", "Historial"], ["perfil", "👤", "Perfil"]];
+    return `<nav class="tabs" aria-label="Secciones">${t.map(([id, ic, n]) => `<button data-a="tab" data-id="${id}" aria-current="${app.tab === id && !app.sub ? "page" : "false"}"><span>${ic}</span>${n}</button>`).join("")}</nav>`;
+  }
+
+  function construir() {
+    let cuerpo;
+    if (app.vista === "login") cuerpo = vLogin();
+    else if (app.sub === "ficha") cuerpo = vFicha();
+    else if (app.sub === "agregar") cuerpo = vAgregar();
+    else cuerpo = { inicio: vInicio, historial: vHistorial, perfil: vPerfil }[app.tab]();
+    const b = app.banner && app.banner.hasta > performance.now() ? app.banner : null;
+    const banner = b && !(R && R.llamada && R.llamada.fase === "sonando") ? `<div class="banner ${b.tipo === "aviso" ? "vibra" : "ok"}" data-a="banner" role="status">
+      <span class="app-n">${b.tipo === "aviso" ? "🔊 Furgón Escolar · alarma" : "Furgón Escolar"}</span><b>${esc(b.titulo)}</b><span>${esc(b.cuerpo)}</span></div>` : "";
+    return barraSis() + cuerpo + (app.vista === "login" ? "" : tabs()) + banner + (app.vista === "login" ? "" : vLlamada());
+  }
+
+  function render(forzar = false) {
+    const html = construir();
+    if (html !== previo && (forzar || !presionando)) {
+      const sc = $tel.querySelector(".vista")?.scrollTop ?? 0;
+      previo = html; $tel.innerHTML = html;
+      const v = $tel.querySelector(".vista"); if (v) v.scrollTop = sc;
+    }
+  }
+
+  // ---------- Eventos ----------
+  function guardar() {
+    const f = app.form, e = {};
+    ["nombre", "apellido", "direccion", "c1n"].forEach((k) => { if (!(f[k] || "").trim()) e[k] = "Este dato es obligatorio."; });
+    const t1 = normalizarTelefono(f.c1t || "");
+    if (!t1) e.c1t = "Revisa el número (ej: 9 1234 5678).";
+    const t2 = (f.c2t || "").trim() ? normalizarTelefono(f.c2t) : null;
+    if ((f.c2t || "").trim() && !t2) e.c2t = "Revisa el número.";
+    if (!f.pin) e.pin = "Marca tu casa en el mapa: así el aviso llega a tiempo.";
+    app.errores = e;
+    if (Object.keys(e).length) return;
+    HIJOS.push({ id: "h" + Date.now(), nombre: f.nombre.trim(), apellido: f.apellido.trim(), curso: f.curso || "—", colegio: f.colegio || "—",
+      direccion: f.direccion, indic: f.indic || "—", pin: f.pin, minutos: 5, noViaja: { ida: false, vuelta: false }, asignado: false,
+      contactos: [{ nombre: f.c1n, tel: formatear(t1) }, ...(t2 ? [{ nombre: f.c2n || "Secundario", tel: formatear(t2) }] : [])] });
+    app.sub = null; app.form = null;
+  }
+
+  // Lo escrito ya está en el campo: se guarda en el estado y se marca como dibujado, sin redibujar.
+  document.addEventListener("input", (e) => {
+    const k = e.target.dataset && e.target.dataset.f;
+    if (k && app.form) { app.form[k] = e.target.value; previo = construir(); }
+  });
+  document.addEventListener("change", (e) => {
+    const el = e.target, a = el.dataset && el.dataset.a;
+    if (!a) return; // los campos de texto se guardan en "input"
+    if (a === "noviaja") {
+      const h = HIJOS.find((x) => x.id === el.dataset.id); h.noViaja[el.dataset.t] = el.checked;
+      if (R) { const p = parDe(h); if (p && el.dataset.t === "vuelta") { if (el.checked && p.estado === "pendiente") { p.estado = "no_viaja"; linea(`📅 Marcaste que ${h.nombre} no viaja hoy`); if (R.llamada && R.llamada.p === p) R.llamada = null; } else if (!el.checked && p.estado === "no_viaja") p.estado = "pendiente"; } }
+    } else if (a === "optAlarma") app.alarma = el.checked;
+    else if (a === "optLlamada") app.llamadaAuto = el.checked;
+    previo = ""; render(true);
+  });
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-a]"); if (!el || el.tagName === "INPUT") return;
+    const a = el.dataset.a;
+    if (a === "entrar") { app.vista = "app"; app.tab = "inicio"; }
+    else if (a === "tab") { app.tab = el.dataset.id; app.sub = null; }
+    else if (a === "simular") { nuevaSimulacion(); app.corriendo = true; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (x) {} }
+    else if (a === "reiniciar") { nuevaSimulacion(); app.corriendo = true; app.notifs = []; }
+    else if (a === "pausa") app.corriendo = !app.corriendo;
+    else if (a === "vel") app.vel = Number(el.dataset.v);
+    else if (a === "ficha") { app.sub = "ficha"; app.hijoId = el.dataset.id; app.editPin = false; }
+    else if (a === "agregar") { app.sub = "agregar"; app.form = { pin: null }; app.errores = {}; }
+    else if (a === "atras") { app.sub = null; app.form = null; }
+    else if (a === "editPin") app.editPin = !app.editPin;
+    else if (a === "pin") {
+      const r = el.getBoundingClientRect();
+      const pin = { x: Math.min(.97, Math.max(.03, (e.clientX - r.left) / r.width)), y: Math.min(.97, Math.max(.2, (e.clientY - r.top) / r.height)) };
+      if (app.sub === "agregar") { app.form.pin = pin; delete app.errores.pin; } else { HIJOS.find((x) => x.id === app.hijoId).pin = pin; }
+    }
+    else if (a === "minutos") HIJOS.find((x) => x.id === app.hijoId).minutos = Number(el.dataset.v);
+    else if (a === "guardar") guardar();
+    else if (a === "recibido") { const p = R.paradas.find((x) => x.id === el.dataset.id); confirmar(p, "📱 Tocaste “Recibido”: se cancelan las llamadas"); }
+    else if (a === "banner") { const b = app.banner; app.banner = null; if (b && b.tipo === "aviso" && R) { const p = R.paradas.find((x) => x.id === b.hijo); if (p && !(R.llamada && R.llamada.fase === "sonando")) confirmar(p, "📱 Abriste la notificación: se cancelan los reintentos"); } }
+    else if (a === "uno") { const p = R.llamada.p; confirmar(p, `📞 Contestaste y presionaste 1 (llamada ${R.llamada.intento})`); }
+    else if (a === "colgar") noContesto();
+    else if (a === "salir") { app.vista = "login"; app.sub = null; }
+    previo = ""; render(true);
+  });
+
+  let ult = performance.now(), acc = 0;
+  function bucle(ahora) {
+    const dt = Math.min(0.25, (ahora - ult) / 1000); ult = ahora;
+    const sonando = R && R.llamada && R.llamada.fase === "sonando";
+    if (sonando && performance.now() >= R.llamada.hastaReal) noContesto();
+    // La simulación espera mientras suena la llamada, para que alcances a contestar.
+    if (R && !R.fin && app.corriendo && !sonando) { acc += dt * app.vel; while (acc >= 1 && !R.fin) { paso(); acc--; } }
+    render();
+    requestAnimationFrame(bucle);
+  }
+  render(); requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>
