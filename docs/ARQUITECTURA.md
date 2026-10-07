@@ -105,6 +105,21 @@ recorridos (una ejecución de una ruta) ─┬─ recorrido_alumnos (estado, eta
                                                                              └─ llamadas (escalera)
 ```
 
+**Administración:**
+
+```
+empresas (mensualidad_defecto, dia_vencimiento) ─┬─ cobros (alumno, periodo, monto, estado, medio)
+                                                 ├─ solicitudes (tipo, estado, resolución) ── solicitud_mensajes
+                                                 └─ preguntas_frecuentes
+invitaciones.alumno_id → el apoderado que se registra con ese código queda ligado al alumno
+```
+
+Las operaciones del administrador son RPC que exigen `rol = admin` (`requiere_admin()`):
+
+- `admin_crear_alumno`, `codigo_familia`, `mover_parada`;
+- `generar_cobros`, `registrar_pago`, `anular_cobro`;
+- `dar_de_baja`, `resolver_cancelacion`, `resumen_admin`.
+
 El historial que pide el requerimiento sale directamente de estas tablas:
 
 - hora del aviso: `avisos.disparado_en`;

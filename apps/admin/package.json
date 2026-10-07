@@ -1,0 +1,29 @@
+{
+  "name": "admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "App web del administrador: alumnos, rutas, conductoras, cobros, solicitudes y preguntas",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:demo": "vite build --mode demo && node -e \"const f=require('fs');f.renameSync('../../docs/admin-demo/index.html','../../docs/app-administracion.html');f.rmSync('../../docs/admin-demo',{recursive:true})\"",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.0",
+    "leaflet": "1.9.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.22",
+    "@types/react": "~19.2.2",
+    "@types/react-dom": "~19.2.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.3",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}

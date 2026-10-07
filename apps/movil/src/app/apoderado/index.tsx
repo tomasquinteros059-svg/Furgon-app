@@ -148,7 +148,11 @@ export default function InicioApoderado() {
         );
       })}
 
-      <Boton titulo="+ Registrar alumno" onPress={() => router.push("/apoderado/nuevo-alumno")} />
+      <View style={[estilos.fila, { marginTop: 4 }]}>
+        <Boton titulo="💳 Pagos" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
+        <Boton titulo="💬 Ayuda" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
+      </View>
+      <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} />
     </Pantalla>
   );
 }

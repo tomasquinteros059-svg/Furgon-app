@@ -56,6 +56,7 @@ export default function RutasConductor() {
   return (
     <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`} accion={<Boton titulo="Salir" variante="texto" onPress={cerrarSesion} />}>
       <Aviso texto="Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas." />
+      <Aviso texto="📡 Tu celular es el GPS del furgón: mantenlo con batería, con la ubicación activada y en su soporte." />
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {rutas.length === 0 ? <Text style={estilos.textoSuave}>No tienes rutas asignadas.</Text> : null}
       {rutas.map((ruta) => {

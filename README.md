@@ -24,6 +24,20 @@ vuelta (que alguien lo reciba).
 
 ---
 
+El sistema tiene dos aplicaciones:
+
+- **App móvil** (Expo), con login por rol, para la tía del furgón (conductora) y para las familias.
+- **App web de administración** (`apps/admin`), para el dueño del servicio:
+  - alumnos, rutas y conductoras;
+  - cobros de mensualidades;
+  - solicitudes de las familias: preguntas, cancelaciones y cambios;
+  - preguntas frecuentes;
+  - costos de llamadas.
+
+La tía solo instala la app y entra con su código: sus alumnos y el orden de su ruta los carga el
+administrador. La ubicación del furgón es la del **celular de la tía**, así que no se necesita un
+GPS aparte.
+
 ## Contenido
 
 - [Arquitectura](#arquitectura)
@@ -66,6 +80,9 @@ Calcular en el teléfono no ahorraría nada: igual se necesita señal para avisa
 ## Estructura del repositorio
 
 ```
+apps/admin/                      App web de administración (Vite + React + Supabase)
+  src/datos/                     supabase.ts (real) y demo.ts (en memoria, para la demostración)
+  src/paginas/                   Panel, Alumnos, Rutas, Conductoras, Cobros, Solicitudes, …
 apps/movil/                      App Expo (SDK 57, expo-router)
   src/app/                       Pantallas: ingresar, registro, conductor/, apoderado/, admin/
   src/ubicacion/                 GPS en segundo plano, tarea, cola SQLite
@@ -155,6 +172,42 @@ npm run demo:preparar
 Para probar las llamadas en local, Twilio necesita llegar a tu máquina. Expón el puerto 54321 con
 un túnel (`ngrok http 54321` o `cloudflared`) y define `FUNCTIONS_PUBLIC_URL=https://<tunel>/functions/v1`.
 
+## App web de administración
+
+```bash
+cp apps/admin/.env.example apps/admin/.env   # VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (públicas)
+npm run admin                                # http://localhost:5173
+npm run admin:demo                           # genera docs/app-administracion.html con datos de ejemplo
+```
+
+Sin las variables de entorno, la app arranca en **modo demostración** con datos en memoria.
+Solo pueden entrar cuentas con rol `admin`. Para producción, `npm run build --workspace=apps/admin`
+genera `apps/admin/dist`, un sitio estático que se puede publicar en Vercel, Netlify o Cloudflare Pages.
+
+**Cómo se agrega un alumno de la tía:**
+
+1. En *Alumnos → Agregar alumno* completas los datos, la casa (búsqueda de dirección y pin en el
+   mapa), los teléfonos, la mensualidad y la ruta.
+2. El alumno aparece de inmediato en la ruta de la tía, al final. El orden se ajusta en *Rutas*
+   con ↑ y ↓.
+3. Se genera un **código para la familia**, con el mensaje listo para copiar o enviar por
+   WhatsApp. Al registrarse con ese código, el apoderado queda ligado al alumno sin cargar nada más.
+
+| Sección | Qué hace |
+|---|---|
+| Panel | Pendientes del día (solicitudes, alumnos sin ruta, familias sin app, morosos), recorridos de hoy, cobranza y llamadas del mes. |
+| Alumnos | Alta completa con pin en el mapa, ficha editable, código para la familia y baja. |
+| Rutas | Conductora asignada, orden de paradas, agregar y quitar alumnos. |
+| Conductoras | Invitación con código; la tía solo instala la app. |
+| Cobros | Genera las mensualidades del mes (idempotente), registra pagos (medio y nota), anula cobros y muestra los vencidos. |
+| Solicitudes | Bandeja de preguntas, reclamos, cambios y **cancelaciones**. Al aprobar una cancelación, el alumno se da de baja: sale de las rutas y se anulan sus cobros futuros. |
+| Preguntas frecuentes | Las familias las ven en *Ayuda* de la app. |
+| Llamadas y costos | Llamadas por la app (gratis) y telefónicas (con costo), con minutos y costo estimado. |
+| Configuración | Nombre de la empresa, teléfono de contacto, mensualidad por defecto y día de vencimiento. |
+
+En la app móvil, las familias tienen **Pagos** (sus mensualidades) y **Ayuda** (preguntas
+frecuentes, consultas, solicitud de cancelación y la conversación con la administración).
+
 ## Simulador de recorrido
 
 El simulador recorre una ruta falsa y envía posiciones como lo haría el teléfono del conductor:
@@ -221,6 +274,14 @@ npm run typecheck
 - `tests/llamadas.test.ts`: la escalera de reintentos. Principal → reintento a los 30 s →
   secundario; un buzón de voz no cuenta como contestada; los números inválidos no se reintentan.
 - `tests/utilidades.test.ts`: teléfonos E.164, firma de Twilio, TwiML, mensajes y la cola sin señal.
+- `tests/sql/administracion.test.ts`: cubre la administración:
+  - alta de alumnos con código para la familia;
+  - vínculo automático del apoderado;
+  - reordenar paradas;
+  - cobros idempotentes y pagos;
+  - que la familia no pueda tocar la mensualidad;
+  - la cancelación aprobada (baja, fuera de la ruta y cobros futuros anulados);
+  - preguntas frecuentes publicadas y el resumen del panel.
 - `tests/sql/base-datos.test.ts`: aplica **las migraciones reales en Postgres (PGlite)** y prueba:
   - el registro con invitación;
   - el RLS (cada apoderado ve solo a sus hijos y el conductor no ve teléfonos);
