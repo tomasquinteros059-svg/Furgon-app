@@ -6,6 +6,7 @@ furgón y para las familias; el administrador usa el panel web.
 Enlaces que piden las tiendas (funcionan cuando el panel web esté publicado en Vercel):
 
 - Política de privacidad: `https://TU-PANEL/privacidad.html`
+- Términos y condiciones: `https://TU-PANEL/terminos.html`
 - Eliminar cuenta: `https://TU-PANEL/eliminar-cuenta.html`
 - Correo de soporte: `tomasquinteros059@gmail.com`
 

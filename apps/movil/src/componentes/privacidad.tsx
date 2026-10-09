@@ -1,11 +1,18 @@
-// Enlace a la política de privacidad publicada con el panel web (Apple y Google lo piden dentro de la app).
-import { Linking } from "react-native";
+// Enlaces a los Términos y Condiciones y a la Política de Privacidad, publicados con el panel web
+// (Apple y Google los piden dentro de la app).
+import { Linking, View } from "react-native";
 import { Boton } from "./ui";
 
 const PANEL_URL = process.env.EXPO_PUBLIC_PANEL_URL?.replace(/\/$/, "");
 export const URL_PRIVACIDAD = PANEL_URL ? `${PANEL_URL}/privacidad.html` : null;
+export const URL_TERMINOS = PANEL_URL ? `${PANEL_URL}/terminos.html` : null;
 
 export function EnlacePrivacidad() {
-  if (!URL_PRIVACIDAD) return null;
-  return <Boton titulo="Política de privacidad" variante="texto" onPress={() => Linking.openURL(URL_PRIVACIDAD)} />;
+  if (!URL_PRIVACIDAD || !URL_TERMINOS) return null;
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
+      <Boton titulo="Términos y condiciones" variante="texto" onPress={() => Linking.openURL(URL_TERMINOS)} />
+      <Boton titulo="Política de privacidad" variante="texto" onPress={() => Linking.openURL(URL_PRIVACIDAD)} />
+    </View>
+  );
 }

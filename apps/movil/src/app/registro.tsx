@@ -83,7 +83,7 @@ export default function Registro() {
         deshabilitado={(!sinCodigo && !invitacion) || !nombre || !email || !password}
       />
       <Boton titulo="Ya tengo cuenta" variante="texto" onPress={() => router.back()} />
-      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>Al crear tu cuenta aceptas que tratemos tus datos y los de tus hijos para el transporte escolar, según la política de privacidad.</Text>
+      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>Al crear tu cuenta aceptas los términos y condiciones, y que tratemos tus datos y los de tus hijos para el transporte escolar según la política de privacidad.</Text>
       <EnlacePrivacidad />
     </Pantalla>
   );
