@@ -4,7 +4,8 @@ import { crearBaseDeDatos } from "./entorno.ts";
 
 let E: Awaited<ReturnType<typeof crearBaseDeDatos>>;
 const ids: Record<string, string> = {};
-const enDias = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+// Fechas en hora de Chile, como las calcula la base de datos.
+const enDias = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date(Date.now() + n * 86_400_000));
 
 beforeAll(async () => {
   E = await crearBaseDeDatos();
@@ -73,17 +74,17 @@ describe("licencias", () => {
     const avisar = () => E.como("service_role", null, () => E.filas<{ conductor: string; dias: number }>(`select conductor, dias from licencias_para_avisar()`));
     expect(await avisar()).toEqual([{ conductor: "Jorge Díaz", dias: 25 }]);
     expect(await avisar()).toEqual([]); // el umbral de 30 ya se avisó
-    await E.db.query(`update licencias set vence_en = current_date + 6 where id = $1`, [lic]);
+    await E.db.query(`update licencias set vence_en = (now() at time zone 'America/Santiago')::date + 6 where id = $1`, [lic]);
     expect(await avisar()).toEqual([{ conductor: "Jorge Díaz", dias: 6 }]);
     // Nadie más puede pedir la lista.
     await expect(comoAdmin(() => E.db.query(`select * from licencias_para_avisar()`))).rejects.toThrow(/permission denied/);
   });
 
   it("con la licencia vencida no se puede iniciar un recorrido", async () => {
-    await E.db.query(`update licencias set vence_en = current_date - 2 where conductor_id = $1`, [ids.tia]);
+    await E.db.query(`update licencias set vence_en = (now() at time zone 'America/Santiago')::date - 2 where conductor_id = $1`, [ids.tia]);
     await expect(comoTia(() => E.db.query(`select iniciar_recorrido($1)`, [ids.ruta]))).rejects.toThrow(/licencia de conducir venció/);
     expect((await estado(ids.tia)).estado).toBe("vencida");
-    await E.db.query(`update licencias set vence_en = current_date + 90 where conductor_id = $1`, [ids.tia]);
+    await E.db.query(`update licencias set vence_en = (now() at time zone 'America/Santiago')::date + 90 where conductor_id = $1`, [ids.tia]);
     await comoTia(() => E.db.query(`select iniciar_recorrido($1)`, [ids.ruta]));
   });
 

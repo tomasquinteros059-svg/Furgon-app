@@ -24,9 +24,9 @@ const comoMama = <T>(fn: () => Promise<T>) => E.como("authenticated", ids.mama, 
 describe("familia compartida", () => {
   it("el papá sin cuenta se registra con el código de la mamá y ve a los mismos hijos", async () => {
     const codigo = await comoMama(async () => (await E.uno<{ c: string }>(`select compartir_familia(null, 'Papá') as c`)).c);
-    expect(codigo).toMatch(/^F[0-9A-F]{7}$/);
+    expect(codigo).toMatch(/^F[A-HJ-NP-Z2-9]{8}$/);
     const v = await E.como("authenticated", null, () => E.filas<{ rol: string; empresa: string }>(`select * from validar_invitacion($1)`, [codigo.toLowerCase()]));
-    expect(v).toEqual([{ rol: "apoderado", empresa: "la familia de Ana Pérez (Isidora, Sofía)" }]);
+    expect(v).toEqual([{ rol: "apoderado", empresa: "la familia de Ana" }]); // sin apellido ni nombres de los niños
 
     ids.papa = await E.crearUsuario("pedro@correo.cl", { codigo_invitacion: codigo, nombre: "Pedro Pérez", telefono: "+56922223333" });
     expect(await E.uno(`select rol, empresa_id from perfiles where id = $1`, [ids.papa])).toEqual({ rol: "apoderado", empresa_id: ids.empresa });

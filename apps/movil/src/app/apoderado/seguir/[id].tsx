@@ -156,9 +156,9 @@ export default function SeguirFurgon() {
           <>
             <Text style={estilos.titulo}>{titulo}</Text>
             <Text style={estilos.suave}>
-              {s.a_bordo && s.a_bordo_desde ? `🚐 ${corto} va a bordo desde las ${hora(s.a_bordo_desde)}. Ubicación exacta en vivo.`
+              {s.a_bordo && s.a_bordo_desde ? `🚐 ${corto} va a bordo desde las ${hora(s.a_bordo_desde)}. ${exacta ? "Ubicación exacta en vivo." : "El furgón está en una parada: ubicación aproximada para cuidar la privacidad de otras familias."}`
                 : s.estado === "entregado" && s.marcado_en ? `En su hogar desde las ${hora(s.marcado_en)}.`
-                : exacta ? `Aviso enviado a las ${hora(s.aviso_en!)}${s.confirmado_en ? " · confirmado ✓" : ""}. Ubicación exacta en vivo.`
+                : s.aviso_en ? `Aviso enviado a las ${hora(s.aviso_en)}${s.confirmado_en ? " · confirmado ✓" : ""}. ${exacta ? "Ubicación exacta en vivo." : "El furgón está en otra parada: ubicación aproximada."}`
                 : s.paradas_antes > 0 ? `Faltan ${s.paradas_antes} parada${s.paradas_antes === 1 ? "" : "s"} antes de tu casa. Ubicación aproximada.`
                 : "Tu casa es la próxima parada. Ubicación aproximada hasta el aviso."}
             </Text>

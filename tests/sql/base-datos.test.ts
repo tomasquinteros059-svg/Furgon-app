@@ -195,13 +195,24 @@ describe("recorrido, avisos y privacidad de la ubicación", () => {
     expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(0);
     await como("service_role", null, () =>
       db.query(`select registrar_posiciones($1, $2::jsonb)`, [recorrido, JSON.stringify([
-        { client_id: crypto.randomUUID(), ts: Date.now() + 1000, lat: -33.41234, lng: -70.60111 },
+        { client_id: crypto.randomUUID(), ts: Date.now() + 1000, lat: -33.40312, lng: -70.60111 },
       ])]));
     expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(1);
     expect(await posicionesVisiblesPara(ids.apoderadoB)).toBe(0);
     const s = await como("authenticated", ids.apoderadoA, async () =>
       (await uno<{ s: Record<string, any> }>(`select seguimiento_furgon($1) as s`, [ids.alumnoA])).s);
-    expect(s.ubicacion).toMatchObject({ exacta: true, lat: -33.41234, lng: -70.60111 });
+    expect(s.ubicacion).toMatchObject({ exacta: true, lat: -33.40312, lng: -70.60111 });
+  });
+
+  it("aun con aviso, nunca ve la posición exacta cerca de la casa de otro niño", async () => {
+    await como("service_role", null, () =>
+      db.query(`select registrar_posiciones($1, $2::jsonb)`, [recorrido, JSON.stringify([
+        { client_id: crypto.randomUUID(), ts: Date.now() + 2000, lat: -33.41050, lng: -70.60020 }, // a ~60 m de Matías
+      ])]));
+    expect(await posicionesVisiblesPara(ids.apoderadoA)).toBe(1); // la nueva no se ve
+    const s = await como("authenticated", ids.apoderadoA, async () =>
+      (await uno<{ s: Record<string, any> }>(`select seguimiento_furgon($1) as s`, [ids.alumnoA])).s);
+    expect(s.ubicacion).toMatchObject({ exacta: false, radio_m: 1000 });
   });
 
   it("reclamar_llamadas entrega cada llamada programada una sola vez", async () => {

@@ -51,11 +51,15 @@ describe("eliminar cuenta", () => {
     expect(await resumen(ids.mama)).toMatchObject({ rol: "apoderado", borra_empresa: false, alumnos_borrados: 1 });
   });
 
-  it("apoderado: se borran sus hijos no compartidos; en los compartidos solo sale su teléfono", async () => {
+  it("apoderado: sus hijos no compartidos se dan de baja sin datos personales, pero los cobros quedan", async () => {
+    await E.db.query(`insert into ruta_paradas (ruta_id, alumno_id, domicilio_id, orden) select $1, $2, id, 1 from domicilios where alumno_id = $2`, [ids.ruta, ids.sola]);
+    await E.db.query(`insert into cobros (empresa_id, alumno_id, periodo, monto, vence_en) values ($1, $2, '2026-10-01', 65000, '2026-10-05')`, [ids.empresa, ids.sola]);
     expect(await eliminar(ids.mama)).toEqual([]);
     expect(await existe("perfiles", ids.mama)).toBe(false);
-    expect(await existe("alumnos", ids.sola)).toBe(false);
-    expect(await E.filas(`select 1 from domicilios where alumno_id = $1`, [ids.sola])).toHaveLength(0);
+    expect(await E.uno(`select activo, motivo_baja from alumnos where id = $1`, [ids.sola])).toEqual({ activo: false, motivo_baja: "La familia eliminó su cuenta" });
+    expect(await E.filas(`select direccion, lat, lng from domicilios where alumno_id = $1`, [ids.sola])).toEqual([{ direccion: "(eliminada)", lat: 0, lng: 0 }]);
+    expect(await E.filas(`select 1 from ruta_paradas where alumno_id = $1`, [ids.sola])).toHaveLength(0);
+    expect(await E.filas(`select monto from cobros where alumno_id = $1`, [ids.sola])).toEqual([{ monto: 65000 }]);
     expect(await existe("alumnos", ids.compartido)).toBe(true);
     expect(await E.filas(`select nombre from contactos where alumno_id = $1`, [ids.compartido])).toEqual([{ nombre: "Papá" }]);
     expect(await E.filas(`select apoderado_id from apoderado_alumno where alumno_id = $1`, [ids.compartido])).toEqual([{ apoderado_id: ids.papa }]);
@@ -69,7 +73,7 @@ describe("eliminar cuenta", () => {
   });
 
   it("último administrador: avisa y borra la empresa completa; las familias conservan su cuenta", async () => {
-    expect(await resumen(ids.admin)).toMatchObject({ borra_empresa: true, empresa: "Furgones Demo", alumnos_borrados: 1, familias_afectadas: 1 });
+    expect(await resumen(ids.admin)).toMatchObject({ borra_empresa: true, empresa: "Furgones Demo", alumnos_borrados: 2, familias_afectadas: 1 });
     await eliminar(ids.admin);
     expect(await existe("empresas", ids.empresa)).toBe(false);
     expect(await existe("alumnos", ids.compartido)).toBe(false);

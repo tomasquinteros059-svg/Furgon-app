@@ -38,7 +38,7 @@ export default function EliminarCuenta() {
     que.push(`El servicio «${resumen.empresa}» completo: ${resumen.alumnos_borrados} alumno(s), sus rutas, cobros e historial.`);
     if (resumen.familias_afectadas) que.push(`${resumen.familias_afectadas} familia(s) dejarán de recibir avisos. Avísales antes.`);
   } else if (resumen?.rol === "apoderado") {
-    if (resumen.alumnos_borrados) que.push(`${resumen.alumnos_borrados} hijo(s) que solo están en tu cuenta, con su dirección y contactos. Dejarán de estar en la ruta del furgón.`);
+    if (resumen.alumnos_borrados) que.push(`${resumen.alumnos_borrados} hijo(s) que solo están en tu cuenta se dan de baja del furgón: se borran su dirección y contactos, y salen de la ruta. Sus cobros quedan registrados para el transportista.`);
     que.push("Los hijos que compartes con otro familiar siguen en su cuenta; solo se quita tu teléfono de las llamadas.");
   } else if (resumen?.rol === "conductor") {
     que.push("Tu licencia de conducir y sus fotos. Los recorridos que hiciste quedan en el historial del servicio, sin tu nombre.");
