@@ -3,166 +3,159 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tus tareas · Furgón</title>
+<title>Tus pasos · Furgón Escolar</title>
 <style>
-  :root { --fondo:#fff; --tarjeta:#fff; --borde:#E3E5E8; --texto:#14181F; --suave:#5F6672; --amarillo:#F5B700; --sobre:#1F1A00; --link:#1E3A5F; --apoyo:#F3F4F6; --rojo:#D93025; }
-  @media (prefers-color-scheme: dark) { :root { --fondo:#0E1116; --tarjeta:#161A21; --borde:#2A313B; --texto:#F3F4F6; --suave:#9AA3AE; --amarillo:#F7C21A; --sobre:#1A1500; --link:#8DB8E6; --apoyo:#1E232B; --rojo:#FF6B5E; } }
+  :root { --fondo:#fff; --tarjeta:#fff; --borde:#E3E5E8; --texto:#14181F; --suave:#5F6672; --amarillo:#F5B700; --sobre:#1F1A00; --link:#1E3A5F; --apoyo:#F3F4F6; --rojo:#D93025; --verde:#1E8E3E; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#0E1116; --tarjeta:#161A21; --borde:#2A313B; --texto:#F3F4F6; --suave:#9AA3AE; --amarillo:#F7C21A; --sobre:#1A1500; --link:#8DB8E6; --apoyo:#1E232B; --rojo:#FF6B5E; --verde:#4DC47F; } }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--fondo); color:var(--texto); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
   h1 { font-size: 26px; margin: 0 0 4px; }
-  .sub { color: var(--suave); margin: 0 0 16px; }
-  .regla { background: var(--apoyo); border-left: 4px solid var(--amarillo); padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; }
-  .barra { height: 8px; background: var(--apoyo); border-radius: 99px; overflow: hidden; margin: 8px 0 24px; }
+  .sub { color: var(--suave); margin: 0 0 14px; }
+  .regla { background: var(--apoyo); border-left: 4px solid var(--amarillo); padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; }
+  .barra { height: 8px; background: var(--apoyo); border-radius: 99px; overflow: hidden; margin: 6px 0 4px; }
   .barra i { display:block; height:100%; width:0; background: var(--amarillo); transition: width .2s; }
+  .cuenta { color: var(--suave); font-size: 14px; margin-bottom: 20px; }
   section { border: 1px solid var(--borde); background: var(--tarjeta); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
-  h2 { font-size: 19px; margin: 0 0 2px; }
-  .meta { color: var(--suave); font-size: 14px; margin: 0 0 10px; }
-  .costo { display:inline-block; font-size:12px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--apoyo); color:var(--suave); margin-left:6px; vertical-align:middle; }
+  h2 { font-size: 19px; margin: 0 0 2px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .meta { color: var(--suave); font-size: 14px; margin: 0 0 8px; }
+  .costo { font-size:12px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--apoyo); color:var(--suave); }
+  main { counter-reset: paso; }
   ol { list-style: none; padding: 0; margin: 0; }
-  li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--borde); }
+  li { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--borde); counter-increment: paso; }
   li:first-child { border-top: 0; }
-  input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; accent-color: var(--amarillo); }
-  li.hecho .txt { color: var(--suave); text-decoration: line-through; }
-  a { color: var(--link); font-weight: 600; }
-  a.ir { display:inline-block; margin-top:4px; padding:6px 12px; border-radius:8px; background:var(--amarillo); color:var(--sobre); text-decoration:none; font-size:14px; }
+  input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; accent-color: var(--amarillo); }
+  .txt::before { content: counter(paso) ". "; font-weight: 800; }
+  li.hecho .txt { color: var(--suave); }
+  li.hecho .txt b { text-decoration: line-through; }
+  a { color: var(--link); font-weight: 600; word-break: break-word; }
+  a.ir { display:inline-block; margin: 6px 6px 0 0; padding:7px 12px; border-radius:8px; background:var(--amarillo); color:var(--sobre); text-decoration:none; font-size:14px; }
   code { background: var(--apoyo); padding: 1px 6px; border-radius: 6px; font-size: 14px; word-break: break-all; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 6px; }
   td { border-top: 1px solid var(--borde); padding: 6px 4px; vertical-align: top; }
-  .aviso { color: var(--rojo); font-weight: 600; }
-  .yo { color: var(--suave); font-size: 14px; font-style: italic; }
+  .secreto { color: var(--rojo); font-weight: 700; }
+  .yo { display:block; margin-top: 6px; color: var(--verde); font-size: 14px; font-weight: 600; }
+  .escribe { display:block; margin-top: 6px; background: var(--apoyo); border-radius: 8px; padding: 8px 10px; font-size: 15px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Tus tareas para dejar la app funcionando</h1>
-  <p class="sub">Marca cada paso al terminarlo (queda guardado en este navegador). Lo técnico lo hago yo después de cada bloque.</p>
-  <div class="regla"><b>Regla de oro:</b> las claves y contraseñas <b>nunca</b> se pegan en el chat. Se guardan en el entorno de Claude Code (bloque 3) o en tu gestor de contraseñas.</div>
+  <h1>Tus pasos, en orden</h1>
+  <p class="sub">Marca cada paso al terminarlo (se guarda en este navegador). Si ya hiciste alguno, márcalo y sigue con el próximo. Los botones amarillos abren la página exacta.</p>
+  <div class="regla"><b>Regla de oro:</b> lo marcado como <span class="secreto">secreto</span> nunca se pega en el chat. Va en tu gestor de contraseñas y en las variables del entorno (paso 9).</div>
   <div class="barra" aria-hidden="true"><i id="progreso"></i></div>
+  <div class="cuenta" id="cuenta"></div>
 
   <section>
-    <h2>Lo que falta de tu parte (7 de octubre)</h2>
-    <p class="meta">Lo demás ya está hecho. En orden:</p>
+    <h2>A. Expo <span class="costo">Gratis</span></h2>
+    <p class="meta">Para compilar las apps. Tu correo de GitHub ya tiene una cuenta de Expo.</p>
     <ol>
-      <li><input type="checkbox"><div class="txt"><b>Expo:</b> tu correo de GitHub ya tiene cuenta. Restablece la contraseña con ese correo y entra.<br><a class="ir" href="https://expo.dev/forgot-password" target="_blank" rel="noopener">Restablecer contraseña</a> <a class="ir" href="https://expo.dev/settings/access-tokens" target="_blank" rel="noopener">Crear token</a><br>Guarda el token en el entorno como <code>EXPO_TOKEN</code>.</div></li>
-      <li><input type="checkbox"><div class="txt"><b>Datos de la empresa</b> para la política de privacidad: razón social, RUT, dirección, un correo de privacidad y la fecha de publicación. Puedes escribirlos en el chat (no son secretos).</div></li>
-      <li><input type="checkbox"><div class="txt"><b>Google Play Console</b> (USD 25): crea la cuenta y verifica tu identidad (tarda de 1 a 7 días).<br><a class="ir" href="https://play.google.com/console/signup" target="_blank" rel="noopener">Google Play Console</a><br>Si la cuenta es <b>personal</b>, junta desde ya <b>12 personas con Android</b> (tías y apoderados) para la prueba cerrada de 14 días que Google exige antes de publicar.</div></li>
-      <li><input type="checkbox"><div class="txt"><b>Apple:</b> espera el correo de Apple (24 h) con la fecha de desbloqueo y luego inscríbete en Apple Developer (USD 99 al año).<br><a class="ir" href="https://iforgot.apple.com" target="_blank" rel="noopener">Estado de la recuperación</a> <a class="ir" href="https://developer.apple.com/programs/enroll/" target="_blank" rel="noopener">Apple Developer</a></div></li>
-      <li><input type="checkbox"><div class="txt"><b>Sesión nueva de Claude Code</b> con todas las claves en el entorno, y escribe: «despliega Supabase y compila la app de Android».<br><span class="yo">Yo: despliego, creo cuentas de prueba para los revisores de las tiendas y te dejo el APK.</span></div></li>
-      <li><input type="checkbox"><div class="txt"><b>Firebase</b> (notificaciones de Android), después de entrar a Expo: ver el bloque 5.<br><a class="ir" href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase</a></div></li>
-      <li><input type="checkbox"><div class="txt"><b>Video de ubicación</b> (30–45 s), cuando tengas la app instalada: el guion está en <code>docs/ficha-tiendas.md</code>, sección 7. Súbelo a YouTube como «No listado».</div></li>
-      <li><input type="checkbox"><div class="txt"><b>Abogado:</b> que revise la política de privacidad antes de publicarla (datos de menores; la Ley 21.719 rige desde el 1 de diciembre de 2026).</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Restablece la contraseña de Expo</b> con el mismo correo de tu GitHub y abre el enlace que te llega.<br><a class="ir" href="https://expo.dev/forgot-password" target="_blank" rel="noopener">Restablecer contraseña</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Entra a Expo</b> con ese correo y la contraseña nueva.<br><a class="ir" href="https://expo.dev/login" target="_blank" rel="noopener">Entrar a Expo</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Crea un token</b>: botón <b>Create token</b>, nombre <code>furgon-claude</code>. Cópialo a tu gestor. <span class="secreto">Secreto.</span><br><a class="ir" href="https://expo.dev/settings/access-tokens" target="_blank" rel="noopener">Tokens de Expo</a></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>1. Supabase <span class="costo">Gratis</span></h2>
-    <p class="meta">La base de datos y el servidor de la app. ≈ 10 min.</p>
+    <h2>B. Supabase y Google Maps</h2>
+    <p class="meta">Si ya los creaste, solo revisa que tengas a mano estos tres valores.</p>
     <ol>
-      <li><input type="checkbox"><div class="txt">Crea tu cuenta (puedes entrar con GitHub).<br><a class="ir" href="https://supabase.com/dashboard/sign-up" target="_blank" rel="noopener">Crear cuenta</a></div></li>
-      <li><input type="checkbox"><div class="txt">Crea el proyecto: nombre <code>furgon-app</code>, región <b>South America (São Paulo)</b>, plan Free. Genera la contraseña de la base de datos y guárdala en tu gestor.<br><a class="ir" href="https://supabase.com/dashboard/new" target="_blank" rel="noopener">Nuevo proyecto</a></div></li>
-      <li><input type="checkbox"><div class="txt">Anota el <b>Project ref</b>: el código que aparece en la dirección del proyecto, <code>supabase.com/dashboard/project/<b>abcdefghijklmnop</b></code>. No es secreto.</div></li>
-      <li><input type="checkbox"><div class="txt">Crea un <b>Access token</b> llamado <code>furgon-despliegue</code> y cópialo a tu gestor (se muestra una sola vez). <span class="aviso">Es secreto.</span><br><a class="ir" href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noopener">Access tokens</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Project ref de Supabase</b>: abre tu proyecto <code>furgon-app</code> y copia el código de la dirección: <code>supabase.com/dashboard/project/<b>este-codigo</b></code>. No es secreto.<br><a class="ir" href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener">Mis proyectos</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Access token de Supabase</b>: <b>Generate new token</b>, nombre <code>furgon-despliegue</code>. <span class="secreto">Secreto.</span><br><a class="ir" href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noopener">Access tokens</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Clave de Google <code>furgon-servidor</code></b> con Routes API habilitada (proyecto <code>furgon-app</code> seleccionado arriba). <span class="secreto">Secreta.</span><br><a class="ir" href="https://console.cloud.google.com/apis/library/routes.googleapis.com" target="_blank" rel="noopener">Habilitar Routes API</a> <a class="ir" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciales</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Habilita los mapas para las apps</b>: <i>Maps SDK for Android</i> y <i>Maps SDK for iOS</i> (botón <b>Habilitar</b> en cada una). Las claves de las apps las creamos después, en el paso 14, con la huella que te paso.<br><a class="ir" href="https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com" target="_blank" rel="noopener">Maps SDK Android</a> <a class="ir" href="https://console.cloud.google.com/apis/library/maps-ios-backend.googleapis.com" target="_blank" rel="noopener">Maps SDK iOS</a></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>2. Google Maps <span class="costo">Crédito gratis mensual · pide tarjeta</span></h2>
-    <p class="meta">Tiempo de llegada con tráfico, ruta por calles y ruta recomendada. ≈ 15 min.</p>
+    <h2>C. Datos para la política de privacidad</h2>
     <ol>
-      <li><input type="checkbox"><div class="txt">Crea el proyecto <code>furgon-app</code>.<br><a class="ir" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Crear proyecto</a></div></li>
-      <li><input type="checkbox"><div class="txt">Activa la facturación del proyecto (tarjeta).<br><a class="ir" href="https://console.cloud.google.com/billing" target="_blank" rel="noopener">Facturación</a></div></li>
-      <li><input type="checkbox"><div class="txt">Crea un presupuesto con alerta, por ejemplo USD 20, para que nunca haya sorpresas.<br><a class="ir" href="https://console.cloud.google.com/billing/budgets" target="_blank" rel="noopener">Presupuestos y alertas</a></div></li>
-      <li><input type="checkbox"><div class="txt">Habilita <b>Routes API</b> (con el proyecto <code>furgon-app</code> seleccionado arriba).<br><a class="ir" href="https://console.cloud.google.com/apis/library/routes.googleapis.com" target="_blank" rel="noopener">Routes API</a></div></li>
-      <li><input type="checkbox"><div class="txt">Crea una <b>Clave de API</b> llamada <code>furgon-servidor</code>. Restricciones de aplicación: <b>Ninguna</b>. Restricciones de API: <b>Restringir clave → Routes API</b>. Cópiala a tu gestor. <span class="aviso">Es secreta.</span><br><a class="ir" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciales</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Escríbeme en el chat</b> (no son secretos): razón social, RUT, dirección, un correo de privacidad (por ejemplo privacidad@tudominio.cl, o tu Gmail por ahora) y la fecha de publicación.<br>Y <b>dos correos para las cuentas de prueba de las tiendas</b>, que no sean tus cuentas personales. Pueden ser alias de tu Gmail: <code>tomasquinteros059+tia@gmail.com</code> y <code>tomasquinteros059+familia@gmail.com</code>.<span class="yo">Yo: completo la política, la página de eliminar cuenta y la ficha de las tiendas.</span></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>3. Entorno de Claude Code <span class="costo">Gratis</span></h2>
-    <p class="meta">Aquí dejas las claves para que yo pueda desplegar. ≈ 5 min.</p>
+    <h2>D. Entorno de Claude Code</h2>
+    <p class="meta">Aquí van las claves para que yo pueda desplegar y compilar. No tiene enlace propio: está en esta misma sesión.</p>
     <ol>
-      <li><input type="checkbox"><div class="txt">En esta sesión de Claude Code, abre el menú del entorno en la barra del título y toca <b>Edit</b>.<br><a class="ir" href="https://code.claude.com/docs/en/cloud-environments#network-access" target="_blank" rel="noopener">Ayuda del entorno</a></div></li>
-      <li><input type="checkbox"><div class="txt"><b>Network access</b> → <b>Allowed domains</b> (deja marcado «Allow package managers»), agrega:
+      <li><input type="checkbox"><div class="txt"><b>Abre la configuración del entorno</b>: arriba, en la barra del título de esta sesión, toca el nombre del entorno → <b>Edit</b>.<br><a class="ir" href="https://code.claude.com/docs/en/cloud-environments#network-access" target="_blank" rel="noopener">Ayuda: dónde está</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Network access → Allowed domains</b> (deja marcado «Allow package managers»). Agrega uno por línea:
         <table>
-          <tr><td><code>api.supabase.com</code></td><td>desplegar</td></tr>
+          <tr><td><code>api.supabase.com</code></td><td>desplegar Supabase</td></tr>
           <tr><td><code>*.supabase.co</code></td><td>tu proyecto</td></tr>
           <tr><td><code>routes.googleapis.com</code></td><td>probar la clave de Google</td></tr>
-          <tr><td><code>*.expo.dev</code></td><td>compilar las apps (bloque 5)</td></tr>
+          <tr><td><code>expo.dev</code></td><td rowspan="2">compilar las apps</td></tr>
+          <tr><td><code>*.expo.dev</code></td></tr>
+          <tr><td><code>storage.googleapis.com</code></td><td>subir el proyecto a Expo</td></tr>
+          <tr><td><code>github.com</code></td><td rowspan="2">descargar la herramienta de Supabase</td></tr>
+          <tr><td><code>objects.githubusercontent.com</code></td></tr>
         </table></div></li>
-      <li><input type="checkbox"><div class="txt"><b>Variables de entorno</b>, agrega:
+      <li><input type="checkbox"><div class="txt"><b>Variables de entorno</b>, una por línea con el formato <code>NOMBRE=valor</code>:
         <table>
-          <tr><td><code>SUPABASE_PROJECT_REF</code></td><td>el Project ref (bloque 1)</td></tr>
-          <tr><td><code>SUPABASE_ACCESS_TOKEN</code></td><td>el Access token (bloque 1)</td></tr>
-          <tr><td><code>GOOGLE_MAPS_API_KEY</code></td><td>la clave <code>furgon-servidor</code> (bloque 2)</td></tr>
-        </table></div></li>
-      <li><input type="checkbox"><div class="txt">Abre una <b>sesión nueva</b> y escribe: «despliega Supabase».<br><span class="yo">Yo: subo la base de datos, las funciones y las tareas automáticas, y pruebo Google.</span></div></li>
-      <li><input type="checkbox"><div class="txt">Crea tu usuario: <b>Add user → Create new user</b>, con tu correo y una contraseña, y marca <b>Auto Confirm User</b>. Luego dime tu correo y si eres administrador o tía.<br><a class="ir" href="https://supabase.com/dashboard/project/_/auth/users" target="_blank" rel="noopener">Usuarios de Supabase</a><br><span class="yo">Yo: creo la empresa y te doy el rol.</span></div></li>
+          <tr><td><code>SUPABASE_PROJECT_REF</code></td><td>paso 4</td></tr>
+          <tr><td><code>SUPABASE_ACCESS_TOKEN</code></td><td>paso 5 <span class="secreto">secreto</span></td></tr>
+          <tr><td><code>GOOGLE_MAPS_API_KEY</code></td><td>paso 6 <span class="secreto">secreto</span></td></tr>
+          <tr><td><code>EXPO_TOKEN</code></td><td>paso 3 <span class="secreto">secreto</span></td></tr>
+        </table>Guarda los cambios.</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Abre una sesión nueva</b> de Claude Code en este repositorio (el entorno solo se carga al empezar) y escribe:
+        <span class="escribe">Despliega Supabase, crea las cuentas de revisión y compila la app de Android.</span>
+        <span class="yo">Yo: subo la base de datos y el servidor, pruebo Google, creo las cuentas de prueba y te dejo el enlace del APK y la huella SHA-1.</span></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>4. Llamadas telefónicas: Twilio <span class="costo">Pago por minuto</span></h2>
-    <p class="meta">Solo para cuando el teléfono de la familia no tiene internet. Sin esto igual funciona la alarma y la llamada gratis por la app. ≈ 20 min.</p>
+    <h2>E. Durante esa sesión nueva</h2>
     <ol>
-      <li><input type="checkbox"><div class="txt">Crea tu cuenta.<br><a class="ir" href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener">Crear cuenta Twilio</a></div></li>
-      <li><input type="checkbox"><div class="txt">Para probar con la cuenta de prueba: verifica tu propio teléfono (solo llama a números verificados).<br><a class="ir" href="https://console.twilio.com/us1/develop/phone-numbers/manage/verified" target="_blank" rel="noopener">Números verificados</a></div></li>
-      <li><input type="checkbox"><div class="txt">Compra un número con capacidad <b>Voice</b> y anótalo en formato <code>+56…</code>.<br><a class="ir" href="https://console.twilio.com/us1/develop/phone-numbers/manage/search" target="_blank" rel="noopener">Comprar número</a></div></li>
-      <li><input type="checkbox"><div class="txt">Copia el <b>Account SID</b> y el <b>Auth Token</b> (<span class="aviso">secreto</span>) desde «Account Info».<br><a class="ir" href="https://console.twilio.com/" target="_blank" rel="noopener">Consola Twilio</a></div></li>
-      <li><input type="checkbox"><div class="txt">En las variables del entorno (bloque 3) agrega:
+      <li><input type="checkbox"><div class="txt"><b>Crea tu usuario</b> en Supabase: <b>Add user → Create new user</b>, tu correo y una contraseña, y marca <b>Auto Confirm User</b>. Luego dime en el chat tu correo y si eres administrador o tía.<br><a class="ir" href="https://supabase.com/dashboard/project/_/auth/users" target="_blank" rel="noopener">Usuarios de Supabase</a><span class="yo">Yo: creo tu empresa y te doy el rol.</span></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Claves de mapas para las apps</b>, con la huella SHA-1 que te paso: <b>Crear credenciales → Clave de API</b>, dos veces.
         <table>
-          <tr><td><code>TWILIO_ACCOUNT_SID</code></td><td>Account SID</td></tr>
-          <tr><td><code>TWILIO_AUTH_TOKEN</code></td><td>Auth Token</td></tr>
-          <tr><td><code>TWILIO_NUMERO_ORIGEN</code></td><td>el número, p. ej. <code>+56221234567</code></td></tr>
-          <tr><td><code>LLAMADAS_HABILITADAS</code></td><td><code>true</code></td></tr>
+          <tr><td><code>furgon-android</code></td><td>Apps de Android → paquete <code>cl.furgonapp.movil</code> + la huella SHA-1. API: Maps SDK for Android.</td></tr>
+          <tr><td><code>furgon-ios</code></td><td>Apps de iOS → bundle <code>cl.furgonapp.movil</code>. API: Maps SDK for iOS.</td></tr>
         </table>
-        Abre una sesión nueva y escribe: «activa las llamadas».</div></li>
+        Agrégalas al entorno como <code>GOOGLE_MAPS_ANDROID_API_KEY</code> y <code>GOOGLE_MAPS_IOS_API_KEY</code>. <span class="secreto">Secretas.</span><br><a class="ir" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciales</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Firebase, para las notificaciones de Android</b>: <b>Crear proyecto</b> → elige el proyecto existente <code>furgon-app</code> de Google Cloud. Luego <b>Agregar app → Android</b>, paquete <code>cl.furgonapp.movil</code>.<br><a class="ir" href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Clave de Firebase a Expo</b>: en Firebase, <b>Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada</b> (descarga un archivo). En Expo, tu proyecto <code>furgon-escolar</code> → <b>Credentials → Android → FCM V1 → Upload</b> y sube ese archivo. <span class="secreto">El archivo es secreto: no lo mandes por chat.</span><br><a class="ir" href="https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk" target="_blank" rel="noopener">Cuentas de servicio</a> <a class="ir" href="https://expo.dev/accounts" target="_blank" rel="noopener">Mis proyectos en Expo</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Instala el APK</b> en tu Android con el enlace que te paso y prueba: inicia un recorrido con la cuenta de la tía y mira el aviso con la de la familia (en otro teléfono si tienes).</div></li>
     </ol>
   </section>
 
   <section>
-    <h2>5. Apps de Android e iPhone</h2>
-    <p class="meta">Para instalar las apps de prueba en teléfonos reales. ≈ 1 h.</p>
+    <h2>F. Panel web en internet <span class="costo">Gratis</span></h2>
     <ol>
-      <li><input type="checkbox"><div class="txt">Crea tu cuenta de Expo <span class="costo">Gratis</span><br><a class="ir" href="https://expo.dev/signup" target="_blank" rel="noopener">Crear cuenta Expo</a></div></li>
-      <li><input type="checkbox"><div class="txt">Crea un <b>Access token</b> de Expo y guárdalo en las variables del entorno como <code>EXPO_TOKEN</code>. <span class="aviso">Es secreto.</span><br><a class="ir" href="https://expo.dev/settings/access-tokens" target="_blank" rel="noopener">Tokens de Expo</a></div></li>
-      <li><input type="checkbox"><div class="txt">En Google Cloud habilita <b>Maps SDK for Android</b> y <b>Maps SDK for iOS</b>.<br><a class="ir" href="https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com" target="_blank" rel="noopener">Maps SDK Android</a> <a class="ir" href="https://console.cloud.google.com/apis/library/maps-ios-backend.googleapis.com" target="_blank" rel="noopener">Maps SDK iOS</a></div></li>
-      <li><input type="checkbox"><div class="txt">Crea dos claves nuevas: <code>furgon-android</code> (restringida a apps Android, paquete <code>cl.furgonapp.movil</code>; la huella SHA-1 te la doy yo) y <code>furgon-ios</code> (apps iOS, bundle <code>cl.furgonapp.movil</code>). Guárdalas como <code>GOOGLE_MAPS_ANDROID_API_KEY</code> y <code>GOOGLE_MAPS_IOS_API_KEY</code> en el entorno.<br><a class="ir" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciales</a></div></li>
-      <li><input type="checkbox"><div class="txt">Notificaciones de Android: crea un proyecto en Firebase (puedes elegir el mismo <code>furgon-app</code> de Google Cloud) y agrega una app Android con paquete <code>cl.furgonapp.movil</code>. Luego <b>Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada</b> y súbela en Expo (Credentials → Android → FCM V1). <span class="aviso">El archivo es secreto: no lo mandes por chat.</span><br><a class="ir" href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase</a></div></li>
-      <li><input type="checkbox"><div class="txt">Escribe: «compila la app de Android».<br><span class="yo">Yo: genero el APK y te dejo el enlace/QR para instalarlo.</span></div></li>
-      <li><input type="checkbox"><div class="txt">Para iPhone: inscríbete en Apple Developer Program <span class="costo">USD 99 al año</span> (la aprobación puede tardar 1–2 días).<br><a class="ir" href="https://developer.apple.com/programs/enroll/" target="_blank" rel="noopener">Apple Developer</a></div></li>
-      <li><input type="checkbox"><div class="txt">Prueba en teléfonos reales: un recorrido con la app en segundo plano, la alarma con el teléfono bloqueado y la llamada. En Xiaomi, Huawei o Samsung, quita la app de la optimización de batería.</div></li>
+      <li><input type="checkbox"><div class="txt"><b>Importa el repositorio en Vercel</b> (entra con GitHub): elige <code>furgon-app</code>, <b>Root Directory</b> <code>apps/admin</code>, y en <b>Environment Variables</b> agrega <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> (te las paso yo después del despliegue; son públicas). Botón <b>Deploy</b>.<br><a class="ir" href="https://vercel.com/new" target="_blank" rel="noopener">Nuevo proyecto en Vercel</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Pega la dirección de Vercel</b> en Supabase como <b>Site URL</b> y dímela en el chat.<br><a class="ir" href="https://supabase.com/dashboard/project/_/auth/url-configuration" target="_blank" rel="noopener">URL Configuration</a></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>6. Panel web en internet: Vercel <span class="costo">Gratis</span></h2>
-    <p class="meta">Para entrar al panel de administración desde cualquier computador. ≈ 15 min.</p>
+    <h2>G. Llamadas telefónicas: Twilio <span class="costo">Pago por minuto · opcional al principio</span></h2>
     <ol>
-      <li><input type="checkbox"><div class="txt">Crea tu cuenta con GitHub.<br><a class="ir" href="https://vercel.com/signup" target="_blank" rel="noopener">Crear cuenta Vercel</a></div></li>
-      <li><input type="checkbox"><div class="txt">Importa el repositorio <code>furgon-app</code>. <b>Root Directory</b>: <code>apps/admin</code>. Variables: <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> (te las doy yo después del despliegue; son públicas).<br><a class="ir" href="https://vercel.com/new" target="_blank" rel="noopener">Nuevo proyecto</a></div></li>
-      <li><input type="checkbox"><div class="txt">Pon la dirección que te da Vercel como <b>Site URL</b> en Supabase y dímela.<br><a class="ir" href="https://supabase.com/dashboard/project/_/auth/url-configuration" target="_blank" rel="noopener">URL Configuration</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Crea la cuenta</b> y verifica tu teléfono.<br><a class="ir" href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener">Crear cuenta</a> <a class="ir" href="https://console.twilio.com/us1/develop/phone-numbers/manage/verified" target="_blank" rel="noopener">Números verificados</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Compra un número con voz</b> (casilla <i>Voice</i>).<br><a class="ir" href="https://console.twilio.com/us1/develop/phone-numbers/manage/search" target="_blank" rel="noopener">Comprar número</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Agrega al entorno</b> <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code> (<span class="secreto">secreto</span>), <code>TWILIO_NUMERO_ORIGEN</code> (el número, p. ej. <code>+56221234567</code>) y <code>LLAMADAS_HABILITADAS=true</code>. Los dos primeros están en «Account Info».<br><a class="ir" href="https://console.twilio.com/" target="_blank" rel="noopener">Consola Twilio</a></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>7. Tiendas</h2>
-    <p class="meta">Cuando las pruebas con familias reales salgan bien.</p>
+    <h2>H. Tiendas</h2>
     <ol>
-      <li><input type="checkbox"><div class="txt">Cuenta de desarrollador de Google Play <span class="costo">USD 25 una vez</span><br><a class="ir" href="https://play.google.com/console/signup" target="_blank" rel="noopener">Google Play Console</a></div></li>
-      <li><input type="checkbox"><div class="txt">App Store Connect (con la cuenta de Apple del bloque 5): crea la app con bundle <code>cl.furgonapp.movil</code>.<br><a class="ir" href="https://appstoreconnect.apple.com/" target="_blank" rel="noopener">App Store Connect</a></div></li>
-      <li><input type="checkbox"><div class="txt">Ten listos: política de privacidad publicada (te la redacto), capturas de pantalla, ícono y un video corto que muestre por qué la app usa la ubicación en segundo plano (Google lo exige).<br><span class="yo">Yo: compilo las versiones finales y las envío a revisión.</span></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Google Play Console</b> (USD 25, una vez): crea la cuenta y verifica tu identidad (de 1 a 7 días). Si es <b>personal</b>, junta desde ya a <b>12 personas con Android</b> para la prueba cerrada de 14 días.<br><a class="ir" href="https://play.google.com/console/signup" target="_blank" rel="noopener">Google Play Console</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Apple</b>: espera el correo con la fecha de desbloqueo de tu cuenta y luego inscríbete en Apple Developer (USD 99 al año).<br><a class="ir" href="https://iforgot.apple.com" target="_blank" rel="noopener">Estado de la recuperación</a> <a class="ir" href="https://developer.apple.com/programs/enroll/" target="_blank" rel="noopener">Apple Developer</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Video de ubicación</b> (30–45 s) con la app instalada, siguiendo el guion de <code>docs/ficha-tiendas.md</code> (sección 7). Súbelo a YouTube como «No listado».<br><a class="ir" href="https://www.youtube.com/upload" target="_blank" rel="noopener">Subir a YouTube</a></div></li>
+      <li><input type="checkbox"><div class="txt"><b>Abogado</b>: que revise la política de privacidad antes de publicarla (datos de menores; la Ley 21.719 rige desde el 1 de diciembre de 2026).</div></li>
     </ol>
   </section>
 </main>
 <script>
   const cajas = [...document.querySelectorAll('input[type=checkbox]')];
   let guardado = [];
-  try { guardado = JSON.parse(localStorage.getItem('furgon-tareas-v2') || '[]'); } catch {}
+  try { guardado = JSON.parse(localStorage.getItem('furgon-pasos') || '[]'); } catch {}
   const actualizar = () => {
     cajas.forEach((c) => c.closest('li').classList.toggle('hecho', c.checked));
-    document.getElementById('progreso').style.width = (100 * cajas.filter((c) => c.checked).length / cajas.length) + '%';
-    try { localStorage.setItem('furgon-tareas-v2', JSON.stringify(cajas.map((c) => c.checked))); } catch {}
+    const hechos = cajas.filter((c) => c.checked).length;
+    document.getElementById('progreso').style.width = (100 * hechos / cajas.length) + '%';
+    document.getElementById('cuenta').textContent = `${hechos} de ${cajas.length} pasos listos`;
+    try { localStorage.setItem('furgon-pasos', JSON.stringify(cajas.map((c) => c.checked))); } catch {}
   };
   cajas.forEach((c, i) => { c.checked = !!guardado[i]; c.setAttribute('aria-label', 'Hecho'); c.addEventListener('change', actualizar); });
   actualizar();
