@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Icono } from "./Icono";
+import { t } from "../i18n";
 
 /** Carga datos asíncronos con estado de carga/error y una función para recargar. */
 export function useCarga<T>(cargar: () => Promise<T>, deps: unknown[] = []) {
@@ -28,11 +29,12 @@ export function Encabezado({ titulo, bajada, acciones }: { titulo: string; bajad
 }
 
 export function Cargando() {
-  return <p className="tenue" role="status">Cargando…</p>;
+  return <p className="tenue" role="status">{t("Cargando…")}</p>;
 }
 
 export function ErrorCaja({ mensaje }: { mensaje: string | null }) {
-  return mensaje ? <p className="caja-error" role="alert">{mensaje}</p> : null;
+  // Los errores de la base de datos llegan en español: t() los traduce con el diccionario de errores.
+  return mensaje ? <p className="caja-error" role="alert">{t(mensaje)}</p> : null;
 }
 
 export function Chip({ tono = "neutro", children }: { tono?: "neutro" | "ok" | "alerta" | "aviso" | "info"; children: ReactNode }) {
@@ -48,7 +50,7 @@ export function Modal({ titulo, onCerrar, children }: { titulo: string; onCerrar
   return (
     <div className="modal-fondo" onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
       <div className="modal" role="dialog" aria-modal="true" aria-label={titulo}>
-        <div className="modal-cab"><h2>{titulo}</h2><button className="btn-icono" onClick={onCerrar} aria-label="Cerrar"><Icono n="cerrar" /></button></div>
+        <div className="modal-cab"><h2>{titulo}</h2><button className="btn-icono" onClick={onCerrar} aria-label={t("Cerrar")}><Icono n="cerrar" /></button></div>
         {children}
       </div>
     </div>
@@ -56,13 +58,13 @@ export function Modal({ titulo, onCerrar, children }: { titulo: string; onCerrar
 }
 
 /** Botón que copia texto al portapapeles (con alternativa si el navegador lo impide). */
-export function Copiar({ texto, etiqueta = "Copiar" }: { texto: string; etiqueta?: string }) {
+export function Copiar({ texto, etiqueta }: { texto: string; etiqueta?: string }) {
   const [hecho, setHecho] = useState(false);
   return (
     <button className="btn sec" onClick={async () => {
       try { await navigator.clipboard.writeText(texto); setHecho(true); setTimeout(() => setHecho(false), 1800); }
-      catch { window.prompt("Copia el texto:", texto); }
-    }}>{hecho ? <><Icono n="check" /> Copiado</> : etiqueta}</button>
+      catch { window.prompt(t("Copia el texto:"), texto); }
+    }}>{hecho ? <><Icono n="check" /> {t("Copiado")}</> : etiqueta ?? t("Copiar")}</button>
   );
 }
 

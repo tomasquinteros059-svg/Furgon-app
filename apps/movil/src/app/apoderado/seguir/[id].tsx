@@ -13,6 +13,7 @@ import { estiloMapa, Furgon, PROVEEDOR_MAPA } from "../../../componentes/mapa";
 import { Boton, colores } from "../../../componentes/ui";
 import { crearEstilos, esOscuro } from "../../../componentes/tema";
 import { supabase } from "../../../lib/supabase";
+import { locale, t } from "../../../lib/idioma";
 
 interface Punto {
   latitude: number;
@@ -39,7 +40,7 @@ interface Seguimiento {
 }
 
 const hora = (iso: string) =>
-  new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
+  new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
 
 export default function SeguirFurgon() {
   const { id: alumnoId, nombre } = useLocalSearchParams<{ id: string; nombre?: string }>();
@@ -97,12 +98,12 @@ export default function SeguirFurgon() {
   }, [casa?.latitude, casa?.longitude, furgon?.latitude, furgon?.longitude]);
 
   const exacta = !!s?.ubicacion?.exacta;
-  const corto = (nombre ?? "Tu hijo/a").split(" ")[0];
-  const titulo = !s ? "" : s.a_bordo && s.tipo === "ida" ? `${corto} va rumbo al colegio`
-    : s.estado === "entregado" ? `${nombre ?? "Tu hijo/a"} está en su hogar`
-    : s.estado !== "pendiente" ? "Hoy no viaja"
-    : s.eta_seg !== null && s.eta_seg < 90 ? "El furgón está llegando"
-    : s.eta_seg !== null ? `Llega en ${Math.max(1, Math.round(s.eta_seg / 60))} min` : "Furgón en camino";
+  const corto = (nombre ?? t("Tu hijo/a")).split(" ")[0];
+  const titulo = !s ? "" : s.a_bordo && s.tipo === "ida" ? t("{nombre} va rumbo al colegio", { nombre: corto })
+    : s.estado === "entregado" ? t("{nombre} está en su hogar", { nombre: nombre ?? t("Tu hijo/a") })
+    : s.estado !== "pendiente" ? t("Hoy no viaja")
+    : s.eta_seg !== null && s.eta_seg < 90 ? t("El furgón está llegando")
+    : s.eta_seg !== null ? t("Llega en {min} min", { min: Math.max(1, Math.round(s.eta_seg / 60)) }) : t("Furgón en camino");
 
   return (
     <View style={{ flex: 1, backgroundColor: colores.fondo }}>
@@ -116,7 +117,7 @@ export default function SeguirFurgon() {
         toolbarEnabled={false}
       >
         {casa ? (
-          <Marker coordinate={casa} title="Tu casa" anchor={{ x: 0.5, y: 1 }}>
+          <Marker coordinate={casa} title={t("Tu casa")} anchor={{ x: 0.5, y: 1 }}>
             <Text style={{ fontSize: 34 }}>🏠</Text>
           </Marker>
         ) : null}
@@ -131,7 +132,7 @@ export default function SeguirFurgon() {
             fillColor="rgba(242,183,5,0.25)" strokeColor="rgba(242,183,5,0.9)" strokeWidth={2} />
         ) : null}
         {furgon && exacta ? (
-          <Marker coordinate={furgon} anchor={{ x: 0.5, y: 0.85 }} title="Furgón">
+          <Marker coordinate={furgon} anchor={{ x: 0.5, y: 0.85 }} title={t("Furgón")}>
             <Furgon haciaIzquierda={!!casa && casa.longitude < furgon.longitude} />
           </Marker>
         ) : null}
@@ -139,41 +140,42 @@ export default function SeguirFurgon() {
 
       <SafeAreaView edges={["top"]} style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
         <Pressable onPress={() => router.back()} style={estilos.volver} accessibilityRole="button">
-          <Text style={{ fontSize: 16, fontWeight: "700", color: colores.azul }}>‹ Volver</Text>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: colores.azul }}>{t("‹ Volver")}</Text>
         </Pressable>
       </SafeAreaView>
 
       <View style={estilos.hoja}>
         {s === undefined ? (
-          <Text style={estilos.suave}>Cargando…</Text>
+          <Text style={estilos.suave}>{t("Cargando…")}</Text>
         ) : s === null ? (
           <>
-            <Text style={estilos.titulo}>Sin recorrido en curso</Text>
-            <Text style={estilos.suave}>El mapa se activa cuando la tía inicia el recorrido.</Text>
-            <Boton titulo="Volver" variante="secundario" onPress={() => router.back()} />
+            <Text style={estilos.titulo}>{t("Sin recorrido en curso")}</Text>
+            <Text style={estilos.suave}>{t("El mapa se activa cuando la tía inicia el recorrido.")}</Text>
+            <Boton titulo={t("Volver")} variante="secundario" onPress={() => router.back()} />
           </>
         ) : (
           <>
             <Text style={estilos.titulo}>{titulo}</Text>
             <Text style={estilos.suave}>
-              {s.a_bordo && s.a_bordo_desde ? `🚐 ${corto} va a bordo desde las ${hora(s.a_bordo_desde)}. ${exacta ? "Ubicación exacta en vivo." : "El furgón está en una parada: ubicación aproximada para cuidar la privacidad de otras familias."}`
-                : s.estado === "entregado" && s.marcado_en ? `En su hogar desde las ${hora(s.marcado_en)}.`
-                : s.aviso_en ? `Aviso enviado a las ${hora(s.aviso_en)}${s.confirmado_en ? " · confirmado ✓" : ""}. ${exacta ? "Ubicación exacta en vivo." : "El furgón está en otra parada: ubicación aproximada."}`
-                : s.paradas_antes > 0 ? `Faltan ${s.paradas_antes} parada${s.paradas_antes === 1 ? "" : "s"} antes de tu casa. Ubicación aproximada.`
-                : "Tu casa es la próxima parada. Ubicación aproximada hasta el aviso."}
+              {s.a_bordo && s.a_bordo_desde ? `${t("🚐 {nombre} va a bordo desde las {hora}.", { nombre: corto, hora: hora(s.a_bordo_desde) })} ${exacta ? t("Ubicación exacta en vivo.") : t("El furgón está en una parada: ubicación aproximada para cuidar la privacidad de otras familias.")}`
+                : s.estado === "entregado" && s.marcado_en ? t("En su hogar desde las {hora}.", { hora: hora(s.marcado_en) })
+                : s.aviso_en ? `${s.confirmado_en ? t("Aviso enviado a las {hora} · confirmado ✓.", { hora: hora(s.aviso_en) }) : t("Aviso enviado a las {hora}.", { hora: hora(s.aviso_en) })} ${exacta ? t("Ubicación exacta en vivo.") : t("El furgón está en otra parada: ubicación aproximada.")}`
+                : s.paradas_antes === 1 ? t("Falta 1 parada antes de tu casa. Ubicación aproximada.")
+                : s.paradas_antes > 0 ? t("Faltan {n} paradas antes de tu casa. Ubicación aproximada.", { n: s.paradas_antes })
+                : t("Tu casa es la próxima parada. Ubicación aproximada hasta el aviso.")}
             </Text>
             <View style={estilos.pasos}>
               {[
                 ...(s.tipo === "ida" ? [
-                  { ok: true, txt: "Salió a buscar" },
-                  { ok: !!s.aviso_en, txt: "Aviso" },
-                  { ok: s.estado === "entregado" || !!s.a_bordo_desde, txt: "Subió" },
-                  { ok: false, txt: "En el colegio" },
+                  { ok: true, txt: t("Salió a buscar") },
+                  { ok: !!s.aviso_en, txt: t("Aviso") },
+                  { ok: s.estado === "entregado" || !!s.a_bordo_desde, txt: t("Subió") },
+                  { ok: false, txt: t("En el colegio") },
                 ] : [
-                  { ok: !!s.a_bordo_desde, txt: "Subió" },
-                  { ok: true, txt: "Salió del colegio" },
-                  { ok: !!s.aviso_en, txt: "Aviso" },
-                  { ok: s.estado === "entregado", txt: "En su hogar" },
+                  { ok: !!s.a_bordo_desde, txt: t("Subió") },
+                  { ok: true, txt: t("Salió del colegio") },
+                  { ok: !!s.aviso_en, txt: t("Aviso") },
+                  { ok: s.estado === "entregado", txt: t("En su hogar") },
                 ]),
               ].map((p, i) => (
                 <View key={i} style={{ flex: 1, gap: 4 }}>
@@ -185,13 +187,13 @@ export default function SeguirFurgon() {
             <View style={estilos.conductor}>
               <View style={estilos.avatar}><Text style={{ fontWeight: "700", fontSize: 18 }}>{(s.conductor ?? "?")[0]}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "700", fontSize: 16, color: colores.texto }}>{s.conductor ?? "Conductor/a"}</Text>
-                <Text style={estilos.suave}>{s.furgon ?? "Furgón"}</Text>
+                <Text style={{ fontWeight: "700", fontSize: 16, color: colores.texto }}>{s.conductor ?? t("Conductor/a")}</Text>
+                <Text style={estilos.suave}>{s.furgon ?? t("Furgón")}</Text>
               </View>
               {s.patente ? <Text style={estilos.patente}>{s.patente}</Text> : null}
             </View>
             <Text style={[estilos.suave, { fontSize: 12 }]}>
-              🔒 Por privacidad, la ubicación exacta se muestra solo mientras tu hijo/a va a bordo o desde tu aviso hasta la llegada.
+              {t("🔒 Por privacidad, la ubicación exacta se muestra solo mientras tu hijo/a va a bordo o desde tu aviso hasta la llegada.")}
             </Text>
           </>
         )}

@@ -5,6 +5,7 @@ import { Alert } from "react-native";
 import Storage from "expo-sqlite/kv-store";
 import type { LocationObject } from "expo-location";
 import { type PosicionGps, type ResultadoEnvio, vaciarCola } from "../lib/core";
+import { t } from "../lib/idioma";
 import { SUPABASE_URL, supabase } from "../lib/supabase";
 import { colaSqlite } from "./cola-sqlite";
 
@@ -24,14 +25,11 @@ export type ResultadoInicio = { ok: true } | { ok: false; mensaje: string };
 
 // Aviso destacado antes de pedir el permiso (lo exige Google Play para la ubicación en segundo plano).
 const avisoUbicacion = () => new Promise<boolean>((resolver) => Alert.alert(
-  "Ubicación del furgón",
-  "Furgón Escolar recopila la ubicación de este teléfono para compartir el furgón con las familias de tu recorrido "
-  + "y avisarles antes de que llegue, incluso cuando la app está cerrada o la pantalla apagada. "
-  + "Solo mientras hay un recorrido iniciado; al finalizarlo deja de usarla.\n\n"
-  + "En la siguiente pantalla elige «Permitir todo el tiempo».",
+  t("Ubicación del furgón"),
+  t("Furgón Escolar recopila la ubicación de este teléfono para compartir el furgón con las familias de tu recorrido y avisarles antes de que llegue, incluso cuando la app está cerrada o la pantalla apagada. Solo mientras hay un recorrido iniciado; al finalizarlo deja de usarla.\n\nEn la siguiente pantalla elige «Permitir todo el tiempo»."),
   [
-    { text: "Ahora no", style: "cancel", onPress: () => resolver(false) },
-    { text: "Continuar", onPress: () => resolver(true) },
+    { text: t("Ahora no"), style: "cancel", onPress: () => resolver(false) },
+    { text: t("Continuar"), onPress: () => resolver(true) },
   ],
   { cancelable: true, onDismiss: () => resolver(false) },
 ));
@@ -41,17 +39,17 @@ export async function pedirPermisosUbicacion(): Promise<ResultadoInicio> {
   const [fgActual, bgActual] = await Promise.all([Location.getForegroundPermissionsAsync(), Location.getBackgroundPermissionsAsync()]);
   if (fgActual.granted && bgActual.granted) return { ok: true };
   if (!(await avisoUbicacion())) {
-    return { ok: false, mensaje: "Sin la ubicación del furgón no podemos avisar a las familias. Puedes iniciar el recorrido cuando quieras." };
+    return { ok: false, mensaje: t("Sin la ubicación del furgón no podemos avisar a las familias. Puedes iniciar el recorrido cuando quieras.") };
   }
   const fg = fgActual.granted ? fgActual : await Location.requestForegroundPermissionsAsync();
   if (fg.status !== "granted") {
-    return { ok: false, mensaje: "Necesitamos acceso a tu ubicación para avisar a los apoderados." };
+    return { ok: false, mensaje: t("Necesitamos acceso a tu ubicación para avisar a los apoderados.") };
   }
   const bg = await Location.requestBackgroundPermissionsAsync();
   if (bg.status !== "granted") {
     return {
       ok: false,
-      mensaje: "Para avisar aunque la pantalla esté apagada, permite la ubicación \"Todo el tiempo\" en los ajustes.",
+      mensaje: t(`Para avisar aunque la pantalla esté apagada, permite la ubicación "Todo el tiempo" en los ajustes.`),
     };
   }
   return { ok: true };
@@ -75,8 +73,8 @@ export async function iniciarSeguimiento(recorridoId: string): Promise<Resultado
     pausesUpdatesAutomatically: false,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
-      notificationTitle: "Recorrido en curso",
-      notificationBody: "Compartiendo la ubicación del furgón con los apoderados del recorrido.",
+      notificationTitle: t("Recorrido en curso"),
+      notificationBody: t("Compartiendo la ubicación del furgón con los apoderados del recorrido."),
       notificationColor: "#F5B700",
       killServiceOnDestroy: false,
     },
@@ -136,7 +134,7 @@ export function enviarCola(): Promise<unknown> {
 async function enviarLote(recorridoId: string, lote: PosicionGps[]): Promise<ResultadoEnvio> {
   const { data } = await supabase.auth.getSession(); // refresca el token si venció
   const token = data.session?.access_token;
-  if (!token) return { ok: false, reintentable: true, error: "sin sesión" };
+  if (!token) return { ok: false, reintentable: true, error: "sin sesión" }; // i18n-ignorar: solo para el registro interno
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/posiciones`, {
       method: "POST",

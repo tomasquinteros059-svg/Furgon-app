@@ -6,6 +6,7 @@ import { Text } from "../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla } from "../../../componentes/ui";
 import { useSesion } from "../../../lib/sesion";
 import { mensajeError, supabase } from "../../../lib/supabase";
+import { locale, t } from "../../../lib/idioma";
 
 interface Mensaje { id: string; cuerpo: string; creado_en: string; autor_id: string }
 
@@ -39,27 +40,27 @@ export default function Solicitud() {
     setTexto(""); cargar();
   }
 
-  const hora = (iso: string) => new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  const hora = (iso: string) => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   return (
-    <Pantalla titulo={s?.asunto ?? "Consulta"} accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
-      {s?.resolucion ? <Aviso tipo={s.resolucion === "aprobada" ? "exito" : "info"} texto={`Cancelación ${s.resolucion}.`} /> : null}
+    <Pantalla titulo={s?.asunto ?? t("Consulta")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
+      {s?.resolucion ? <Aviso tipo={s.resolucion === "aprobada" ? "exito" : "info"} texto={s.resolucion === "aprobada" ? t("Cancelación aprobada.") : t("Cancelación rechazada.")} /> : null}
       {error ? <Aviso tipo="error" texto={error} /> : null}
       {mensajes.map((m) => {
         const mio = m.autor_id === perfil?.id;
         return (
           <View key={m.id} style={{ alignSelf: mio ? "flex-end" : "flex-start", maxWidth: "85%", backgroundColor: mio ? colores.superficie2 : colores.superficie, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colores.borde }}>
-            <Text style={[estilos.textoSuave, { fontSize: 12 }]}>{mio ? "Tú" : "Administración"} · {hora(m.creado_en)}</Text>
+            <Text style={[estilos.textoSuave, { fontSize: 12 }]}>{mio ? t("Tú") : t("Administración")} · {hora(m.creado_en)}</Text>
             <Text style={estilos.texto}>{m.cuerpo}</Text>
           </View>
         );
       })}
       {s && s.estado !== "cerrada" ? (
         <>
-          <TextInput multiline value={texto} onChangeText={setTexto} placeholder="Escribe tu mensaje"
+          <TextInput multiline value={texto} onChangeText={setTexto} placeholder={t("Escribe tu mensaje")}
             style={[estilos.input, { minHeight: 80, textAlignVertical: "top", marginTop: 8 }]} />
-          <Boton titulo="Enviar" onPress={enviar} deshabilitado={!texto.trim()} />
+          <Boton titulo={t("Enviar")} onPress={enviar} deshabilitado={!texto.trim()} />
         </>
-      ) : s ? <Aviso texto="Esta consulta está cerrada. Si necesitas algo más, escribe una nueva desde Ayuda." /> : null}
+      ) : s ? <Aviso texto={t("Esta consulta está cerrada. Si necesitas algo más, escribe una nueva desde Ayuda.")} /> : null}
     </Pantalla>
   );
 }

@@ -2,6 +2,7 @@
 // estilo de mapa limpio y enlace a la navegación de Google Maps.
 import { Linking, Platform, View } from "react-native";
 import { Text } from "./icono";
+import { t } from "../lib/idioma";
 import { PROVIDER_GOOGLE } from "react-native-maps";
 
 /** Google Maps en Android y también en iOS (clave en app.config.ts → react-native-maps). */
@@ -10,9 +11,9 @@ export const PROVEEDOR_MAPA = PROVIDER_GOOGLE;
 /** Furgón escolar chileno: amarillo, franja negra y letrero "ESCOLAR" en el techo. */
 export function Furgon({ haciaIzquierda = false, tamano = 1 }: { haciaIzquierda?: boolean; tamano?: number }) {
   return (
-    <View style={{ width: 60 * tamano, height: 50 * tamano, alignItems: "center" }} accessibilityLabel="Furgón escolar">
+    <View style={{ width: 60 * tamano, height: 50 * tamano, alignItems: "center" }} accessibilityLabel={t("Furgón escolar")}>
       <View style={{ position: "absolute", top: 0, left: 16 * tamano, width: 28 * tamano, height: 10 * tamano, backgroundColor: "#15202B", borderRadius: 2 * tamano, alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-        <Text style={{ color: "#F5B700", fontSize: 6.5 * tamano, fontWeight: "900", letterSpacing: 0.3 }}>ESCOLAR</Text>
+        <Text style={{ color: "#F5B700", fontSize: 6.5 * tamano, fontWeight: "900", letterSpacing: 0.3 }}>ESCOLAR</Text>{/* i18n-ignorar: letrero real de los furgones chilenos */}
       </View>
       <View style={{ position: "absolute", top: 9 * tamano, width: 58 * tamano, height: 40 * tamano, transform: [{ scaleX: haciaIzquierda ? -1 : 1 }] }}>
         <View style={{ position: "absolute", left: 2 * tamano, top: 0, width: 54 * tamano, height: 27 * tamano, backgroundColor: "#F5B700", borderColor: "#2A2100", borderWidth: 2 * tamano, borderTopLeftRadius: 6 * tamano, borderBottomLeftRadius: 5 * tamano, borderTopRightRadius: 14 * tamano, borderBottomRightRadius: 6 * tamano, overflow: "hidden" }}>

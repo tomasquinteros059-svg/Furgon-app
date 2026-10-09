@@ -5,8 +5,11 @@ import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
+import { t } from "../lib/idioma";
 
 const NOMBRE_ROL = { apoderado: "apoderado", conductor: "conductor", admin: "administrador" } as const;
+/** Rol en palabras, en el idioma actual. */
+const nombreRol = (rol: keyof typeof NOMBRE_ROL) => ({ apoderado: t("apoderado"), conductor: t("conductor"), admin: t("administrador") })[rol];
 
 export default function Registro() {
   const [codigo, setCodigo] = useState("");
@@ -24,18 +27,18 @@ export default function Registro() {
   useEffect(() => {
     setInvitacion(null);
     if (codigo.trim().length < 6) return;
-    const t = setTimeout(async () => {
+    const espera = setTimeout(async () => {
       const { data } = await supabase.rpc("validar_invitacion", { p_codigo: codigo });
       setInvitacion((data as { rol: keyof typeof NOMBRE_ROL; empresa: string }[] | null)?.[0] ?? null);
     }, 400);
-    return () => clearTimeout(t);
+    return () => clearTimeout(espera);
   }, [codigo]);
 
   async function registrar() {
     setError(null);
     const tel = normalizarTelefono(telefono);
-    if (!tel) return setError("Revisa el teléfono (ej: 9 1234 5678).");
-    if (password.length < 8) return setError("La contraseña debe tener al menos 8 caracteres.");
+    if (!tel) return setError(t("Revisa el teléfono (ej: 9 1234 5678)."));
+    if (password.length < 8) return setError(t("La contraseña debe tener al menos 8 caracteres."));
     setCargando(true);
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -52,38 +55,38 @@ export default function Registro() {
   }
 
   return (
-    <Pantalla titulo="Crear cuenta">
+    <Pantalla titulo={t("Crear cuenta")}>
       <Text style={[estilos.textoSuave, { marginBottom: 16 }]}>
         {sinCodigo
-          ? "Creas tu cuenta como familia. Después buscas a tu tía o tío del furgón y te conectas con un toque."
-          : "Si el furgón te dio un código de invitación, escríbelo: define si te registras como apoderado o conductor."}
+          ? t("Creas tu cuenta como familia. Después buscas a tu tía o tío del furgón y te conectas con un toque.")
+          : t("Si el furgón te dio un código de invitación, escríbelo: define si te registras como apoderado o conductor.")}
       </Text>
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {sinCodigo ? (
-        <Boton titulo="Tengo un código de invitación" variante="texto" onPress={() => setSinCodigo(false)} />
+        <Boton titulo={t("Tengo un código de invitación")} variante="texto" onPress={() => setSinCodigo(false)} />
       ) : (
         <>
-          <Campo etiqueta="Código de invitación" value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />
-          <Boton titulo="Soy familia y no tengo código" variante="texto" onPress={() => { setSinCodigo(true); setCodigo(""); }} />
+          <Campo etiqueta={t("Código de invitación")} value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />
+          <Boton titulo={t("Soy familia y no tengo código")} variante="texto" onPress={() => { setSinCodigo(true); setCodigo(""); }} />
         </>
       )}
       {sinCodigo ? null : invitacion ? (
-        <Aviso tipo="exito" texto={`Te unirás a "${invitacion.empresa}" como ${NOMBRE_ROL[invitacion.rol]}.`} />
+        <Aviso tipo="exito" texto={t(`Te unirás a "{empresa}" como {rol}.`, { empresa: invitacion.empresa, rol: nombreRol(invitacion.rol) })} />
       ) : codigo.trim().length >= 6 ? (
-        <Aviso tipo="error" texto="Código no válido o vencido." />
+        <Aviso tipo="error" texto={t("Código no válido o vencido.")} />
       ) : null}
-      <Campo etiqueta="Nombre y apellido" value={nombre} onChangeText={setNombre} autoComplete="name" />
-      <Campo etiqueta="Teléfono" value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" placeholder="9 1234 5678" />
-      <Campo etiqueta="Correo" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-      <Campo etiqueta="Contraseña" value={password} onChangeText={setPassword} secureTextEntry ayuda="Mínimo 8 caracteres" />
+      <Campo etiqueta={t("Nombre y apellido")} value={nombre} onChangeText={setNombre} autoComplete="name" />
+      <Campo etiqueta={t("Teléfono")} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" placeholder="9 1234 5678" />
+      <Campo etiqueta={t("Correo")} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+      <Campo etiqueta={t("Contraseña")} value={password} onChangeText={setPassword} secureTextEntry ayuda={t("Mínimo 8 caracteres")} />
       <Boton
-        titulo="Crear cuenta"
+        titulo={t("Crear cuenta")}
         onPress={registrar}
         cargando={cargando}
         deshabilitado={(!sinCodigo && !invitacion) || !nombre || !email || !password}
       />
-      <Boton titulo="Ya tengo cuenta" variante="texto" onPress={() => router.back()} />
-      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>Al crear tu cuenta aceptas los términos y condiciones, y que tratemos tus datos y los de tus hijos para el transporte escolar según la política de privacidad.</Text>
+      <Boton titulo={t("Ya tengo cuenta")} variante="texto" onPress={() => router.back()} />
+      <Text style={[estilos.textoSuave, { textAlign: "center" }]}>{t("Al crear tu cuenta aceptas los términos y condiciones, y que tratemos tus datos y los de tus hijos para el transporte escolar según la política de privacidad.")}</Text>
       <EnlacePrivacidad />
     </Pantalla>
   );

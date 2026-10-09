@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { t } from "./lib/idioma";
 import { supabase } from "./lib/supabase";
 import { configurarLlamadas } from "./llamadas-app";
 
@@ -24,8 +25,8 @@ export async function configurarCanales(): Promise<void> {
   // Ojo: el sonido de un canal no se puede cambiar después de creado. Si cambias
   // el sonido, cambia también el id del canal (aquí y en el backend).
   await Notifications.setNotificationChannelAsync(CANAL_ALARMA, {
-    name: "Aviso de llegada del furgón",
-    description: "Alarma cuando el furgón está a pocos minutos de tu casa",
+    name: t("Aviso de llegada del furgón"),
+    description: t("Alarma cuando el furgón está a pocos minutos de tu casa"),
     importance: Notifications.AndroidImportance.MAX,
     sound: "alarma.wav",
     vibrationPattern: [0, 600, 300, 600, 300, 600],
@@ -38,8 +39,8 @@ export async function configurarCanales(): Promise<void> {
     },
   });
   await Notifications.setNotificationChannelAsync(CANAL_GENERAL, {
-    name: "Novedades del recorrido",
-    description: "Alumno en su hogar, ausente y otras novedades",
+    name: t("Novedades del recorrido"),
+    description: t("Alumno en su hogar, ausente y otras novedades"),
     importance: Notifications.AndroidImportance.HIGH,
   });
 }

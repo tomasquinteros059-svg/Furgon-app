@@ -6,6 +6,7 @@
 import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
+import { t } from "./lib/idioma";
 import { llamarFuncion } from "./lib/supabase";
 
 // Debe coincidir con supabase/functions/_shared/push.ts
@@ -73,8 +74,8 @@ TaskManager.defineTask(TAREA_PUSH, async ({ data, error }) => {
 
 export async function configurarLlamadas(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(CATEGORIA_LLAMADA, [
-    { identifier: "confirmar", buttonTitle: "Confirmar (1)", options: { opensAppToForeground: true } },
-    { identifier: "rechazar", buttonTitle: "No puedo", options: { opensAppToForeground: false } },
+    { identifier: "confirmar", buttonTitle: t("Confirmar (1)"), options: { opensAppToForeground: true } },
+    { identifier: "rechazar", buttonTitle: t("No puedo"), options: { opensAppToForeground: false } },
   ]);
   try {
     await Notifications.registerTaskAsync(TAREA_PUSH);

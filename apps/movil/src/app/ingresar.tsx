@@ -5,7 +5,7 @@ import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
-import { SelectorIdioma } from "../i18n";
+import { SelectorIdioma, t } from "../i18n";
 
 export default function Ingresar() {
   const [email, setEmail] = useState("");
@@ -25,19 +25,19 @@ export default function Ingresar() {
     <Pantalla>
       <View style={{ alignItems: "center", marginVertical: 32 }}>
         <Text style={{ fontSize: 56 }}>🚐</Text>
-        <Text style={[estilos.titulo, { marginTop: 8 }]}>Furgón Escolar</Text>
-        <Text style={estilos.textoSuave}>Avisos automáticos de llegada</Text>
+        <Text style={[estilos.titulo, { marginTop: 8 }]}>Furgón Escolar</Text>{/* i18n-ignorar: marca */}
+        <Text style={estilos.textoSuave}>{t("Avisos automáticos de llegada")}</Text>
       </View>
       {error ? <Aviso texto={error} tipo="error" /> : null}
-      <Campo etiqueta="Correo" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
-      <Campo etiqueta="Contraseña" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
-      <Boton titulo="Ingresar" onPress={ingresar} cargando={cargando} deshabilitado={!email || !password} />
+      <Campo etiqueta={t("Correo")} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
+      <Campo etiqueta={t("Contraseña")} value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
+      <Boton titulo={t("Ingresar")} onPress={ingresar} cargando={cargando} deshabilitado={!email || !password} />
       <View style={{ marginTop: 28, gap: 8 }}>
-        <Text style={[estilos.textoSuave, { textAlign: "center" }]}>¿La mamá o el papá te compartió a los hijos?</Text>
-        <Boton titulo="👨‍👩‍👧 Entrar con código de familia" variante="secundario" grande onPress={() => router.push("/entrar-codigo")} />
+        <Text style={[estilos.textoSuave, { textAlign: "center" }]}>{t("¿La mamá o el papá te compartió a los hijos?")}</Text>
+        <Boton titulo={t("👨‍👩‍👧 Entrar con código de familia")} variante="secundario" grande onPress={() => router.push("/entrar-codigo")} />
       </View>
       <Link href="/registro" style={{ marginTop: 20, textAlign: "center", color: colores.azul, fontWeight: "600" }}>
-        ¿Tienes un código de invitación? Crea tu cuenta
+        {t("¿Tienes un código de invitación? Crea tu cuenta")}
       </Link>
       <EnlacePrivacidad />
       <SelectorIdioma />

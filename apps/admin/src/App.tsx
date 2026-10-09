@@ -14,19 +14,20 @@ import { Preguntas } from "./paginas/Preguntas";
 import { Rutas } from "./paginas/Rutas";
 import { Solicitudes } from "./paginas/Solicitudes";
 import { Icono } from "./componentes/Icono";
-import { SelectorIdioma, useIdiomaActual } from "./i18n";
+import { SelectorIdioma, t, useIdiomaActual } from "./i18n";
 
-const SECCIONES = [
-  { ruta: "panel", nombre: "Panel" },
-  { ruta: "furgones", nombre: "Furgones" },
-  { ruta: "rutas", nombre: "Rutas" },
-  { ruta: "conductoras", nombre: "Conductoras" },
-  { ruta: "cobros", nombre: "Cobros" },
-  { ruta: "solicitudes", nombre: "Solicitudes" },
-  { ruta: "preguntas", nombre: "Preguntas frecuentes" },
-  { ruta: "llamadas", nombre: "Llamadas y costos" },
-  { ruta: "configuracion", nombre: "Configuración" },
-] as const;
+// Función (no constante) para que los nombres tomen el idioma actual al dibujar.
+const secciones = () => [
+  { ruta: "panel", nombre: t("Panel") },
+  { ruta: "furgones", nombre: t("Furgones") },
+  { ruta: "rutas", nombre: t("Rutas") },
+  { ruta: "conductoras", nombre: t("Conductoras") },
+  { ruta: "cobros", nombre: t("Cobros") },
+  { ruta: "solicitudes", nombre: t("Solicitudes") },
+  { ruta: "preguntas", nombre: t("Preguntas frecuentes") },
+  { ruta: "llamadas", nombre: t("Llamadas y costos") },
+  { ruta: "configuracion", nombre: t("Configuración") },
+];
 
 /** Navegación por hash (#/alumnos/123): funciona también desde el archivo HTML de demostración. */
 function useRuta(): string[] {
@@ -41,20 +42,20 @@ function useRuta(): string[] {
 }
 
 type Tema = "sistema" | "claro" | "oscuro";
-const leerTema = (): Tema => { try { const t = localStorage.getItem("tema"); return t === "claro" || t === "oscuro" ? t : "sistema"; } catch { return "sistema"; } };
-function aplicarTema(t: Tema) {
-  if (t === "sistema") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = t === "oscuro" ? "dark" : "light";
+const leerTema = (): Tema => { try { const v = localStorage.getItem("tema"); return v === "claro" || v === "oscuro" ? v : "sistema"; } catch { return "sistema"; } };
+function aplicarTema(tema: Tema) {
+  if (tema === "sistema") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = tema === "oscuro" ? "dark" : "light";
 }
 aplicarTema(leerTema());
 
 /** Apariencia del panel: automática (según el equipo), clara u oscura. Se recuerda en este navegador. */
 function SelectorTema() {
   const [tema, setTema] = useState<Tema>(leerTema);
-  const elegir = (t: Tema) => { setTema(t); aplicarTema(t); try { localStorage.setItem("tema", t); } catch { /* sin almacenamiento */ } };
+  const elegir = (v: Tema) => { setTema(v); aplicarTema(v); try { localStorage.setItem("tema", v); } catch { /* sin almacenamiento */ } };
   return (
-    <div className="tema" role="group" aria-label="Apariencia">
-      {([["sistema", "Auto"], ["claro", "Claro"], ["oscuro", "Oscuro"]] as const).map(([v, n]) => (
+    <div className="tema" role="group" aria-label={t("Apariencia")}>
+      {([["sistema", t("Auto")], ["claro", t("Claro")], ["oscuro", t("Oscuro")]] as const).map(([v, n]) => (
         <button key={v} type="button" aria-pressed={tema === v} onClick={() => elegir(v)}>{n}</button>
       ))}
     </div>
@@ -105,23 +106,23 @@ export function App() {
       <aside className={`lateral ${menuAbierto ? "abierto" : ""}`}>
         <div className="marca">
           <Icono n="furgon" tam={34} />
-          <div><b>Furgón Escolar</b><span>Administración</span></div>
-          <button className="btn-menu" aria-label="Menú" aria-expanded={menuAbierto} onClick={() => setMenuAbierto(!menuAbierto)}><Icono n="menu" /></button>
+          <div><b>Furgón Escolar</b><span>{t("Administración")}</span></div>{/* i18n-ignorar: nombre de la app */}
+          <button className="btn-menu" aria-label={t("Menú")} aria-expanded={menuAbierto} onClick={() => setMenuAbierto(!menuAbierto)}><Icono n="menu" /></button>
         </div>
-        <nav aria-label="Secciones" onClick={() => setMenuAbierto(false)}>
-          {SECCIONES.map((s) => (
+        <nav aria-label={t("Secciones")} onClick={() => setMenuAbierto(false)}>
+          {secciones().map((s) => (
             <a key={s.ruta} href={`#/${s.ruta}`} aria-current={seccion === s.ruta || (s.ruta === "panel" && !partes.length) ? "page" : undefined}>{s.nombre}</a>
           ))}
         </nav>
         <div className="pie-lateral">
           <SelectorTema />
           <SelectorIdioma />
-          <span>{usuario.nombre}{usuario.tipo === "conductora" ? " · conductora" : ""}</span>
-          <button className="btn-link" onClick={async () => { await datos.salir(); setUsuario(null); }}>Cerrar sesión</button>
+          <span>{usuario.nombre}{usuario.tipo === "conductora" ? ` · ${t("conductora")}` : ""}</span>
+          <button className="btn-link" onClick={async () => { await datos.salir(); setUsuario(null); }}>{t("Cerrar sesión")}</button>
         </div>
       </aside>
       <main>
-        {datos.modo === "demo" ? <div className="cinta-demo">Modo demostración · datos de ejemplo, los cambios no se guardan al recargar</div> : null}
+        {datos.modo === "demo" ? <div className="cinta-demo">{t("Modo demostración · datos de ejemplo, los cambios no se guardan al recargar")}</div> : null}
         <div className="contenido">{pagina}</div>
       </main>
     </div>

@@ -7,7 +7,7 @@ import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
-import { SelectorIdioma } from "../../i18n";
+import { locale, SelectorIdioma, t } from "../../i18n";
 
 interface Alumno {
   id: string;
@@ -31,7 +31,7 @@ function hoy(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date());
 }
 const hora = (iso: string) =>
-  new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
+  new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
 
 export default function InicioApoderado() {
   const { perfil, sesion, cerrarSesion, recargarPerfil } = useSesion();
@@ -103,46 +103,46 @@ export default function InicioApoderado() {
 
   function cambiarMinutos(alumno: Alumno) {
     const opciones = [3, 5, 7, 10, 15];
-    Alert.alert("Avisarme con anticipación de…", undefined, [
+    Alert.alert(t("Avisarme con anticipación de…"), undefined, [
       ...opciones.map((m) => ({
-        text: `${m} minutos${m === alumno.minutos_aviso ? " ✓" : ""}`,
+        text: t("{n} minutos", { n: m }) + (m === alumno.minutos_aviso ? " ✓" : ""),
         onPress: async () => {
           await supabase.from("alumnos").update({ minutos_aviso: m }).eq("id", alumno.id);
           cargar();
         },
       })),
-      { text: "Cancelar", style: "cancel" as const },
+      { text: t("Cancelar"), style: "cancel" as const },
     ]);
   }
 
   return (
-    <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`} accion={<Boton titulo="Salir" variante="texto" onPress={() => {
+    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={<Boton titulo={t("Salir")} variante="texto" onPress={() => {
       if (!sinProteger) return cerrarSesion();
-      Alert.alert("¿Salir sin proteger tu cuenta?", "Entraste con un código: si sales ahora, no podrás volver a entrar. Protégela primero con tu correo.", [
-        { text: "Proteger mi cuenta", onPress: () => router.push("/apoderado/proteger-cuenta") },
-        { text: "Salir igual", style: "destructive", onPress: cerrarSesion },
+      Alert.alert(t("¿Salir sin proteger tu cuenta?"), t("Entraste con un código: si sales ahora, no podrás volver a entrar. Protégela primero con tu correo."), [
+        { text: t("Proteger mi cuenta"), onPress: () => router.push("/apoderado/proteger-cuenta") },
+        { text: t("Salir igual"), style: "destructive", onPress: cerrarSesion },
       ]);
     }} />}>
       {sinProteger ? (
         <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
-          <Text style={estilos.subtitulo}>🔒 Protege tu cuenta</Text>
-          <Text style={estilos.textoSuave}>Entraste con un código. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.</Text>
-          <Boton titulo="Agregar correo y contraseña" variante="secundario" onPress={() => router.push("/apoderado/proteger-cuenta")} />
+          <Text style={estilos.subtitulo}>{t("🔒 Protege tu cuenta")}</Text>
+          <Text style={estilos.textoSuave}>{t("Entraste con un código. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.")}</Text>
+          <Boton titulo={t("Agregar correo y contraseña")} variante="secundario" onPress={() => router.push("/apoderado/proteger-cuenta")} />
         </Tarjeta>
       ) : null}
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {!perfil?.empresa_id ? (
         <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
-          <Text style={estilos.subtitulo}>🤝 Conéctate con tu tía o tío del furgón</Text>
-          <Text style={estilos.textoSuave}>Búscalo por su nombre o comuna y envíale una solicitud. Cuando la acepte, registras a tus hijos y empiezas a recibir los avisos.</Text>
-          <Boton titulo="Buscar a mi tía o tío" onPress={() => router.push("/apoderado/conectar")} />
-          <Boton titulo="Me compartieron un código de la familia" variante="texto" onPress={() => router.push("/apoderado/familia")} />
+          <Text style={estilos.subtitulo}>{t("🤝 Conéctate con tu tía o tío del furgón")}</Text>
+          <Text style={estilos.textoSuave}>{t("Búscalo por su nombre o comuna y envíale una solicitud. Cuando la acepte, registras a tus hijos y empiezas a recibir los avisos.")}</Text>
+          <Boton titulo={t("Buscar a mi tía o tío")} onPress={() => router.push("/apoderado/conectar")} />
+          <Boton titulo={t("Me compartieron un código de la familia")} variante="texto" onPress={() => router.push("/apoderado/familia")} />
         </Tarjeta>
       ) : alumnos.length === 0 ? (
-        <Aviso texto="Aún no registras alumnos. Agrega a tu hijo/a con su dirección exacta para recibir los avisos." />
+        <Aviso texto={t("Aún no registras alumnos. Agrega a tu hijo/a con su dirección exacta para recibir los avisos.")} />
       ) : null}
       {solicitudes ? (
-        <Boton titulo={`🤝 ${solicitudes === 1 ? "Una tía o tío quiere" : `${solicitudes} tías o tíos quieren`} conectarse contigo`} variante="exito"
+        <Boton titulo={solicitudes === 1 ? t("🤝 Una tía o tío quiere conectarse contigo") : t("🤝 {n} tías o tíos quieren conectarse contigo", { n: solicitudes })} variante="exito"
           onPress={() => router.push("/apoderado/conectar")} />
       ) : null}
 
@@ -161,36 +161,38 @@ export default function InicioApoderado() {
             {enCurso ? (
               <View style={{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: colores.superficie2 }}>
                 <Text style={[estilos.texto, { fontWeight: "700" }]}>
-                  {enCurso.recorrido.tipo === "ida" ? "🌅 Recorrido de ida en curso" : "🏠 Recorrido de vuelta en curso"}
+                  {enCurso.recorrido.tipo === "ida" ? t("🌅 Recorrido de ida en curso") : t("🏠 Recorrido de vuelta en curso")}
                 </Text>
                 <Text style={estilos.texto}>
                   {enCurso.estado === "entregado"
-                    ? `${enCurso.recorrido.tipo === "ida" ? "Subió al furgón" : "En su hogar"} desde las ${hora(enCurso.marcado_en!)} ✅`
-                    : enCurso.estado === "ausente" ? "Marcado ausente por el conductor"
-                    : enCurso.estado === "no_viaja" ? "Hoy no viaja"
-                    : aviso ? `🔔 Llega en ~${Math.max(1, Math.round((enCurso.eta_seg ?? 60) / 60))} min (aviso ${hora(aviso.disparado_en)})`
-                    : "Te avisaremos cuando el furgón esté cerca."}
+                    ? (enCurso.recorrido.tipo === "ida"
+                      ? t("Subió al furgón desde las {hora} ✅", { hora: hora(enCurso.marcado_en!) })
+                      : t("En su hogar desde las {hora} ✅", { hora: hora(enCurso.marcado_en!) }))
+                    : enCurso.estado === "ausente" ? t("Marcado ausente por el conductor")
+                    : enCurso.estado === "no_viaja" ? t("Hoy no viaja")
+                    : aviso ? t("🔔 Llega en ~{min} min (aviso {hora})", { min: Math.max(1, Math.round((enCurso.eta_seg ?? 60) / 60)), hora: hora(aviso.disparado_en) })
+                    : t("Te avisaremos cuando el furgón esté cerca.")}
                 </Text>
                 {aBordo ? (
-                  <Text style={[estilos.texto, { color: colores.verde, fontWeight: "700" }]}>🚐 {nombreCorto} va a bordo desde las {hora(enCurso.a_bordo_desde!)}</Text>
+                  <Text style={[estilos.texto, { color: colores.verde, fontWeight: "700" }]}>{t("🚐 {nombre} va a bordo desde las {hora}", { nombre: nombreCorto, hora: hora(enCurso.a_bordo_desde!) })}</Text>
                 ) : null}
                 {puedeDecirQueSubio ? (
-                  <Boton titulo={`🙋 Ya subió ${nombreCorto}`} variante="exito" onPress={() => yaSubio(alumno)} />
+                  <Boton titulo={t("🙋 Ya subió {nombre}", { nombre: nombreCorto })} variante="exito" onPress={() => yaSubio(alumno)} />
                 ) : null}
                 {enCurso.estado === "pendiente" || aBordo ? (
-                  <Boton titulo={aBordo ? `🗺️ Seguir a ${nombreCorto} en vivo` : "🗺️ Seguir el furgón en vivo"} variante={aBordo ? "primario" : "secundario"}
+                  <Boton titulo={aBordo ? t("🗺️ Seguir a {nombre} en vivo", { nombre: nombreCorto }) : t("🗺️ Seguir el furgón en vivo")} variante={aBordo ? "primario" : "secundario"}
                     onPress={() => router.push({ pathname: "/apoderado/seguir/[id]", params: { id: alumno.id, nombre: alumno.nombre } })} />
                 ) : null}
                 {aviso && !aviso.confirmado_en && enCurso.estado === "pendiente" ? (
-                  <Boton titulo="Recibido, estoy atento/a" variante="exito" onPress={() => confirmar(aviso.id)} />
+                  <Boton titulo={t("Recibido, estoy atento/a")} variante="exito" onPress={() => confirmar(aviso.id)} />
                 ) : null}
               </View>
             ) : null}
 
-            <Text style={[estilos.etiqueta, { marginTop: 12 }]}>Hoy no viaja</Text>
+            <Text style={[estilos.etiqueta, { marginTop: 12 }]}>{t("Hoy no viaja")}</Text>
             {(["ida", "vuelta"] as const).map((tipo) => (
               <View key={tipo} style={[estilos.fila, { justifyContent: "space-between" }]}>
-                <Text style={estilos.texto}>{tipo === "ida" ? "Ida (mañana)" : "Vuelta (tarde)"}</Text>
+                <Text style={estilos.texto}>{tipo === "ida" ? t("Ida (mañana)") : t("Vuelta (tarde)")}</Text>
                 <Switch
                   value={noViaja.has(`${alumno.id}:${tipo}`)}
                   onValueChange={(v) => cambiarNoViaja(alumno, tipo, v)}
@@ -199,21 +201,21 @@ export default function InicioApoderado() {
               </View>
             ))}
 
-            <Boton titulo={`Aviso ${alumno.minutos_aviso} min antes · cambiar`} variante="texto" onPress={() => cambiarMinutos(alumno)} />
+            <Boton titulo={t("Aviso {min} min antes · cambiar", { min: alumno.minutos_aviso })} variante="texto" onPress={() => cambiarMinutos(alumno)} />
           </Tarjeta>
         );
       })}
 
       <View style={[estilos.fila, { marginTop: 4 }]}>
-        <Boton titulo="💳 Pagos" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
-        <Boton titulo="💬 Ayuda" variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
+        <Boton titulo={t("💳 Pagos")} variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
+        <Boton titulo={t("💬 Ayuda")} variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
       </View>
-      <Boton titulo="👨‍👩‍👧 Familia: compartir con papá o mamá" variante="secundario" onPress={() => router.push("/apoderado/familia")} />
-      <Boton titulo="🤝 Conectar con mi tía o tío" variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
-      {perfil?.empresa_id ? <Boton titulo="+ Registrar alumno" variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
+      <Boton titulo={t("👨‍👩‍👧 Familia: compartir con papá o mamá")} variante="secundario" onPress={() => router.push("/apoderado/familia")} />
+      <Boton titulo={t("🤝 Conectar con mi tía o tío")} variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
+      {perfil?.empresa_id ? <Boton titulo={t("+ Registrar alumno")} variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
       <Tarjeta><SelectorTema /></Tarjeta>
       <Tarjeta><SelectorIdioma /></Tarjeta>
-      <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
+      <Boton titulo={t("Eliminar mi cuenta")} variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
       <EnlacePrivacidad />
     </Pantalla>
   );

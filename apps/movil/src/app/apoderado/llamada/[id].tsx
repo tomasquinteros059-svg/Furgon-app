@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Vibration, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { responderLlamada } from "../../../llamadas-app";
+import { locale, t } from "../../../lib/idioma";
 
 const TIMBRE_SEG = 30; // igual a CONFIG_LLAMADAS_POR_DEFECTO.timbreAppSeg
 
@@ -14,7 +15,8 @@ export default function LlamadaEntrante() {
   const [quedan, setQuedan] = useState(TIMBRE_SEG);
   const [estado, setEstado] = useState<"sonando" | "confirmada" | "rechazada" | "vencida">("sonando");
   const activa = useRef(true);
-  const texto = `${voz || "El furgón escolar está por llegar."} Para confirmar, presione 1.`;
+  // «voz» ya viene en el idioma de la persona desde el servidor.
+  const texto = `${voz || t("El furgón escolar está por llegar.")} ${t("Para confirmar, presione 1.")}`;
 
   useEffect(() => {
     responderLlamada(id, "acuse");
@@ -22,7 +24,7 @@ export default function LlamadaEntrante() {
     const hablar = () => {
       if (!activa.current) return;
       Speech.speak(texto, {
-        language: "es-CL",
+        language: locale(),
         rate: 0.95,
         onDone: () => {
           setTimeout(hablar, 1500);
@@ -57,9 +59,9 @@ export default function LlamadaEntrante() {
   return (
     <SafeAreaView style={e.fondo}>
       <View style={{ alignItems: "center", gap: 6 }}>
-        <Text style={e.suave}>Llamada por internet · sin costo</Text>
-        <Text style={e.quien}>Furgón Escolar</Text>
-        <Text style={e.suave}>{alumno ? `Aviso de ${alumno}` : "Aviso de llegada"}</Text>
+        <Text style={e.suave}>{t("Llamada por internet · sin costo")}</Text>
+        <Text style={e.quien}>Furgón Escolar</Text>{/* i18n-ignorar: marca */}
+        <Text style={e.suave}>{alumno ? t("Aviso de {alumno}", { alumno }) : t("Aviso de llegada")}</Text>
       </View>
       <View style={e.voz}>
         <Text style={{ color: "#fff", fontSize: 16 }}>🗣️ “{texto}”</Text>
@@ -67,18 +69,18 @@ export default function LlamadaEntrante() {
       {estado === "sonando" ? (
         <View style={{ alignItems: "center", gap: 14 }}>
           <View style={{ flexDirection: "row", gap: 32 }}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Presionar 1 para confirmar" onPress={() => terminar("confirmada")} style={[e.tecla, { backgroundColor: "#1D7F45" }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Presionar 1 para confirmar")} onPress={() => terminar("confirmada")} style={[e.tecla, { backgroundColor: "#1D7F45" }]}>
               <Text style={{ color: "#fff", fontSize: 34, fontWeight: "800" }}>1</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Colgar" onPress={() => terminar("rechazada")} style={[e.tecla, { backgroundColor: "#C4281C" }]}>
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Colgar</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Colgar")} onPress={() => terminar("rechazada")} style={[e.tecla, { backgroundColor: "#C4281C" }]}>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{t("Colgar")}</Text>
             </Pressable>
           </View>
-          <Text style={e.suave}>Si no confirmas en {quedan} s, volveremos a llamar.</Text>
+          <Text style={e.suave}>{t("Si no confirmas en {seg} s, volveremos a llamar.", { seg: quedan })}</Text>
         </View>
       ) : (
         <Text style={[e.quien, { fontSize: 24, textAlign: "center" }]}>
-          {estado === "confirmada" ? "✅ Aviso confirmado" : estado === "rechazada" ? "Llamada terminada" : "Sin respuesta"}
+          {estado === "confirmada" ? t("✅ Aviso confirmado") : estado === "rechazada" ? t("Llamada terminada") : t("Sin respuesta")}
         </Text>
       )}
     </SafeAreaView>

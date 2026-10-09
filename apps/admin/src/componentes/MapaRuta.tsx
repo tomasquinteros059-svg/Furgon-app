@@ -3,6 +3,7 @@
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { svgIcono } from "../../../../diseno/iconos.ts";
+import { t } from "../i18n";
 
 export interface CasaRuta { id: string; nombre: string; lat: number; lng: number; noVa?: boolean }
 
@@ -32,7 +33,7 @@ export function MapaRuta({ casas, colegio, tipo, alto = 280 }: {
     if (!div.current) return;
     const m = L.map(div.current, { scrollWheelZoom: false }).setView([-33.4489, -70.6693], 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: "© colaboradores de OpenStreetMap",
+      maxZoom: 19, attribution: t("© colaboradores de OpenStreetMap"),
     }).addTo(m);
     mapa.current = m;
     capa.current = L.layerGroup().addTo(m);
@@ -48,7 +49,7 @@ export function MapaRuta({ casas, colegio, tipo, alto = 280 }: {
     const puntos: L.LatLngExpression[] = van.map((c) => [c.lat, c.lng]);
     if (colegio) {
       if (tipo === "ida") puntos.push([colegio.lat, colegio.lng]); else puntos.unshift([colegio.lat, colegio.lng]);
-      L.marker([colegio.lat, colegio.lng], { icon: pin("colegio", "#15202B"), title: colegio.nombre ?? "Colegio" }).addTo(g);
+      L.marker([colegio.lat, colegio.lng], { icon: pin("colegio", "#15202B"), title: colegio.nombre ?? t("Colegio") }).addTo(g);
     }
     if (puntos.length > 1) {
       L.polyline(puntos, { color: "#FFFFFF", weight: 8, opacity: 1 }).addTo(g);
@@ -56,12 +57,12 @@ export function MapaRuta({ casas, colegio, tipo, alto = 280 }: {
     }
     let n = 0;
     casas.forEach((c) => {
-      L.marker([c.lat, c.lng], { icon: pin(c.noVa ? "–" : String(++n), c.noVa ? "#8A95A1" : "#C4281C"), title: c.noVa ? `${c.nombre} (hoy no va)` : c.nombre }).addTo(g);
+      L.marker([c.lat, c.lng], { icon: pin(c.noVa ? "–" : String(++n), c.noVa ? "#8A95A1" : "#C4281C"), title: c.noVa ? t("{nombre} (hoy no va)", { nombre: c.nombre }) : c.nombre }).addTo(g);
     });
     const todos: L.LatLngExpression[] = [...casas.map((c) => [c.lat, c.lng] as L.LatLngTuple), ...(colegio ? [[colegio.lat, colegio.lng] as L.LatLngTuple] : [])];
     if (todos.length) m.fitBounds(L.latLngBounds(todos), { padding: [30, 30], maxZoom: 16 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
 
-  return <div ref={div} className="mapa-pin" style={{ height: alto }} role="img" aria-label="Mapa de la ruta con las casas numeradas en orden" />;
+  return <div ref={div} className="mapa-pin" style={{ height: alto }} role="img" aria-label={t("Mapa de la ruta con las casas numeradas en orden")} />;
 }

@@ -10,6 +10,7 @@ import { llamarFuncion } from "../lib/supabase";
 import { estiloMapa, Furgon, PinCasa, PROVEEDOR_MAPA } from "./mapa";
 import { colores } from "./ui";
 import { esOscuro } from "./tema";
+import { t } from "../lib/idioma";
 
 export interface CasaMapa {
   id: string;
@@ -85,13 +86,13 @@ export function MapaConductor({ recorridoId, casas, alto = 280 }: { recorridoId:
           <Polyline coordinates={respaldo} strokeColor={colores.azul} strokeWidth={4} lineDashPattern={[8, 8]} />
         ) : null}
         {casas.filter((c) => c.estado !== "no_viaja").map((c) => (
-          <Marker key={c.id} coordinate={{ latitude: c.lat, longitude: c.lng }} anchor={{ x: 0.5, y: 1 }} title={`Parada ${c.numero}`}>
+          <Marker key={c.id} coordinate={{ latitude: c.lat, longitude: c.lng }} anchor={{ x: 0.5, y: 1 }} title={t("Parada {numero}", { numero: c.numero })}>
             <PinCasa numero={c.estado === "entregado" ? "✓" : c.numero}
               color={c.estado === "entregado" ? colores.verde : c.estado === "ausente" ? colores.suave : c.avisado ? colores.rojo : colores.azul} />
           </Marker>
         ))}
         {yo ? (
-          <Marker coordinate={yo} anchor={{ x: 0.5, y: 0.85 }} zIndex={10} title="Tu furgón">
+          <Marker coordinate={yo} anchor={{ x: 0.5, y: 0.85 }} zIndex={10} title={t("Tu furgón")}>
             <Furgon haciaIzquierda={haciaIzquierda} />
           </Marker>
         ) : null}
@@ -99,12 +100,12 @@ export function MapaConductor({ recorridoId, casas, alto = 280 }: { recorridoId:
       {!seguir ? (
         <Pressable onPress={() => setSeguir(true)} accessibilityRole="button"
           style={{ position: "absolute", right: 10, bottom: 10, backgroundColor: colores.tarjeta, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, elevation: 4 }}>
-          <Text style={{ fontWeight: "700", color: colores.azul }}>◎ Centrar</Text>
+          <Text style={{ fontWeight: "700", color: colores.azul }}>{t("◎ Centrar")}</Text>
         </Pressable>
       ) : null}
       {!yo ? (
         <View style={{ position: "absolute", left: 10, top: 10, backgroundColor: colores.tarjeta, borderRadius: 12, padding: 8 }}>
-          <Text style={{ color: colores.suave }}>Buscando tu ubicación…</Text>
+          <Text style={{ color: colores.suave }}>{t("Buscando tu ubicación…")}</Text>
         </View>
       ) : null}
     </View>

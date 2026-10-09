@@ -8,6 +8,7 @@ import { Aviso, Boton, Campo, estilos, Pantalla } from "../../componentes/ui";
 import { type Conexion, misConexiones } from "../../lib/conexiones";
 import { normalizarTelefono } from "../../lib/core";
 import { mensajeError, supabase } from "../../lib/supabase";
+import { t } from "../../lib/idioma";
 
 const SANTIAGO: Region = { latitude: -33.4489, longitude: -70.6693, latitudeDelta: 0.05, longitudeDelta: 0.05 };
 
@@ -49,23 +50,23 @@ export default function NuevoAlumno() {
     if (!direccion.trim()) return;
     try {
       const [r] = await Location.geocodeAsync(direccion);
-      if (!r) return setError("No encontramos esa dirección. Ubica el pin manualmente.");
+      if (!r) return setError(t("No encontramos esa dirección. Ubica el pin manualmente."));
       const punto = { latitude: r.latitude, longitude: r.longitude };
       setPin(punto);
       mapa.current?.animateToRegion({ ...punto, latitudeDelta: 0.004, longitudeDelta: 0.004 }, 500);
     } catch {
-      setError("No pudimos buscar la dirección. Ubica el pin manualmente.");
+      setError(t("No pudimos buscar la dirección. Ubica el pin manualmente."));
     }
   }
 
   async function guardar() {
     setError(null);
-    if (tias.length > 1 && !tia) return setError("Elige con qué tía o tío va al colegio.");
-    if (!pin) return setError("Marca en el mapa la puerta de tu casa: así el aviso será exacto.");
+    if (tias.length > 1 && !tia) return setError(t("Elige con qué tía o tío va al colegio."));
+    if (!pin) return setError(t("Marca en el mapa la puerta de tu casa: así el aviso será exacto."));
     const tel1 = normalizarTelefono(contacto1.telefono);
-    if (!tel1) return setError("Revisa el teléfono del contacto principal.");
+    if (!tel1) return setError(t("Revisa el teléfono del contacto principal."));
     const tel2 = contacto2.telefono.trim() ? normalizarTelefono(contacto2.telefono) : null;
-    if (contacto2.telefono.trim() && !tel2) return setError("Revisa el teléfono del contacto secundario.");
+    if (contacto2.telefono.trim() && !tel2) return setError(t("Revisa el teléfono del contacto secundario."));
 
     setGuardando(true);
     const { error } = await supabase.rpc("registrar_alumno", {
@@ -73,8 +74,8 @@ export default function NuevoAlumno() {
         nombre, colegio, curso, minutos_aviso: 5, conductor_id: tia,
         domicilio: { direccion, lat: pin.latitude, lng: pin.longitude, indicaciones },
         contactos: [
-          { nombre: contacto1.nombre || "Contacto principal", telefono: tel1, prioridad: 1 },
-          ...(tel2 ? [{ nombre: contacto2.nombre || "Contacto secundario", telefono: tel2, prioridad: 2 }] : []),
+          { nombre: contacto1.nombre || t("Contacto principal"), telefono: tel1, prioridad: 1 },
+          ...(tel2 ? [{ nombre: contacto2.nombre || t("Contacto secundario"), telefono: tel2, prioridad: 2 }] : []),
         ],
       },
     });
@@ -84,27 +85,27 @@ export default function NuevoAlumno() {
   }
 
   return (
-    <Pantalla titulo="Registrar alumno">
+    <Pantalla titulo={t("Registrar alumno")}>
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {tias.length > 1 ? (
         <View style={{ marginBottom: 14, gap: 6 }}>
-          <Text style={estilos.etiqueta}>¿Con qué tía o tío va?</Text>
-          {tias.map((t) => (
-            <Boton key={t.otro_id} titulo={`${tia === t.otro_id ? "✓ " : ""}${t.otro_nombre}${t.empresa ? ` · ${t.empresa}` : ""}`}
-              variante={tia === t.otro_id ? "primario" : "secundario"} onPress={() => setTia(t.otro_id)} />
+          <Text style={estilos.etiqueta}>{t("¿Con qué tía o tío va?")}</Text>
+          {tias.map((x) => (
+            <Boton key={x.otro_id} titulo={`${tia === x.otro_id ? "✓ " : ""}${x.otro_nombre}${x.empresa ? ` · ${x.empresa}` : ""}`}
+              variante={tia === x.otro_id ? "primario" : "secundario"} onPress={() => setTia(x.otro_id)} />
           ))}
         </View>
       ) : null}
-      <Campo etiqueta="Nombre del alumno" value={nombre} onChangeText={setNombre} />
-      <Campo etiqueta="Colegio" value={colegio} onChangeText={setColegio} />
-      <Campo etiqueta="Curso" value={curso} onChangeText={setCurso} placeholder="Ej: 3° Básico" />
+      <Campo etiqueta={t("Nombre del alumno")} value={nombre} onChangeText={setNombre} />
+      <Campo etiqueta={t("Colegio")} value={colegio} onChangeText={setColegio} />
+      <Campo etiqueta={t("Curso")} value={curso} onChangeText={setCurso} placeholder={t("Ej: 3° Básico")} />
 
-      <Text style={estilos.subtitulo}>Dirección</Text>
-      <Campo etiqueta="Dirección" value={direccion} onChangeText={setDireccion} onSubmitEditing={buscarDireccion}
-        placeholder="Calle, número, comuna" returnKeyType="search" />
-      <Boton titulo="Buscar en el mapa" variante="secundario" onPress={buscarDireccion} />
+      <Text style={estilos.subtitulo}>{t("Dirección")}</Text>
+      <Campo etiqueta={t("Dirección")} value={direccion} onChangeText={setDireccion} onSubmitEditing={buscarDireccion}
+        placeholder={t("Calle, número, comuna")} returnKeyType="search" />
+      <Boton titulo={t("Buscar en el mapa")} variante="secundario" onPress={buscarDireccion} />
       <Text style={[estilos.textoSuave, { marginVertical: 8 }]}>
-        Toca el mapa o arrastra el pin hasta la puerta de tu casa.
+        {t("Toca el mapa o arrastra el pin hasta la puerta de tu casa.")}
       </Text>
       <View style={{ height: 280, borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
         <MapView
@@ -117,20 +118,20 @@ export default function NuevoAlumno() {
           {pin ? <Marker coordinate={pin} draggable onDragEnd={(e) => setPin(e.nativeEvent.coordinate)} /> : null}
         </MapView>
       </View>
-      <Campo etiqueta="Indicaciones para el conductor (opcional)" value={indicaciones} onChangeText={setIndicaciones}
-        placeholder="Ej: portón verde, depto 302" />
+      <Campo etiqueta={t("Indicaciones para el conductor (opcional)")} value={indicaciones} onChangeText={setIndicaciones}
+        placeholder={t("Ej: portón verde, depto 302")} />
 
-      <Text style={estilos.subtitulo}>Teléfonos para la llamada automática</Text>
-      <Campo etiqueta="Contacto principal · nombre" value={contacto1.nombre} onChangeText={(t) => setContacto1({ ...contacto1, nombre: t })} />
-      <Campo etiqueta="Contacto principal · teléfono" value={contacto1.telefono} keyboardType="phone-pad" placeholder="9 1234 5678"
-        onChangeText={(t) => setContacto1({ ...contacto1, telefono: t })} />
-      <Campo etiqueta="Contacto secundario · nombre (opcional)" value={contacto2.nombre} onChangeText={(t) => setContacto2({ ...contacto2, nombre: t })} />
-      <Campo etiqueta="Contacto secundario · teléfono" value={contacto2.telefono} keyboardType="phone-pad"
-        ayuda="Si el principal no contesta dos veces, llamamos a este número."
-        onChangeText={(t) => setContacto2({ ...contacto2, telefono: t })} />
+      <Text style={estilos.subtitulo}>{t("Teléfonos para la llamada automática")}</Text>
+      <Campo etiqueta={t("Contacto principal · nombre")} value={contacto1.nombre} onChangeText={(v) => setContacto1({ ...contacto1, nombre: v })} />
+      <Campo etiqueta={t("Contacto principal · teléfono")} value={contacto1.telefono} keyboardType="phone-pad" placeholder="9 1234 5678"
+        onChangeText={(v) => setContacto1({ ...contacto1, telefono: v })} />
+      <Campo etiqueta={t("Contacto secundario · nombre (opcional)")} value={contacto2.nombre} onChangeText={(v) => setContacto2({ ...contacto2, nombre: v })} />
+      <Campo etiqueta={t("Contacto secundario · teléfono")} value={contacto2.telefono} keyboardType="phone-pad"
+        ayuda={t("Si el principal no contesta dos veces, llamamos a este número.")}
+        onChangeText={(v) => setContacto2({ ...contacto2, telefono: v })} />
 
-      <Aviso texto="El administrador del furgón asignará al alumno a la ruta correspondiente." />
-      <Boton titulo="Guardar" onPress={guardar} cargando={guardando} deshabilitado={!nombre || !direccion} />
+      <Aviso texto={t("El administrador del furgón asignará al alumno a la ruta correspondiente.")} />
+      <Boton titulo={t("Guardar")} onPress={guardar} cargando={guardando} deshabilitado={!nombre || !direccion} />
     </Pantalla>
   );
 }

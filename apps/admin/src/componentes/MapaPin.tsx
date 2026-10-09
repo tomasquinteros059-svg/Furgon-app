@@ -1,6 +1,7 @@
 // Mapa (OpenStreetMap + Leaflet) para ubicar la casa del alumno con un pin exacto.
 import L from "leaflet";
 import { useEffect, useRef } from "react";
+import { idioma, t } from "../i18n";
 
 const icono = L.divIcon({
   className: "pin-casa",
@@ -27,7 +28,7 @@ export function MapaPin({ punto, onCambio, alto = 300, soloLectura = false }: {
     if (!div.current) return;
     const m = L.map(div.current, { scrollWheelZoom: false }).setView(punto ? [punto.lat, punto.lng] : [-33.4489, -70.6693], punto ? 16 : 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: "© colaboradores de OpenStreetMap",
+      maxZoom: 19, attribution: t("© colaboradores de OpenStreetMap"),
     }).addTo(m);
     if (!soloLectura) m.on("click", (e: L.LeafletMouseEvent) => cambio.current?.({ lat: e.latlng.lat, lng: e.latlng.lng }));
     mapa.current = m;
@@ -47,13 +48,13 @@ export function MapaPin({ punto, onCambio, alto = 300, soloLectura = false }: {
     }
   }, [punto?.lat, punto?.lng, soloLectura]);
 
-  return <div ref={div} className="mapa-pin" style={{ height: alto }} role="application" aria-label="Mapa: toca o arrastra el pin para ubicar la casa" />;
+  return <div ref={div} className="mapa-pin" style={{ height: alto }} role="application" aria-label={t("Mapa: toca o arrastra el pin para ubicar la casa")} />;
 }
 
 /** Busca una dirección con Nominatim (OpenStreetMap). */
 export async function buscarDireccion(q: string): Promise<Punto | null> {
   const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cl&q=${encodeURIComponent(q)}`, {
-    headers: { "Accept-Language": "es" },
+    headers: { "Accept-Language": idioma() },
   });
   const d = await r.json() as { lat: string; lon: string }[];
   return d[0] ? { lat: Number(d[0].lat), lng: Number(d[0].lon) } : null;

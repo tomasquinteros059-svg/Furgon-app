@@ -1,10 +1,12 @@
-export const pesos = (n: number) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
-export const fecha = (iso: string) => new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short" }).format(new Date(iso.length === 10 ? `${iso}T12:00:00` : iso));
-export const fechaHora = (iso: string) => new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
-export const hora = (iso: string) => new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+import { locale } from "./i18n";
+
+export const pesos = (n: number) => new Intl.NumberFormat(locale(), { style: "currency", currency: "CLP", currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(n);
+export const fecha = (iso: string) => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short" }).format(new Date(iso.length === 10 ? `${iso}T12:00:00` : iso));
+export const fechaHora = (iso: string) => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+export const hora = (iso: string) => new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 export const nombreMes = (periodo: string) => {
   const [a, m] = periodo.split("-").map(Number);
-  const t = new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(new Date(a, m - 1, 1));
+  const t = new Intl.DateTimeFormat(locale(), { month: "long", year: "numeric" }).format(new Date(a, m - 1, 1));
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 export const mesActual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };

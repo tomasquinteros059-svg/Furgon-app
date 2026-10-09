@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   Alumno, Cobro, Conductora, Datos, Empresa, Furgon, Licencia, LlamadaReporte, Mensaje, Pregunta, RecomendacionRuta, RecorridoHoy, Resumen, Ruta, Solicitud,
 } from "./tipos";
+import { t } from "../i18n";
 
 function ok<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw new Error(traducir(r.error.message));
@@ -11,8 +12,8 @@ function ok<T>(r: { data: T; error: { message: string } | null }): T {
 }
 
 function traducir(m: string): string {
-  if (/Invalid login credentials/i.test(m)) return "Correo o contraseña incorrectos.";
-  if (/Failed to fetch|NetworkError/i.test(m)) return "Sin conexión con el servidor.";
+  if (/Invalid login credentials/i.test(m)) return t("Correo o contraseña incorrectos.");
+  if (/Failed to fetch|NetworkError/i.test(m)) return t("Sin conexión con el servidor.");
   return m;
 }
 
@@ -31,7 +32,7 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
       const administra = perfil && (perfil.rol === "admin" || (perfil.rol === "conductor" && perfil.puede_administrar));
       if (!perfil || !administra) {
         await sb.auth.signOut();
-        throw new Error("Esta cuenta no tiene permiso de administración. Pídeselo al administrador principal.");
+        throw new Error(t("Esta cuenta no tiene permiso de administración. Pídeselo al administrador principal."));
       }
       empresaId = perfil.empresa_id;
       miId = perfil.id;
@@ -138,7 +139,7 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
       const { data, error } = await sb.functions.invoke("recomendar-ruta", { body: { ruta_id: rutaId } });
       if (error) {
         const cuerpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
-        throw new Error(cuerpo?.mensaje ?? "No se pudo calcular la recomendación.");
+        throw new Error(cuerpo?.mensaje ?? t("No se pudo calcular la recomendación."));
       }
       return data as RecomendacionRuta;
     },

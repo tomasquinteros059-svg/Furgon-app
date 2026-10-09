@@ -5,15 +5,17 @@ import { Pressable, TextInput, View } from "react-native";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { mensajeError, supabase } from "../../lib/supabase";
+import { t } from "../../lib/idioma";
 
 type Tipo = "pregunta" | "cancelacion_servicio" | "cambio_datos" | "reclamo";
-const TIPOS: { id: Tipo; nombre: string }[] = [
-  { id: "pregunta", nombre: "Pregunta" },
-  { id: "cambio_datos", nombre: "Cambio de datos" },
-  { id: "reclamo", nombre: "Reclamo" },
-  { id: "cancelacion_servicio", nombre: "Cancelar el servicio" },
+// Funciones (no constantes) para que los nombres salgan en el idioma actual.
+const tipos = (): { id: Tipo; nombre: string }[] => [
+  { id: "pregunta", nombre: t("Pregunta") },
+  { id: "cambio_datos", nombre: t("Cambio de datos") },
+  { id: "reclamo", nombre: t("Reclamo") },
+  { id: "cancelacion_servicio", nombre: t("Cancelar el servicio") },
 ];
-const ESTADO = { abierta: "Enviada", respondida: "Respondida", cerrada: "Cerrada" } as Record<string, string>;
+const nombreEstado = (estado: string) => ({ abierta: t("Enviada"), respondida: t("Respondida"), cerrada: t("Cerrada") } as Record<string, string>)[estado] ?? estado;
 
 export default function Ayuda() {
   const [faq, setFaq] = useState<{ id: string; pregunta: string; respuesta: string }[]>([]);
@@ -24,6 +26,7 @@ export default function Ayuda() {
   const [nueva, setNueva] = useState<{ tipo: Tipo; alumno: string | null; asunto: string; mensaje: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const TIPOS = tipos();
 
   const cargar = useCallback(async () => {
     const [f, s, h, e] = await Promise.all([
@@ -39,8 +42,8 @@ export default function Ayuda() {
   async function enviar() {
     if (!nueva) return;
     setError(null);
-    if (!nueva.asunto.trim() || !nueva.mensaje.trim()) return setError("Escribe un asunto y tu mensaje.");
-    if (nueva.tipo === "cancelacion_servicio" && !nueva.alumno) return setError("Elige qué alumno deja el furgón.");
+    if (!nueva.asunto.trim() || !nueva.mensaje.trim()) return setError(t("Escribe un asunto y tu mensaje."));
+    if (nueva.tipo === "cancelacion_servicio" && !nueva.alumno) return setError(t("Elige qué alumno deja el furgón."));
     setEnviando(true);
     const { error } = await supabase.rpc("crear_solicitud", {
       p_tipo: nueva.tipo, p_asunto: nueva.asunto.trim(), p_mensaje: nueva.mensaje.trim(), p_alumno: nueva.alumno,
@@ -51,16 +54,16 @@ export default function Ayuda() {
   }
 
   return (
-    <Pantalla titulo="Ayuda" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={t("Ayuda")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       {nueva ? (
         <Tarjeta>
-          <Text style={estilos.subtitulo}>Nueva consulta</Text>
+          <Text style={estilos.subtitulo}>{t("Nueva consulta")}</Text>
           {error ? <Aviso tipo="error" texto={error} /> : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {TIPOS.map((t) => (
-              <Pressable key={t.id} onPress={() => setNueva({ ...nueva, tipo: t.id })} accessibilityRole="button"
-                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.tipo === t.id ? colores.amarillo : colores.superficie }}>
-                <Text style={{ color: nueva.tipo === t.id ? colores.sobreAmarillo : colores.texto, fontWeight: "600" }}>{t.nombre}</Text>
+            {TIPOS.map((x) => (
+              <Pressable key={x.id} onPress={() => setNueva({ ...nueva, tipo: x.id })} accessibilityRole="button"
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.tipo === x.id ? colores.amarillo : colores.superficie }}>
+                <Text style={{ color: nueva.tipo === x.id ? colores.sobreAmarillo : colores.texto, fontWeight: "600" }}>{x.nombre}</Text>
               </Pressable>
             ))}
           </View>
@@ -74,29 +77,29 @@ export default function Ayuda() {
               ))}
             </View>
           ) : null}
-          {nueva.tipo === "cancelacion_servicio" ? <Aviso texto="La administración revisará tu solicitud y te confirmará desde cuándo queda cancelado el servicio." /> : null}
-          <Campo etiqueta="Asunto" value={nueva.asunto} onChangeText={(t) => setNueva({ ...nueva, asunto: t })} />
-          <Text style={estilos.etiqueta}>Mensaje</Text>
-          <TextInput multiline value={nueva.mensaje} onChangeText={(t) => setNueva({ ...nueva, mensaje: t })}
+          {nueva.tipo === "cancelacion_servicio" ? <Aviso texto={t("La administración revisará tu solicitud y te confirmará desde cuándo queda cancelado el servicio.")} /> : null}
+          <Campo etiqueta={t("Asunto")} value={nueva.asunto} onChangeText={(v) => setNueva({ ...nueva, asunto: v })} />
+          <Text style={estilos.etiqueta}>{t("Mensaje")}</Text>
+          <TextInput multiline value={nueva.mensaje} onChangeText={(v) => setNueva({ ...nueva, mensaje: v })}
             style={[estilos.input, { minHeight: 110, textAlignVertical: "top", marginBottom: 12 }]} />
-          <Boton titulo="Enviar" onPress={enviar} cargando={enviando} />
-          <Boton titulo="Cancelar" variante="texto" onPress={() => setNueva(null)} />
+          <Boton titulo={t("Enviar")} onPress={enviar} cargando={enviando} />
+          <Boton titulo={t("Cancelar")} variante="texto" onPress={() => setNueva(null)} />
         </Tarjeta>
       ) : (
-        <Boton titulo="+ Escribir a la administración" onPress={() => setNueva({ tipo: "pregunta", alumno: hijos.length === 1 ? hijos[0].id : null, asunto: "", mensaje: "" })} />
+        <Boton titulo={t("+ Escribir a la administración")} onPress={() => setNueva({ tipo: "pregunta", alumno: hijos.length === 1 ? hijos[0].id : null, asunto: "", mensaje: "" })} />
       )}
 
-      {solicitudes.length ? <Text style={estilos.subtitulo}>Mis consultas</Text> : null}
+      {solicitudes.length ? <Text style={estilos.subtitulo}>{t("Mis consultas")}</Text> : null}
       {solicitudes.map((s) => (
         <Pressable key={s.id} onPress={() => router.push(`/apoderado/solicitud/${s.id}`)} accessibilityRole="button">
           <Tarjeta>
             <Text style={[estilos.texto, { fontWeight: "700" }]}>{s.asunto}</Text>
-            <Text style={estilos.textoSuave}>{TIPOS.find((t) => t.id === s.tipo)?.nombre ?? "Otro"} · {ESTADO[s.estado] ?? s.estado}</Text>
+            <Text style={estilos.textoSuave}>{TIPOS.find((x) => x.id === s.tipo)?.nombre ?? t("Otro")} · {nombreEstado(s.estado)}</Text>
           </Tarjeta>
         </Pressable>
       ))}
 
-      <Text style={estilos.subtitulo}>Preguntas frecuentes</Text>
+      <Text style={estilos.subtitulo}>{t("Preguntas frecuentes")}</Text>
       {faq.map((f) => (
         <Pressable key={f.id} onPress={() => setAbierta(abierta === f.id ? null : f.id)} accessibilityRole="button">
           <Tarjeta>
@@ -105,7 +108,7 @@ export default function Ayuda() {
           </Tarjeta>
         </Pressable>
       ))}
-      {telefono ? <Aviso texto={`¿Urgente? Llama a la administración al ${telefono}.`} /> : null}
+      {telefono ? <Aviso texto={t("¿Urgente? Llama a la administración al {telefono}.", { telefono })} /> : null}
     </Pantalla>
   );
 }
