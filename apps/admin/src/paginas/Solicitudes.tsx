@@ -63,7 +63,7 @@ function Conversacion({ s, onCambio }: { s: Solicitud; onCambio: () => void }) {
           <label className="campo"><span>{t("Respuesta")}</span><textarea id="respuesta" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={t("Escribe tu respuesta. La familia la verá en la app.")} /></label>
           {s.tipo === "cancelacion_servicio" ? (
             <div className="acciones">
-              <button className="btn peligro" onClick={() => hacer(() => datos.resolverCancelacion(s.id, true, texto.trim()))}>{t("Aprobar cancelación y dar de baja")}</button>
+              <button className="btn peligro" onClick={() => confirm(t("Se dará de baja al alumno: sale de sus rutas y se anulan sus cobros futuros. ¿Continuar?")) && hacer(() => datos.resolverCancelacion(s.id, true, texto.trim()))}>{t("Aprobar cancelación y dar de baja")}</button>
               <button className="btn sec" onClick={() => hacer(() => datos.resolverCancelacion(s.id, false, texto.trim()))}>{t("Rechazar")}</button>
               <button className="btn" disabled={!texto.trim()} onClick={() => hacer(() => datos.responder(s.id, texto.trim()))}>{t("Solo responder")}</button>
             </div>

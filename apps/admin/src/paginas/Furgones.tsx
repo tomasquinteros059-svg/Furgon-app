@@ -37,7 +37,11 @@ export function Furgones() {
   return (
     <>
       <Encabezado titulo={t("Furgones")} bajada={t("Cada furgón con su tía o tío, sus rutas, cuántos niños lleva y la licencia de quien conduce.")}
-        acciones={<button className="btn bus" onClick={() => setEditar({ patente: "", modelo: "", capacidad: 12, conductor_id: null, ruta_ids: [] })}>{t("+ Agregar furgón")}</button>} />
+        acciones={<>
+          <a className="btn sec" href="#/alumnos">{t("Ver alumnos")}</a>
+          <a className="btn sec" href="#/alumnos/nuevo">{t("+ Agregar alumno")}</a>
+          <button className="btn bus" onClick={() => setEditar({ patente: "", modelo: "", capacidad: 12, conductor_id: null, ruta_ids: [] })}>{t("+ Agregar furgón")}</button>
+        </>} />
       {msg ? (msg.ok ? <p className="caja-ok" role="status">{msg.txt}</p> : <ErrorCaja mensaje={msg.txt} />) : null}
       <ErrorCaja mensaje={error} />
 
@@ -83,7 +87,7 @@ export function Furgones() {
                 <div className="acciones">
                   <button className="btn sec chico" onClick={() => setEditar({
                     id: f.id, patente: f.patente, modelo: f.modelo ?? "", capacidad: f.capacidad, conductor_id: f.conductor_id, activo: f.activo,
-                    ruta_ids: (rutas ?? []).filter((r) => f.rutas.includes(r.nombre)).map((r) => r.id),
+                    ruta_ids: (rutas ?? []).filter((r) => r.furgon_id === f.id).map((r) => r.id),
                   })}>{t("Editar")}</button>
                   {lic?.licencia_id ? <button className="btn sec chico" onClick={() => setRevisar(lic)}>{t("Licencia")}</button> : null}
                   <a className="btn sec chico" href="#/rutas">{t("Rutas")}</a>
@@ -96,7 +100,9 @@ export function Furgones() {
 
       {editar ? <ModalFurgon f={editar} conductoras={conductoras ?? []} rutas={(rutas ?? []).map((r) => ({ id: r.id, nombre: r.nombre, tipo: r.tipo }))}
         onCerrar={() => setEditar(null)}
-        onGuardar={(f) => { setEditar(null); hacer(() => datos.guardarFurgon(f), t("Furgón {patente} guardado.", { patente: f.patente.toUpperCase() })); }} /> : null}
+        onGuardar={(f) => {
+          if (f.capacidad != null && (f.capacidad < 1 || f.capacidad > 60)) return hacer(async () => { throw new Error(t("La capacidad debe estar entre 1 y 60 asientos.")); }, "");
+          setEditar(null); hacer(() => datos.guardarFurgon(f), t("Furgón {patente} guardado.", { patente: f.patente.toUpperCase() })); }} /> : null}
       {revisar ? <ModalLicencia l={revisar} onCerrar={() => setRevisar(null)}
         onRevisar={(aprobar, motivo) => { const l = revisar; setRevisar(null); hacer(() => datos.revisarLicencia(l.licencia_id!, aprobar, motivo), aprobar ? t("Licencia de {conductor} aprobada.", { conductor: l.conductor }) : t("Licencia de {conductor} rechazada: se le pedirá subirla de nuevo.", { conductor: l.conductor })); }} /> : null}
     </>

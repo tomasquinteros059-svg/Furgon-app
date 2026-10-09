@@ -100,8 +100,8 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
       }
     },
     async guardarContactos(alumnoId, contactos) {
-      ok(await sb.from("contactos").delete().eq("alumno_id", alumnoId));
-      if (contactos.length) ok(await sb.from("contactos").insert(contactos.map((c) => ({ ...c, alumno_id: alumnoId }))));
+      // En una sola transacción: si falla, el alumno conserva sus teléfonos.
+      ok(await sb.rpc("reemplazar_contactos", { p_alumno: alumnoId, p_contactos: contactos }));
     },
     async codigoFamilia(alumnoId) {
       return ok(await sb.rpc("codigo_familia", { p_alumno: alumnoId })) as string;
@@ -113,18 +113,19 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     async rutas() {
       const [filas, hoy] = await Promise.all([
         sb.from("rutas")
-          .select("id, nombre, tipo, hora_salida, conductor_id, colegio_nombre, colegio_lat, colegio_lng, conductor:perfiles(nombre), furgones(patente, descripcion), ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion, lat, lng))")
+          .select("id, nombre, tipo, hora_salida, conductor_id, furgon_id, activa, colegio_nombre, colegio_lat, colegio_lng, conductor:perfiles(nombre), furgones(patente, modelo, descripcion), ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion, lat, lng))")
           .order("nombre").then(ok),
         sb.rpc("hoy_empresa").then(ok) as Promise<string>,
       ]);
       const inasistencias = ok(await sb.from("inasistencias").select("alumno_id, tipo").eq("fecha", hoy)) ?? [];
       return (filas ?? []).map((r) => {
-        const f = r.furgones as unknown as { patente: string; descripcion: string | null } | null;
+        const f = r.furgones as unknown as { patente: string; modelo: string | null; descripcion: string | null } | null;
         const noVa = (alumnoId: string) => inasistencias.some((i) => i.alumno_id === alumnoId && (i.tipo === r.tipo || i.tipo === "ambos"));
         return {
           id: r.id, nombre: r.nombre, tipo: r.tipo, hora_salida: r.hora_salida, conductor_id: r.conductor_id,
           conductor_nombre: (r.conductor as unknown as { nombre: string } | null)?.nombre ?? null,
-          furgon: f ? `${f.descripcion ?? ""} · ${f.patente}` : null,
+          furgon: f ? [f.modelo ?? f.descripcion, f.patente].filter(Boolean).join(" · ") : null,
+          furgon_id: r.furgon_id, activa: r.activa,
           colegio: r.colegio_lat != null && r.colegio_lng != null ? { nombre: r.colegio_nombre, lat: r.colegio_lat, lng: r.colegio_lng } : null,
           paradas: (r.ruta_paradas as unknown as { alumno_id: string; orden: number; alumnos: { nombre: string }; domicilios: { direccion: string; lat: number; lng: number } | null }[])
             .map((p) => ({
@@ -235,7 +236,7 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
         .select("id, cuerpo, creado_en, autor:perfiles(nombre, rol)").eq("solicitud_id", solicitudId).order("creado_en"));
       return (filas ?? []).map((m) => {
         const a = m.autor as unknown as { nombre: string; rol: string } | null;
-        return { id: m.id, cuerpo: m.cuerpo, creado_en: m.creado_en, autor: a?.nombre ?? "—", es_admin: a?.rol === "admin" } satisfies Mensaje;
+        return { id: m.id, cuerpo: m.cuerpo, creado_en: m.creado_en, autor: a?.nombre ?? "—", es_admin: !!a && a.rol !== "apoderado" } satisfies Mensaje; // admin o tía que administra
       });
     },
     async responder(solicitudId, cuerpo) {

@@ -18,7 +18,11 @@ export function NuevoAlumno() {
   const [guardando, setGuardando] = useState(false);
   const [buscando, setBuscando] = useState(false);
   const [creado, setCreado] = useState<{ codigo: string; alumno_id: string; telefono: string | null } | null>(null);
-  const seleccion = rutaIds ?? (rutas ?? []).map((r) => r.id); // por defecto, todas las rutas (ida y vuelta)
+  const activas = (rutas ?? []).filter((r) => r.activa);
+  // Por defecto: si hay una sola tía, sus rutas (ida y vuelta); con varias, se elige a mano.
+  const conductoras = new Set(activas.map((r) => r.conductor_id));
+  const unaSola = conductoras.size <= 1;
+  const seleccion = rutaIds ?? (unaSola ? activas.map((r) => r.id) : []);
 
   if (creado) {
     return (
@@ -80,7 +84,7 @@ export function NuevoAlumno() {
           {campo("curso", t("Curso"), { placeholder: t("Ej: 3° Básico") })}
           {campo("colegio", t("Colegio"))}
           <label className="campo"><span>{t("Mensualidad (CLP)")}</span>
-            <input id="f-mensualidad" inputMode="numeric" placeholder={t("Vacío = la de la empresa")} value={f.mensualidad} onChange={(e) => setF({ ...f, mensualidad: e.target.value })} /></label>
+            <input id="f-mensualidad" inputMode="numeric" placeholder={t("Vacío = la de la empresa")} value={f.mensualidad} onChange={(e) => setF({ ...f, mensualidad: e.target.value.replace(/\D/g, "") })} /></label>
           <label className="campo"><span>{t("Avisar antes de llegar")}</span>
             <select id="f-minutos" value={f.minutos} onChange={(e) => setF({ ...f, minutos: Number(e.target.value) })}>
               {[3, 5, 7, 10].map((m) => <option key={m} value={m}>{t("{m} minutos", { m })}</option>)}
@@ -118,7 +122,7 @@ export function NuevoAlumno() {
         <h2>{t("Rutas")}</h2>
         {!rutas ? <Cargando /> : (
           <div className="chips" style={{ gap: 16 }}>
-            {rutas.map((r) => (
+            {activas.map((r) => (
               <label key={r.id} className="check">
                 <input type="checkbox" checked={seleccion.includes(r.id)} onChange={(e) => setRutaIds(e.target.checked ? [...seleccion, r.id] : seleccion.filter((x) => x !== r.id))} />
                 {r.nombre} <span className="tenue">({r.conductor_nombre ?? t("sin conductora")})</span>

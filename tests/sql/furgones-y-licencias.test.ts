@@ -63,7 +63,7 @@ describe("licencias", () => {
     // Una tía que administra no puede aprobarse a sí misma.
     await E.db.query(`update perfiles set puede_administrar = true where id = $1`, [ids.tia]);
     const propia = await subir(ids.tia, enDias(300));
-    await expect(comoTia(() => E.db.query(`select revisar_licencia($1, true)`, [propia]))).rejects.toThrow(/no encontrada/);
+    await expect(comoTia(() => E.db.query(`select revisar_licencia($1, true)`, [propia]))).rejects.toThrow(/la revisa otra persona/);
     await E.db.query(`update perfiles set puede_administrar = false where id = $1`, [ids.tia]);
   });
 

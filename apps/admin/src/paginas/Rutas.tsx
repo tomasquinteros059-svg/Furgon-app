@@ -71,7 +71,7 @@ function TarjetaRuta({ r, hacer, conductoras, disponibles }: {
                   onClick={() => hacer(() => datos.hoyNoVa(p.alumno_id, r.tipo, !p.hoy_no_va))}>{p.hoy_no_va ? t("Sí va hoy") : t("Hoy no va")}</button>
                 <button className="btn sec chico" aria-label={t("Subir a {nombre}", { nombre: p.nombre })} disabled={i === 0} onClick={() => hacer(() => datos.moverParada(r.id, p.alumno_id, -1))}>↑</button>
                 <button className="btn sec chico" aria-label={t("Bajar a {nombre}", { nombre: p.nombre })} disabled={i === r.paradas.length - 1} onClick={() => hacer(() => datos.moverParada(r.id, p.alumno_id, 1))}>↓</button>
-                <button className="btn sec chico" onClick={() => hacer(() => datos.quitarDeRuta(r.id, p.alumno_id))}>{t("Quitar")}</button>
+                <button className="btn sec chico" onClick={() => confirm(t("¿Quitar a {nombre} de esta ruta?", { nombre: p.nombre })) && hacer(() => datos.quitarDeRuta(r.id, p.alumno_id))}>{t("Quitar")}</button>
               </span>
             </li>
           ))}

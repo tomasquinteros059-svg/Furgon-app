@@ -29,7 +29,7 @@ export function Preguntas() {
           <div className="acciones">
             <button className="btn sec chico" onClick={() => setEditando(p)}>{t("Editar")}</button>
             <button className="btn sec chico" onClick={() => hacer(() => datos.guardarPregunta({ ...p, publicada: !p.publicada }))}>{p.publicada ? t("Despublicar") : t("Publicar")}</button>
-            <button className="btn sec chico" onClick={() => hacer(() => datos.eliminarPregunta(p.id))}>{t("Eliminar")}</button>
+            <button className="btn sec chico" onClick={() => confirm(t("¿Eliminar esta pregunta?")) && hacer(() => datos.eliminarPregunta(p.id))}>{t("Eliminar")}</button>
           </div>
         </section>
       ))}

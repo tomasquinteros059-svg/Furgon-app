@@ -45,14 +45,19 @@ function Ficha({ a, recargar }: { a: Alumno; recargar: () => void }) {
             <label className="campo"><span>{t("Nombre")}</span><input id="d-nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} /></label>
             <label className="campo"><span>{t("Curso")}</span><input id="d-curso" value={d.curso} onChange={(e) => setD({ ...d, curso: e.target.value })} /></label>
             <label className="campo"><span>{t("Colegio")}</span><input id="d-colegio" value={d.colegio} onChange={(e) => setD({ ...d, colegio: e.target.value })} /></label>
-            <label className="campo"><span>{t("Mensualidad (CLP)")}</span><input id="d-mensualidad" inputMode="numeric" placeholder={t("La de la empresa")} value={d.mensualidad} onChange={(e) => setD({ ...d, mensualidad: e.target.value })} /></label>
+            <label className="campo"><span>{t("Mensualidad (CLP)")}</span><input id="d-mensualidad" inputMode="numeric" placeholder={t("La de la empresa")} value={d.mensualidad} onChange={(e) => setD({ ...d, mensualidad: e.target.value.replace(/\D/g, "") })} /></label>
             <label className="campo"><span>{t("Avisar antes de llegar")}</span>
               <select id="d-minutos" value={d.minutos} onChange={(e) => setD({ ...d, minutos: Number(e.target.value) })}>{[3, 5, 7, 10].map((m) => <option key={m} value={m}>{t("{m} minutos", { m })}</option>)}</select></label>
           </div>
-          <div><button className="btn" onClick={() => ejecutar(() => datos.actualizarAlumno(a.id, {
-            nombre: d.nombre.trim(), curso: d.curso, colegio: d.colegio, minutos_aviso: d.minutos,
-            mensualidad: d.mensualidad.trim() ? Number(d.mensualidad.replace(/\D/g, "")) : null,
-          }), t("Datos guardados."))}>{t("Guardar datos")}</button></div>
+          <div><button className="btn" onClick={() => ejecutar(async () => {
+            const mensualidad = d.mensualidad ? Number(d.mensualidad) : null;
+            await datos.actualizarAlumno(a.id, { nombre: d.nombre.trim(), curso: d.curso, colegio: d.colegio, minutos_aviso: d.minutos, mensualidad });
+            // Si cambió el precio, también se ajusta el cobro pendiente de este mes (igual que en Cobros → Precios).
+            if (mensualidad !== null && mensualidad !== a.mensualidad) {
+              const hoy = new Date();
+              await datos.fijarMensualidad(a.id, mensualidad, `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`); // formato AAAA-MM
+            }
+          }, t("Datos guardados."))}>{t("Guardar datos")}</button></div>
         </section>
 
         <section className="tarjeta">
@@ -61,7 +66,7 @@ function Ficha({ a, recargar }: { a: Alumno; recargar: () => void }) {
             <ul className="lista-tareas">{a.apoderados.map((p) => <li key={p.id}><span><b>{p.nombre}</b><br /><small className="tenue mono">{p.telefono ?? t("sin teléfono")}</small></span><Chip tono="ok">{t("Usa la app")}</Chip></li>)}</ul>
           ) : <p className="nota">{t("La familia aún no instala la app. Envíale su código.")}</p>}
           {codigo ? <CodigoFamilia codigo={codigo} alumno={a.nombre} telefono={a.contactos[0]?.telefono} />
-            : a.activo ? <div><button className="btn bus" onClick={async () => setCodigo(await datos.codigoFamilia(a.id))}>{t("Ver código para la familia")}</button></div> : null}
+            : a.activo ? <div><button className="btn bus" onClick={() => ejecutar(async () => setCodigo(await datos.codigoFamilia(a.id)), t("Código listo."))}>{t("Ver código para la familia")}</button></div> : null}
           <h3>{t("Rutas")}</h3>
           {a.rutas.length ? <div className="chips">{a.rutas.map((r) => <Chip key={r.id}>{r.nombre}</Chip>)}</div> : <p className="tenue" style={{ margin: 0 }}>{t("Sin ruta. Asígnala en")} <a href="#/rutas">{t("Rutas")}</a>.</p>}
         </section>

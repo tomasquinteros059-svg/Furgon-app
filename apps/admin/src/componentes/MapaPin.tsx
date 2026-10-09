@@ -45,6 +45,7 @@ export function MapaPin({ punto, onCambio, alto = 300, soloLectura = false }: {
       m.setView([punto.lat, punto.lng], Math.max(m.getZoom(), 16));
     } else {
       marcador.current.setLatLng([punto.lat, punto.lng]);
+      m.panTo([punto.lat, punto.lng]); // una nueva búsqueda lleva el mapa a la dirección encontrada
     }
   }, [punto?.lat, punto?.lng, soloLectura]);
 

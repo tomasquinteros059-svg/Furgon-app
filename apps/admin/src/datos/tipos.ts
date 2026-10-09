@@ -87,6 +87,9 @@ export interface Ruta {
   conductor_id: string | null;
   conductor_nombre: string | null;
   furgon: string | null;
+  /** Furgón asignado (para editar el furgón sin confundir rutas con el mismo nombre). */
+  furgon_id: string | null;
+  activa: boolean;
   colegio: { nombre: string | null; lat: number; lng: number } | null;
   paradas: Parada[];
 }

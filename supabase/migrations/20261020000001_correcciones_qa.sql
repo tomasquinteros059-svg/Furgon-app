@@ -323,3 +323,73 @@ begin
   delete from public.apoderado_alumno where alumno_id = p_alumno and apoderado_id = p_apoderado;
   delete from public.contactos where alumno_id = p_alumno and apoderado_id = p_apoderado;
 end $$;
+
+
+-- ---------------------------------------------------------------------------
+-- Panel web (QA en el navegador)
+-- ---------------------------------------------------------------------------
+-- Editar un furgón no borra su descripción si el formulario no la envía.
+create or replace function public.guardar_furgon(p_datos jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  v_empresa uuid := public.requiere_admin();
+  v_id uuid := nullif(p_datos ->> 'id', '')::uuid;
+  v_conductor uuid := nullif(p_datos ->> 'conductor_id', '')::uuid;
+begin
+  if coalesce(trim(p_datos ->> 'patente'), '') = '' then raise exception 'Falta la patente'; end if;
+  if v_conductor is not null and not exists (
+    select 1 from public.perfiles where id = v_conductor and empresa_id = v_empresa and rol = 'conductor') then
+    raise exception 'Conductora no encontrada';
+  end if;
+  if v_id is null then
+    insert into public.furgones (empresa_id, patente, modelo, descripcion, capacidad, conductor_id)
+    values (v_empresa, upper(trim(p_datos ->> 'patente')), p_datos ->> 'modelo', p_datos ->> 'descripcion',
+      nullif(p_datos ->> 'capacidad', '')::smallint, v_conductor)
+    returning id into v_id;
+  else
+    update public.furgones set patente = upper(trim(p_datos ->> 'patente')), modelo = p_datos ->> 'modelo',
+      descripcion = coalesce(p_datos ->> 'descripcion', descripcion), capacidad = nullif(p_datos ->> 'capacidad', '')::smallint,
+      conductor_id = v_conductor, activo = coalesce((p_datos ->> 'activo')::boolean, activo)
+    where id = v_id and empresa_id = v_empresa;
+    if not found then raise exception 'Furgón no encontrado'; end if;
+  end if;
+  if p_datos ? 'ruta_ids' then
+    update public.rutas set furgon_id = null where furgon_id = v_id and empresa_id = v_empresa
+      and not (id = any (array(select jsonb_array_elements_text(p_datos -> 'ruta_ids')::uuid)));
+    update public.rutas set furgon_id = v_id
+    where empresa_id = v_empresa and id = any (array(select jsonb_array_elements_text(p_datos -> 'ruta_ids')::uuid));
+  end if;
+  return v_id;
+end $$;
+
+-- Mensaje claro si una tía que administra intenta revisar su propia licencia.
+create or replace function public.revisar_licencia(p_licencia uuid, p_aprobar boolean, p_motivo text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_empresa uuid := public.requiere_admin();
+begin
+  if not p_aprobar and coalesce(trim(p_motivo), '') = '' then
+    raise exception 'Indica el motivo del rechazo para que la tía pueda corregirlo';
+  end if;
+  if exists (select 1 from public.licencias where id = p_licencia and conductor_id = auth.uid()) then
+    raise exception 'Tu propia licencia la revisa otra persona que administre el servicio';
+  end if;
+  update public.licencias set
+    estado = case when p_aprobar then 'aprobada'::public.estado_licencia else 'rechazada'::public.estado_licencia end,
+    motivo_rechazo = case when p_aprobar then null else trim(p_motivo) end,
+    revisada_por = auth.uid(), revisada_en = now()
+  where id = p_licencia and empresa_id = v_empresa and conductor_id <> auth.uid(); -- nadie aprueba la propia
+  if not found then raise exception 'Licencia no encontrada'; end if;
+end $$;
+
+-- Reemplaza los teléfonos de un alumno de una vez: si algo falla, quedan los que había
+-- (antes se borraban y, si la inserción fallaba, el alumno quedaba sin llamadas).
+create or replace function public.reemplazar_contactos(p_alumno uuid, p_contactos jsonb)
+returns void language plpgsql security invoker set search_path = '' as $$
+begin
+  delete from public.contactos where alumno_id = p_alumno;
+  insert into public.contactos (alumno_id, nombre, telefono, prioridad)
+  select p_alumno, c ->> 'nombre', c ->> 'telefono', (c ->> 'prioridad')::smallint
+  from jsonb_array_elements(coalesce(p_contactos, '[]'::jsonb)) c;
+end $$;
+revoke all on function public.reemplazar_contactos(uuid, jsonb) from public, anon;
+grant execute on function public.reemplazar_contactos(uuid, jsonb) to authenticated;

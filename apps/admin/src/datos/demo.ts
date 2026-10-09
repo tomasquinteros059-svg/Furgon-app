@@ -39,8 +39,8 @@ export function crearDatosDemo(): Datos {
   // Josefa recién agregada: aún sin ruta y su familia sin la app.
   const colegio = { nombre: "Colegio Demo (Plaza Ñuñoa)", lat: -33.4565, lng: -70.5978 };
   const rutas: Ruta[] = [
-    { id: "r1", nombre: "Ida mañana", tipo: "ida", hora_salida: "07:00:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", colegio, paradas: [] },
-    { id: "r2", nombre: "Vuelta tarde", tipo: "vuelta", hora_salida: "16:30:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", colegio, paradas: [] },
+    { id: "r1", nombre: "Ida mañana", tipo: "ida", hora_salida: "07:00:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", furgon_id: "f1", activa: true, colegio, paradas: [] },
+    { id: "r2", nombre: "Vuelta tarde", tipo: "vuelta", hora_salida: "16:30:00", conductor_id: "c1", conductor_nombre: conductoras[0].nombre, furgon: "Hyundai H1 blanca · DEMO-11", furgon_id: "f1", activa: true, colegio, paradas: [] },
   ];
   const ponerEnRuta = (r: Ruta, a: Alumno) => {
     r.paradas.push({ alumno_id: a.id, nombre: a.nombre, orden: r.paradas.length + 1, direccion: a.domicilio?.direccion ?? "",
@@ -258,6 +258,7 @@ export function crearDatosDemo(): Datos {
         else if (furgonDeRuta[r.id] === id) furgonDeRuta[r.id] = null;
         const fu = furgones.find((x) => x.id === furgonDeRuta[r.id]);
         r.furgon = fu ? `${fu.modelo ?? ""} · ${fu.patente}` : null;
+        r.furgon_id = fu?.id ?? null;
       }
       return id;
     },

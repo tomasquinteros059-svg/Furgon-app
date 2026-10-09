@@ -430,4 +430,11 @@ export const EN_ADMIN_PAGINAS: Record<string, string> = {
   "Guardando…": "Saving…",
   "Guardar alumno": "Save student",
   "Vencimiento": "Expires",
+  "Ver alumnos": "View students",
+  "Código listo.": "Code ready.",
+  "¿Anular este cobro? No se puede deshacer.": "Void this charge? This can't be undone.",
+  "¿Eliminar esta pregunta?": "Delete this question?",
+  "¿Quitar a {nombre} de esta ruta?": "Remove {nombre} from this route?",
+  "Se dará de baja al alumno: sale de sus rutas y se anulan sus cobros futuros. ¿Continuar?": "The student will be unenrolled: removed from their routes and future charges voided. Continue?",
+  "La capacidad debe estar entre 1 y 60 asientos.": "Capacity must be between 1 and 60 seats.",
 };

@@ -18,7 +18,9 @@ export function Cobros() {
   const [vista, setVista] = useState<"cobros" | "precios">("cobros");
   const [editar, setEditar] = useState<Cobro | null>(null);
   const [monto, setMonto] = useState("");
-  const hoy = new Date().toISOString().slice(0, 10);
+  // Fecha de hoy en la hora del computador (Chile), no en UTC.
+  const ahora = new Date();
+  const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
   const vencido = (c: Cobro) => c.estado === "pendiente" && c.vence_en < hoy; // i18n-ignorar (no es texto)
 
   const lista = useMemo(() => (cobros ?? []).filter((c) =>
@@ -75,7 +77,7 @@ export function Cobros() {
               <td>{c.estado === "pendiente" ? <span className="acciones">
                 <button className="btn ok chico" onClick={() => { setPagar(c); setNota(""); }}>{t("Registrar pago")}</button>
                 <button className="btn sec chico" onClick={() => { setEditar(c); setMonto(String(c.monto)); setNota(""); }}>{t("Cambiar monto")}</button>
-                <button className="btn sec chico" onClick={() => hacer(() => datos.anularCobro(c.id, "Anulado por administración" /* i18n-ignorar: dato guardado */), t("Cobro anulado."))}>{t("Anular")}</button>
+                <button className="btn sec chico" onClick={() => confirm(t("¿Anular este cobro? No se puede deshacer.")) && hacer(() => datos.anularCobro(c.id, "Anulado por administración" /* i18n-ignorar: dato guardado */), t("Cobro anulado."))}>{t("Anular")}</button>
               </span> : null}</td>
             </tr>
           ))}</tbody>

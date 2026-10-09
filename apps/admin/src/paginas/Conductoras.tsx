@@ -13,7 +13,7 @@ export function Conductoras({ principal }: { principal: boolean }) {
   return (
     <>
       <Encabezado titulo={t("Conductoras")} bajada={t("La tía solo instala la app y entra con su código. Los alumnos y el orden de la ruta los administras tú.")}
-        acciones={<button className="btn bus" onClick={async () => setCodigo(await datos.invitarConductora())}>{t("+ Invitar conductora")}</button>} />
+        acciones={<button className="btn bus" onClick={async () => { try { setErr(null); setCodigo(await datos.invitarConductora()); } catch (x) { setErr(x instanceof Error ? x.message : String(x)); } }}>{t("+ Invitar conductora")}</button>} />
       <ErrorCaja mensaje={error ?? err} />
       {codigo ? (
         <section className="tarjeta">

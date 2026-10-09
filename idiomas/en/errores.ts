@@ -81,6 +81,7 @@ export const EN_ERRORES: Record<string, string> = {
   "El monto no puede ser negativo": "The amount can't be negative",
   "El precio no puede ser negativo": "The price can't be negative",
   "La familia marcó que hoy no viaja. Si sí viaja, quítalo en «Hoy no va».": "The family marked that this child is not riding today. If they are, remove it in “Not riding today”.",
+  "Tu propia licencia la revisa otra persona que administre el servicio": "Your own license must be reviewed by someone else who manages the service",
 };
 
 /**
