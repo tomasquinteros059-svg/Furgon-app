@@ -74,8 +74,8 @@ export default function NuevoAlumno() {
         nombre, colegio, curso, minutos_aviso: 5, conductor_id: tia,
         domicilio: { direccion, lat: pin.latitude, lng: pin.longitude, indicaciones },
         contactos: [
-          { nombre: contacto1.nombre || t("Contacto principal"), telefono: tel1, prioridad: 1 },
-          ...(tel2 ? [{ nombre: contacto2.nombre || t("Contacto secundario"), telefono: tel2, prioridad: 2 }] : []),
+          { nombre: contacto1.nombre || "Contacto principal", telefono: tel1, prioridad: 1 }, // i18n-ignorar: dato guardado
+          ...(tel2 ? [{ nombre: contacto2.nombre || "Contacto secundario", telefono: tel2, prioridad: 2 }] : []), // i18n-ignorar: dato guardado
         ],
       },
     });

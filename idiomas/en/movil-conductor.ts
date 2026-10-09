@@ -58,7 +58,6 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "Licencia enviada. Te avisaremos cuando la empresa la verifique.":
     "License sent. We'll let you know when the company verifies it.",
   "N° {numero} · Clase {clase}": "No. {numero} · Class {clase}",
-  "Vence el {fecha}": "Expires on {fecha}",
   "Subir licencia renovada": "Upload renewed license",
   "Subir mi licencia": "Upload my license",
   "Número (RUT)": "Number (RUT)",
@@ -192,7 +191,7 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "Ej: 3° Básico": "e.g. 3rd grade",
   "Colegio": "School",
   "Dirección": "Address",
-  "Calle, número, comuna": "Street, number, comuna",
+  "Calle, número, comuna": "Street, number, district",
   "Buscar en el mapa": "Find on the map",
   "Indicaciones (opcional)": "Directions (optional)",
   "Ej: portón verde": "e.g. green gate",
@@ -260,7 +259,7 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   // Solicitudes
   "Pregunta": "Question",
   "Cancelación": "Cancellation",
-  "Cambio de datos": "Details change",
+  "Cambio de datos": "Update details",
   "Reclamo": "Complaint",
   "Otro": "Other",
   "Solicitudes": "Requests",
@@ -284,4 +283,5 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
     "School van management is done in the web panel, from a computer or your phone's browser.",
   "Esta app es para la tía o el tío del furgón y para las familias.": "This app is for school van drivers and families.",
   "Abrir el panel web": "Open the web panel",
+  "Vencimiento: {fecha}": "Expires: {fecha}",
 };

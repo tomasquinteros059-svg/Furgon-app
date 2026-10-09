@@ -60,7 +60,7 @@ export default function Familia() {
     Alert.alert(yo ? t("¿Dejar de recibir los avisos de {alumno}?", { alumno: v.alumno }) : t("¿Dejar de compartir a {alumno} con {apoderado}?", { alumno: v.alumno, apoderado: v.apoderado }),
       yo ? t("Ya no verás a este hijo/a en tu app.") : t("Ya no recibirá los avisos ni verá el furgón."), [
         { text: t("Cancelar"), style: "cancel" },
-        { text: yo ? t("Salir") : t("Dejar de compartir"), style: "destructive", onPress: async () => {
+        { text: yo ? t("Salir de la familia") : t("Dejar de compartir"), style: "destructive", onPress: async () => {
           const { error } = await supabase.rpc("dejar_de_compartir", { p_alumno: v.alumno_id, p_apoderado: v.apoderado_id });
           setMsg(error ? { ok: false, txt: mensajeError(error) } : { ok: true, txt: t("Listo.") });
           cargar();
@@ -84,7 +84,7 @@ export default function Familia() {
                 {v.soy_yo ? t("👤 Tú") : `👥 ${v.apoderado}`}{v.parentesco && !v.soy_yo ? ` · ${t(v.parentesco)}` : ""}
               </Text>
               {v.soy_yo || v.lo_invite ? (
-                <Boton titulo={v.soy_yo ? t("Salir") : t("Quitar")} variante="texto" onPress={() => quitar(v)} />
+                <Boton titulo={v.soy_yo ? t("Salir de la familia") : t("Quitar")} variante="texto" onPress={() => quitar(v)} />
               ) : null}
             </View>
           ))}

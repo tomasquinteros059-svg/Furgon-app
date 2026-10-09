@@ -19,7 +19,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /** Invoca una Edge Function con la sesión actual. Lanza con el mensaje del servidor si falla. */
-export async function llamarFuncion<T = unknown>(nombre: string, cuerpo: Record<string, unknown>): Promise<T> {
+export async function llamarFuncion<T = unknown>(nombre: string, cuerpo: Record<string, unknown>): Promise<T> { // i18n-ignorar: tipos genéricos
   const { data, error } = await supabase.functions.invoke<T>(nombre, { body: cuerpo });
   if (error) {
     let mensaje = error.message;

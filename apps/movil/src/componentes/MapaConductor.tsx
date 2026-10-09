@@ -37,7 +37,7 @@ export function MapaConductor({ recorridoId, casas, alto = 280 }: { recorridoId:
     let sub: Location.LocationSubscription | null = null;
     Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 5 }, (l) => {
       setYo((previo) => {
-        if (previo && Math.abs(l.coords.longitude - previo.longitude) > 0.00003) setHaciaIzquierda(l.coords.longitude < previo.longitude);
+        if (previo && Math.abs(l.coords.longitude - previo.longitude) > 0.00003) setHaciaIzquierda(previo.longitude > l.coords.longitude);
         return { latitude: l.coords.latitude, longitude: l.coords.longitude };
       });
     }).then((s) => { sub = s; }).catch(() => {});

@@ -24,6 +24,7 @@ export function recorridoActivo(): string | null {
 export type ResultadoInicio = { ok: true } | { ok: false; mensaje: string };
 
 // Aviso destacado antes de pedir el permiso (lo exige Google Play para la ubicación en segundo plano).
+// i18n-ignorar (la línea siguiente tiene tipos genéricos, no texto)
 const avisoUbicacion = () => new Promise<boolean>((resolver) => Alert.alert(
   t("Ubicación del furgón"),
   t("Furgón Escolar recopila la ubicación de este teléfono para compartir el furgón con las familias de tu recorrido y avisarles antes de que llegue, incluso cuando la app está cerrada o la pantalla apagada. Solo mientras hay un recorrido iniciado; al finalizarlo deja de usarla.\n\nEn la siguiente pantalla elige «Permitir todo el tiempo»."),

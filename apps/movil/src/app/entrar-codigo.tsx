@@ -51,7 +51,8 @@ export default function EntrarConCodigo() {
       </Text>
       {error ? <Aviso texto={error} tipo="error" /> : null}
       <Campo etiqueta={t("Código de familia")} value={codigo} onChangeText={setCodigo} autoCapitalize="characters" placeholder="F1A2B3C4" />
-      {familia ? <Aviso tipo="exito" texto={t("Te unirás a {familia}.", { familia })} /> : revisado ? <Aviso tipo="error" texto={t("Código no válido, vencido o ya usado.")} /> : null}
+      {familia ? <Aviso tipo="exito" texto={t("Te unirás a {familia}.", { familia })} />
+        : revisado ? <Aviso tipo="error" texto={t("Código no válido, vencido o ya usado.")} /> : null}
       <Campo etiqueta={t("Tu nombre")} value={nombre} onChangeText={setNombre} autoComplete="name" placeholder={t("Ej: Rodrigo Pérez")} />
       <Campo etiqueta={t("Tu teléfono")} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" placeholder="9 1234 5678"
         ayuda={t("Para llamarte si no contestan el aviso.")} />

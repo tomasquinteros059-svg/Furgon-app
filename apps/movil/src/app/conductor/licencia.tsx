@@ -83,7 +83,7 @@ export default function MiLicencia() {
       {lic?.numero ? (
         <Tarjeta>
           <Text style={estilos.texto}>{t("N° {numero} · Clase {clase}", { numero: lic.numero, clase: lic.clase })}</Text>
-          {lic.vence_en ? <Text style={estilos.textoSuave}>{t("Vence el {fecha}", { fecha: aFecha(lic.vence_en) })}</Text> : null}
+          {lic.vence_en ? <Text style={estilos.textoSuave}>{t("Vencimiento: {fecha}", { fecha: aFecha(lic.vence_en) })}</Text> : null}
         </Tarjeta>
       ) : null}
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
