@@ -143,7 +143,7 @@ function ModalLicencia({ l, onCerrar, onRevisar }: { l: Licencia; onCerrar: () =
       <dl className="datos-lic">
         <div><dt>{t("Número")}</dt><dd className="mono">{l.numero}</dd></div>
         <div><dt>{t("Clase")}</dt><dd>{l.clase}</dd></div>
-        <div><dt>{t("Vence")}</dt><dd>{l.vence_en ? fechaLarga(l.vence_en) : "—"}</dd></div>
+        <div><dt>{t("Vencimiento")}</dt><dd>{l.vence_en ? fechaLarga(l.vence_en) : "—"}</dd></div>
         <div><dt>{t("Situación")}</dt><dd><ChipLicencia estado={l.estado} vence={l.vence_en} dias={l.dias_restantes} /></dd></div>
       </dl>
       <p className="tenue" style={{ margin: 0 }}>{t("Comprueba que el nombre, la clase (A1 o A3 para transporte escolar) y el vencimiento coincidan con la foto.")}</p>

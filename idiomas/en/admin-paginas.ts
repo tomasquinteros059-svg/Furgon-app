@@ -429,4 +429,5 @@ export const EN_ADMIN_PAGINAS: Record<string, string> = {
   "Queda al final de la ruta; puedes cambiar el orden en «Rutas».": "They're added at the end of the route; you can change the order in “Routes”.",
   "Guardando…": "Saving…",
   "Guardar alumno": "Save student",
+  "Vencimiento": "Expires",
 };

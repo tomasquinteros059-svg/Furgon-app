@@ -75,7 +75,7 @@ export function Cobros() {
               <td>{c.estado === "pendiente" ? <span className="acciones">
                 <button className="btn ok chico" onClick={() => { setPagar(c); setNota(""); }}>{t("Registrar pago")}</button>
                 <button className="btn sec chico" onClick={() => { setEditar(c); setMonto(String(c.monto)); setNota(""); }}>{t("Cambiar monto")}</button>
-                <button className="btn sec chico" onClick={() => hacer(() => datos.anularCobro(c.id, t("Anulado por administración")), t("Cobro anulado."))}>{t("Anular")}</button>
+                <button className="btn sec chico" onClick={() => hacer(() => datos.anularCobro(c.id, "Anulado por administración" /* i18n-ignorar: dato guardado */), t("Cobro anulado."))}>{t("Anular")}</button>
               </span> : null}</td>
             </tr>
           ))}</tbody>
