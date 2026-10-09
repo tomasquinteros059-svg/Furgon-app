@@ -7,7 +7,7 @@ Enlaces que piden las tiendas (funcionan cuando el panel web esté publicado en 
 
 - Política de privacidad: `https://TU-PANEL/privacidad.html`
 - Eliminar cuenta: `https://TU-PANEL/eliminar-cuenta.html`
-- Correo de soporte: `[CORREO DE PRIVACIDAD]`
+- Correo de soporte: `tomasquinteros059@gmail.com`
 
 ---
 
