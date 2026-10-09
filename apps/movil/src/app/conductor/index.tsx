@@ -9,6 +9,7 @@ import { iniciarSeguimiento, pedirPermisosUbicacion } from "../../ubicacion/segu
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
+import { SelectorIdioma } from "../../i18n";
 
 interface Ruta {
   id: string;
@@ -137,6 +138,7 @@ export default function RutasConductor() {
         );
       })}
       <Tarjeta><SelectorTema /></Tarjeta>
+      <Tarjeta><SelectorIdioma /></Tarjeta>
       <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
       <EnlacePrivacidad />
     </Pantalla>

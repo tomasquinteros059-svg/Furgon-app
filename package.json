@@ -19,7 +19,8 @@
     "verificar-google": "node scripts/verificar-google.mjs",
     "iconos": "node --experimental-strip-types --no-warnings scripts/generar-iconos.mjs",
     "cuentas-revision": "node scripts/crear-cuentas-revision.mjs",
-    "compilar-app": "node scripts/compilar-app.mjs"
+    "compilar-app": "node scripts/compilar-app.mjs",
+    "idiomas": "node --experimental-strip-types --no-warnings scripts/revisar-idiomas.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",

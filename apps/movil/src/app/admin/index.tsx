@@ -7,6 +7,7 @@ import { Aviso, Boton, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
+import { SelectorIdioma } from "../../i18n";
 
 const PANEL_URL = process.env.EXPO_PUBLIC_PANEL_URL ?? "";
 
@@ -21,6 +22,7 @@ export default function AdminEnLaWeb() {
       {PANEL_URL ? <Boton titulo="Abrir el panel web" onPress={() => Linking.openURL(PANEL_URL)} /> : null}
       <Boton titulo="Cerrar sesión" variante="secundario" onPress={cerrarSesion} />
       <Tarjeta><SelectorTema /></Tarjeta>
+      <Tarjeta><SelectorIdioma /></Tarjeta>
       <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
       <EnlacePrivacidad />
     </Pantalla>

@@ -14,6 +14,7 @@ import { Preguntas } from "./paginas/Preguntas";
 import { Rutas } from "./paginas/Rutas";
 import { Solicitudes } from "./paginas/Solicitudes";
 import { Icono } from "./componentes/Icono";
+import { SelectorIdioma, useIdiomaActual } from "./i18n";
 
 const SECCIONES = [
   { ruta: "panel", nombre: "Panel" },
@@ -69,6 +70,7 @@ export function App() {
   const [errorSesion, setErrorSesion] = useState<string | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const partes = useRuta();
+  const idioma = useIdiomaActual();
 
   useEffect(() => {
     datos.sesion().then(setUsuario).catch((e) => { setErrorSesion(e.message); setUsuario(null); });
@@ -99,7 +101,7 @@ export function App() {
   }
 
   return (
-    <div className="marco">
+    <div className="marco" key={idioma}>
       <aside className={`lateral ${menuAbierto ? "abierto" : ""}`}>
         <div className="marca">
           <Icono n="furgon" tam={34} />
@@ -113,6 +115,7 @@ export function App() {
         </nav>
         <div className="pie-lateral">
           <SelectorTema />
+          <SelectorIdioma />
           <span>{usuario.nombre}{usuario.tipo === "conductora" ? " · conductora" : ""}</span>
           <button className="btn-link" onClick={async () => { await datos.salir(); setUsuario(null); }}>Cerrar sesión</button>
         </div>

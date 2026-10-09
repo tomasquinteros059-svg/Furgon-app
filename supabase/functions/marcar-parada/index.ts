@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
         tipo: estado,
         titulo: textos.titulo,
         cuerpo: textos.cuerpo,
+        porIdioma: (idioma) => mensajeEstadoParada({ tipo: info.tipo, nombreAlumno: info.nombre, estado, hora: horaChile(new Date()), idioma }),
         recorridoAlumnoId: parada_id,
         data: { recorridoId: info.recorrido_id, alumnoId: info.alumno_id },
       });

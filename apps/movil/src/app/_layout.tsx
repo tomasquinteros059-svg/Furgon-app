@@ -7,6 +7,7 @@ import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { ProveedorTema } from "../componentes/tema";
+import { ProveedorIdioma } from "../i18n";
 import { ProveedorSesion, useSesion } from "../lib/sesion";
 import { supabase } from "../lib/supabase";
 
@@ -75,9 +76,11 @@ function Navegacion() {
 export default function RootLayout() {
   return (
     <ProveedorTema>
-      <ProveedorSesion>
-        <Navegacion />
-      </ProveedorSesion>
+      <ProveedorIdioma>
+        <ProveedorSesion>
+          <Navegacion />
+        </ProveedorSesion>
+      </ProveedorIdioma>
     </ProveedorTema>
   );
 }

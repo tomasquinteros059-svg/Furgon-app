@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { PALETA, type Paleta, type PreferenciaTema } from "../../../../diseno/colores.ts";
+import { t } from "../lib/idioma";
 import { Text } from "./icono";
 
 export type Colores = Paleta & {
@@ -64,10 +65,10 @@ export function useTema() {
 /** Selector Automático · Claro · Oscuro. */
 export function SelectorTema() {
   const { preferencia, cambiar } = useTema();
-  const opciones: [PreferenciaTema, string][] = [["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]];
+  const opciones: [PreferenciaTema, string][] = [["sistema", t("Automático")], ["claro", t("Claro")], ["oscuro", t("Oscuro")]];
   return (
     <View style={{ gap: 6 }}>
-      <Text style={{ fontSize: 14, fontWeight: "600", color: colores.texto }}>Apariencia</Text>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: colores.texto }}>{t("Apariencia")}</Text>
       <View style={{ flexDirection: "row", borderWidth: 1, borderColor: colores.borde, borderRadius: 12, padding: 3, gap: 3, backgroundColor: colores.superficie2 }}>
         {opciones.map(([v, nombre]) => {
           const activo = preferencia === v;

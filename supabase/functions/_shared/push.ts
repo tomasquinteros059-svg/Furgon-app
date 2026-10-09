@@ -1,6 +1,7 @@
 // Envío de notificaciones push mediante el servicio de Expo (FCM en Android, APNs en iOS).
 
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { type Idioma, idiomaValido } from "./core/mensajes.ts";
 import { entorno } from "./entorno.ts";
 
 /** Debe coincidir con los canales creados en la app (apps/movil/src/notificaciones.ts). */
@@ -35,23 +36,44 @@ export interface Notificacion {
   data: Record<string, unknown>;
   avisoId?: string;
   recorridoAlumnoId?: string;
+  /** Título y cuerpo en el idioma de quien la recibe (si no, se usan titulo y cuerpo). */
+  porIdioma?: (idioma: Idioma) => { titulo: string; cuerpo: string };
+}
+
+type Dispositivo = { id: string; expo_push_token: string };
+
+/** Envía a cada grupo de dispositivos la notificación en su idioma. */
+async function enviarPorIdioma(sb: SupabaseClient, dispositivos: (Dispositivo & { idioma: Idioma })[], n: Notificacion): Promise<number> {
+  let enviados = 0;
+  for (const idioma of new Set(dispositivos.map((d) => d.idioma))) {
+    const textos = n.porIdioma?.(idioma);
+    enviados += await enviar(sb, dispositivos.filter((d) => d.idioma === idioma), textos ? { ...n, ...textos } : n);
+  }
+  return enviados;
+}
+
+/** Idioma de la persona detrás de un contacto de llamada (español si no tiene cuenta). */
+export async function idiomaDeContacto(sb: SupabaseClient, contactoId: string | null): Promise<Idioma> {
+  if (!contactoId) return "es";
+  const { data } = await sb.from("contactos").select("perfiles(idioma)").eq("id", contactoId).maybeSingle();
+  return idiomaValido((data?.perfiles as unknown as { idioma?: string } | null)?.idioma);
 }
 
 /** Envía la notificación a todos los dispositivos de los apoderados del alumno. */
 export async function notificarApoderados(sb: SupabaseClient, alumnoId: string, n: Notificacion): Promise<number> {
   const { data: vinculos, error } = await sb
     .from("apoderado_alumno")
-    .select("apoderado_id, perfiles!inner(dispositivos(id, expo_push_token))")
+    .select("apoderado_id, perfiles!inner(idioma, dispositivos(id, expo_push_token))")
     .eq("alumno_id", alumnoId);
   if (error) throw error;
 
   const dispositivos = (vinculos ?? []).flatMap((v) => {
-    const perfil = v.perfiles as unknown as { dispositivos: { id: string; expo_push_token: string }[] };
-    return perfil?.dispositivos ?? [];
+    const perfil = v.perfiles as unknown as { idioma: string; dispositivos: Dispositivo[] };
+    return (perfil?.dispositivos ?? []).map((d) => ({ ...d, idioma: idiomaValido(perfil.idioma) }));
   });
   if (dispositivos.length === 0) return 0;
 
-  return enviar(sb, dispositivos, n);
+  return enviarPorIdioma(sb, dispositivos, n);
 }
 
 /**
@@ -68,10 +90,14 @@ export async function enviarLlamadaApp(sb: SupabaseClient, contactoId: string, n
 
 /** Envía la notificación a todos los dispositivos de una persona (p. ej. la tía). */
 export async function notificarPerfil(sb: SupabaseClient, perfilId: string, n: Notificacion): Promise<number> {
-  const { data } = await sb.from("dispositivos").select("id, expo_push_token").eq("perfil_id", perfilId);
-  const dispositivos = (data ?? []) as { id: string; expo_push_token: string }[];
+  const [{ data }, { data: perfil }] = await Promise.all([
+    sb.from("dispositivos").select("id, expo_push_token").eq("perfil_id", perfilId),
+    sb.from("perfiles").select("idioma").eq("id", perfilId).maybeSingle(),
+  ]);
+  const idioma = idiomaValido(perfil?.idioma);
+  const dispositivos = ((data ?? []) as Dispositivo[]).map((d) => ({ ...d, idioma }));
   if (dispositivos.length === 0) return 0;
-  return enviar(sb, dispositivos, n);
+  return enviarPorIdioma(sb, dispositivos, n);
 }
 
 async function enviar(sb: SupabaseClient, dispositivos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {

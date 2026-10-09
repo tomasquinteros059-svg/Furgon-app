@@ -78,6 +78,7 @@ export function crearDepsFlujo(
           tipo: "aviso",
           titulo: textos.titulo,
           cuerpo: textos.cuerpo,
+          porIdioma: (idioma) => mensajeAviso({ tipo: recorrido.tipo, nombreAlumno: nombres.get(disparo.paradaId) ?? (idioma === "en" ? "your child" : "su hijo/a"), etaSeg: disparo.etaSeg, motivo: disparo.motivo, idioma }),
           avisoId,
           recorridoAlumnoId: disparo.paradaId,
           data: { avisoId, recorridoId: recorrido.id, alumnoId: disparo.alumnoId },

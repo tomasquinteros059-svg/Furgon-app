@@ -5,6 +5,7 @@ import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
+import { SelectorIdioma } from "../i18n";
 
 export default function Ingresar() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ export default function Ingresar() {
         ¿Tienes un código de invitación? Crea tu cuenta
       </Link>
       <EnlacePrivacidad />
+      <SelectorIdioma />
     </Pantalla>
   );
 }

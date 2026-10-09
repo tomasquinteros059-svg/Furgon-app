@@ -17,7 +17,7 @@ import {
 } from "./core/llamadas.ts";
 import { mensajeAviso, type TipoRecorrido } from "./core/mensajes.ts";
 import { enSegundoPlano, entorno } from "./entorno.ts";
-import { enviarLlamadaApp } from "./push.ts";
+import { enviarLlamadaApp, idiomaDeContacto } from "./push.ts";
 
 const RESULTADOS: ReadonlySet<string> = new Set<ResultadoLlamada>([
   "confirmada", "sin_confirmar", "no_contesto", "ocupado", "fallida", "cancelada", "sin_internet",
@@ -123,10 +123,11 @@ async function iniciarLlamadaApp(sb: SupabaseClient, llamada: { id: string; avis
   if (!aviso) return 0;
   const alumno = aviso.alumnos as unknown as { nombre: string };
   const recorrido = aviso.recorridos as unknown as { tipo: TipoRecorrido };
-  const textos = mensajeAviso({ tipo: recorrido.tipo, nombreAlumno: alumno.nombre, etaSeg: aviso.eta_seg ?? 300, motivo: aviso.motivo });
+  const idioma = await idiomaDeContacto(sb, llamada.contacto_id);
+  const textos = mensajeAviso({ tipo: recorrido.tipo, nombreAlumno: alumno.nombre, etaSeg: aviso.eta_seg ?? 300, motivo: aviso.motivo, idioma });
   return enviarLlamadaApp(sb, llamada.contacto_id, {
     tipo: "llamada",
-    titulo: "Llamada del furgón escolar",
+    titulo: idioma === "en" ? "Call from the school van" : "Llamada del furgón escolar",
     cuerpo: textos.cuerpo,
     avisoId: llamada.aviso_id,
     data: { llamadaId: llamada.id, avisoId: llamada.aviso_id, alumnoId: aviso.alumno_id, alumno: alumno.nombre, voz: textos.voz },

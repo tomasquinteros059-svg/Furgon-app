@@ -15,6 +15,28 @@ export interface OpcionesVoz {
 }
 
 export const VOZ_POR_DEFECTO: OpcionesVoz = { idioma: "es-MX", voz: "Polly.Mia" };
+/** Voz en inglés para quien eligió English en la app. */
+export const VOZ_INGLES: OpcionesVoz = { idioma: "en-US", voz: "Polly.Joanna" };
+
+const FRASES = {
+  es: {
+    confirmar: "Para confirmar que recibió este aviso, presione 1.",
+    repito: "Repito:",
+    presione: "Presione 1 para confirmar.",
+    sinRespuesta: "No recibimos su confirmación. Volveremos a intentar. Adiós.",
+    gracias: "Gracias. Aviso confirmado. Adiós.",
+    noReconocida: "No reconocimos la opción. Volveremos a intentar. Adiós.",
+  },
+  en: {
+    confirmar: "To confirm you received this message, press 1.",
+    repito: "Again:",
+    presione: "Press 1 to confirm.",
+    sinRespuesta: "We did not receive your confirmation. We will try again. Goodbye.",
+    gracias: "Thank you. Message confirmed. Goodbye.",
+    noReconocida: "We did not recognize that option. We will try again. Goodbye.",
+  },
+};
+const frases = (voz: OpcionesVoz) => (voz.idioma.startsWith("en") ? FRASES.en : FRASES.es);
 
 /** TwiML del aviso: lee el mensaje dos veces y pide presionar 1 para confirmar. */
 export function twimlAviso(mensaje: string, urlConfirmar: string, voz: OpcionesVoz = VOZ_POR_DEFECTO): string {
@@ -23,20 +45,18 @@ export function twimlAviso(mensaje: string, urlConfirmar: string, voz: OpcionesV
     `<?xml version="1.0" encoding="UTF-8"?>` +
     `<Response>` +
     `<Gather input="dtmf" numDigits="1" timeout="6" action="${escaparXml(urlConfirmar)}" method="POST">` +
-    say(`${mensaje} Para confirmar que recibió este aviso, presione 1.`) +
+    say(`${mensaje} ${frases(voz).confirmar}`) +
     `<Pause length="1"/>` +
-    say(`Repito: ${mensaje} Presione 1 para confirmar.`) +
+    say(`${frases(voz).repito} ${mensaje} ${frases(voz).presione}`) +
     `</Gather>` +
-    say("No recibimos su confirmación. Volveremos a intentar. Adiós.") +
+    say(frases(voz).sinRespuesta) +
     `<Hangup/>` +
     `</Response>`
   );
 }
 
 export function twimlRespuestaConfirmacion(confirmada: boolean, voz: OpcionesVoz = VOZ_POR_DEFECTO): string {
-  const texto = confirmada
-    ? "Gracias. Aviso confirmado. Adiós."
-    : "No reconocimos la opción. Volveremos a intentar. Adiós.";
+  const texto = confirmada ? frases(voz).gracias : frases(voz).noReconocida;
   return (
     `<?xml version="1.0" encoding="UTF-8"?><Response>` +
     `<Say language="${escaparXml(voz.idioma)}" voice="${escaparXml(voz.voz)}">${escaparXml(texto)}</Say>` +

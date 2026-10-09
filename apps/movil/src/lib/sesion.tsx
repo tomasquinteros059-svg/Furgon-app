@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import { registrarParaPush } from "../notificaciones";
 import { detenerSeguimiento } from "../ubicacion/seguimiento";
 import { supabase } from "./supabase";
+import { idioma, sincronizarIdioma } from "../i18n";
 
 export type Rol = "admin" | "conductor" | "apoderado";
 
@@ -37,11 +38,13 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from("perfiles")
-      .select("id, rol, nombre, empresa_id, puede_administrar")
+      .select("id, rol, nombre, empresa_id, puede_administrar, idioma")
       .eq("id", s.user.id)
       .maybeSingle();
     setPerfil((data as Perfil | null) ?? null);
     if (data) registrarParaPush().catch((e) => console.warn("push no disponible:", e?.message ?? e));
+    // El servidor usa el idioma del perfil para avisos, notificaciones y llamadas.
+    if (data && (data as { idioma?: string }).idioma !== idioma()) sincronizarIdioma().catch(() => {});
   }, []);
 
   useEffect(() => {

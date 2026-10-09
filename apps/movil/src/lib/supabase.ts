@@ -1,5 +1,6 @@
 import "expo-sqlite/localStorage/install";
 import { createClient } from "@supabase/supabase-js";
+import { t } from "./idioma";
 
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -37,9 +38,10 @@ export async function llamarFuncion<T = unknown>(nombre: string, cuerpo: Record<
 /** Mensaje en español para errores de Supabase/red. */
 export function mensajeError(e: unknown): string {
   const m = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String(e.message) : String(e);
-  if (/Invalid login credentials/i.test(m)) return "Correo o contraseña incorrectos.";
-  if (/Network request failed|Failed to fetch/i.test(m)) return "Sin conexión. Revisa tu señal e intenta de nuevo.";
-  if (/User already registered/i.test(m)) return "Ya existe una cuenta con ese correo.";
-  if (/Database error saving new user/i.test(m)) return "No se pudo crear la cuenta. Revisa el código de invitación.";
-  return m;
+  if (/Invalid login credentials/i.test(m)) return t("Correo o contraseña incorrectos.");
+  if (/Network request failed|Failed to fetch/i.test(m)) return t("Sin conexión. Revisa tu señal e intenta de nuevo.");
+  if (/User already registered/i.test(m)) return t("Ya existe una cuenta con ese correo.");
+  if (/Database error saving new user/i.test(m)) return t("No se pudo crear la cuenta. Revisa el código de invitación.");
+  // Los mensajes de la base de datos vienen en español: se traducen si están en el diccionario.
+  return t(m);
 }

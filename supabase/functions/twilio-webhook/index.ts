@@ -5,9 +5,10 @@
 
 import { resultadoDesdeTwilio } from "../_shared/core/llamadas.ts";
 import { mensajeAviso, type TipoRecorrido } from "../_shared/core/mensajes.ts";
-import { twimlAviso, twimlRespuestaConfirmacion, validarFirmaTwilio } from "../_shared/core/twilio.ts";
+import { twimlAviso, twimlRespuestaConfirmacion, validarFirmaTwilio, VOZ_INGLES } from "../_shared/core/twilio.ts";
 import { entorno } from "../_shared/entorno.ts";
 import { clienteServicio } from "../_shared/http.ts";
+import { idiomaDeContacto } from "../_shared/push.ts";
 import { despacharLlamadasVencidas, programarSiguienteLlamada } from "../_shared/servicio-llamadas.ts";
 
 const xml = (cuerpo: string) => new Response(cuerpo, { headers: { "Content-Type": "text/xml; charset=utf-8" } });
@@ -27,14 +28,18 @@ Deno.serve(async (req) => {
   const accion = url.searchParams.get("accion");
   const llamadaId = url.searchParams.get("llamada") ?? "";
   const sb = clienteServicio();
-  const voz = entorno.twilioVoz();
+  const vozConfigurada = entorno.twilioVoz();
 
   const { data: llamada } = await sb
     .from("llamadas")
-    .select("id, aviso_id, estado, avisos!inner(eta_seg, motivo, alumnos!inner(nombre), recorridos!inner(tipo))")
+    .select("id, aviso_id, contacto_id, estado, avisos!inner(eta_seg, motivo, alumnos!inner(nombre), recorridos!inner(tipo))")
     .eq("id", llamadaId)
     .maybeSingle();
   if (!llamada) return accion === "estado" ? new Response(null, { status: 204 }) : xml(VACIO);
+
+  // Voz en el idioma de la persona (si eligió English en la app); si no, la voz configurada.
+  const idioma = accion === "estado" ? "es" : await idiomaDeContacto(sb, llamada.contacto_id);
+  const voz = idioma === "en" ? VOZ_INGLES : vozConfigurada;
 
   if (accion === "voz") {
     const aviso = llamada.avisos as unknown as {
@@ -45,6 +50,7 @@ Deno.serve(async (req) => {
       nombreAlumno: aviso.alumnos.nombre,
       etaSeg: aviso.eta_seg ?? 300,
       motivo: aviso.motivo,
+      idioma,
     });
     const urlConfirmar = `${entorno.funcionesUrlPublica()}/twilio-webhook?accion=confirmar&llamada=${llamada.id}`;
     return xml(twimlAviso(texto, urlConfirmar, voz));
