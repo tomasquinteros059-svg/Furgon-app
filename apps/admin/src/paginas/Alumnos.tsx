@@ -33,7 +33,8 @@ export function Alumnos() {
           ))}
         </span>
       </div>
-      {!alumnos ? <Cargando /> : lista.length === 0 ? <Vacio>{t("No hay alumnos en esta vista.")}</Vacio> : (
+      {!alumnos ? <Cargando />
+        : lista.length === 0 ? <Vacio>{t("No hay alumnos en esta vista.")}</Vacio> : (
         <div className="tabla-cont">
           <table>
             <thead><tr><th>{t("Alumno")}</th><th>{t("Dirección")}</th><th>{t("Ruta")}</th><th>{t("Familia")}</th><th className="num">{t("Mensualidad")}</th></tr></thead>
@@ -42,8 +43,10 @@ export function Alumnos() {
                 <tr key={a.id} className="clic" onClick={() => { location.hash = `#/alumnos/${a.id}`; }}>
                   <td><a href={`#/alumnos/${a.id}`}><b>{a.nombre}</b></a><br /><small className="tenue">{a.curso} · {a.colegio}</small></td>
                   <td>{a.domicilio?.direccion ?? <Chip tono="alerta">{t("Sin dirección")}</Chip>}</td>
-                  <td>{a.rutas.length ? <div className="chips">{a.rutas.map((r) => <Chip key={r.id}>{r.nombre}</Chip>)}</div> : a.activo ? <Chip tono="aviso">{t("Sin ruta")}</Chip> : "—"}</td>
-                  <td>{a.apoderados.length ? <Chip tono="ok"><Icono n="check" /> {a.apoderados.map((p) => p.nombre).join(", ")}</Chip> : a.activo ? <Chip tono="aviso">{t("Sin app")}</Chip> : "—"}</td>
+                  <td>{a.rutas.length ? <div className="chips">{a.rutas.map((r) => <Chip key={r.id}>{r.nombre}</Chip>)}</div>
+                    : a.activo ? <Chip tono="aviso">{t("Sin ruta")}</Chip> : "—"}</td>
+                  <td>{a.apoderados.length ? <Chip tono="ok"><Icono n="check" /> {a.apoderados.map((p) => p.nombre).join(", ")}</Chip>
+                    : a.activo ? <Chip tono="aviso">{t("Sin app")}</Chip> : "—"}</td>
                   <td className="num">{pesos(a.mensualidad ?? empresa?.mensualidad_defecto ?? 0)}{a.mensualidad == null ? <small className="tenue"> *</small> : null}</td>
                 </tr>
               ))}

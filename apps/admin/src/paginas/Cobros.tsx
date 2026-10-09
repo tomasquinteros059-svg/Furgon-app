@@ -19,7 +19,7 @@ export function Cobros() {
   const [editar, setEditar] = useState<Cobro | null>(null);
   const [monto, setMonto] = useState("");
   const hoy = new Date().toISOString().slice(0, 10);
-  const vencido = (c: Cobro) => c.estado === "pendiente" && c.vence_en < hoy;
+  const vencido = (c: Cobro) => c.estado === "pendiente" && c.vence_en < hoy; // i18n-ignorar (no es texto)
 
   const lista = useMemo(() => (cobros ?? []).filter((c) =>
     filtro === "todos" || (filtro === "pendientes" && c.estado === "pendiente") || (filtro === "vencidos" && vencido(c)) || (filtro === "pagados" && c.estado === "pagado")),
@@ -58,7 +58,8 @@ export function Cobros() {
       <span className="seg" role="group" aria-label={t("Filtro")}>
         {([["todos", t("Todos")], ["pendientes", t("Pendientes")], ["vencidos", t("Vencidos")], ["pagados", t("Pagados")]] as const).map(([k, n]) => <button key={k} aria-pressed={filtro === k} onClick={() => setFiltro(k)}>{n}</button>)}
       </span>
-      {!cobros ? <Cargando /> : cobros.length === 0 ? <Vacio>{t("Aún no hay cobros para {mes}. Usa «Generar cobros del mes».", { mes: nombreMes(periodo) })}</Vacio> : (
+      {!cobros ? <Cargando />
+        : cobros.length === 0 ? <Vacio>{t("Aún no hay cobros para {mes}. Usa «Generar cobros del mes».", { mes: nombreMes(periodo) })}</Vacio> : (
         <div className="tabla-cont"><table>
           <thead><tr><th>{t("Alumno")}</th><th className="num">{t("Monto")}</th><th>{t("Vence")}</th><th>{t("Estado")}</th><th>{t("Pago")}</th><th></th></tr></thead>
           <tbody>{lista.map((c) => (
@@ -66,12 +67,15 @@ export function Cobros() {
               <td><a href={`#/alumnos/${c.alumno_id}`}>{c.alumno}</a></td>
               <td className="num">{pesos(c.monto)}</td>
               <td>{fecha(c.vence_en)}</td>
-              <td>{c.estado === "pagado" ? <Chip tono="ok">{t("Pagado")}</Chip> : c.estado === "anulado" ? <Chip>{t("Anulado")}</Chip> : vencido(c) ? <Chip tono="alerta">{t("Vencido")}</Chip> : <Chip tono="aviso">{t("Pendiente")}</Chip>}</td>
+              <td>{c.estado === "pagado" ? <Chip tono="ok">{t("Pagado")}</Chip>
+                : c.estado === "anulado" ? <Chip>{t("Anulado")}</Chip>
+                : vencido(c) ? <Chip tono="alerta">{t("Vencido")}</Chip>
+                : <Chip tono="aviso">{t("Pendiente")}</Chip>}</td>
               <td className="tenue">{c.estado === "pagado" ? `${fecha(c.pagado_en!)} · ${nombreMedio(c.medio ?? "")}${c.nota ? ` · ${c.nota}` : ""}` : c.nota ?? ""}</td>
               <td>{c.estado === "pendiente" ? <span className="acciones">
                 <button className="btn ok chico" onClick={() => { setPagar(c); setNota(""); }}>{t("Registrar pago")}</button>
                 <button className="btn sec chico" onClick={() => { setEditar(c); setMonto(String(c.monto)); setNota(""); }}>{t("Cambiar monto")}</button>
-                <button className="btn sec chico" onClick={() => hacer(() => datos.anularCobro(c.id, "Anulado por administración"), t("Cobro anulado."))}>{t("Anular")}</button>
+                <button className="btn sec chico" onClick={() => hacer(() => datos.anularCobro(c.id, t("Anulado por administración")), t("Cobro anulado."))}>{t("Anular")}</button>
               </span> : null}</td>
             </tr>
           ))}</tbody>

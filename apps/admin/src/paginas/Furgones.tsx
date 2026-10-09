@@ -57,7 +57,9 @@ export function Furgones() {
         </section>
       ) : null}
 
-      {!furgones ? <Cargando /> : furgones.length === 0 ? <Vacio>{t("Aún no hay furgones. Agrega el primero con su patente y su tía o tío.")}</Vacio> : (
+      {!furgones ? <Cargando />
+
+        : furgones.length === 0 ? <Vacio>{t("Aún no hay furgones. Agrega el primero con su patente y su tía o tío.")}</Vacio> : (
         <div className="furgones">
           {furgones.map((f) => {
             const lic = licDe(f);

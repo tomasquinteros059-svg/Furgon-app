@@ -2,7 +2,7 @@ import type { Contacto } from "../datos";
 import { t } from "../i18n";
 
 export function FormContactos({ contactos, onCambio, errores }: {
-  contactos: Contacto[]; onCambio: (c: Contacto[]) => void; errores?: Record<number, string>;
+  contactos: Contacto[]; onCambio: (c: Contacto[]) => void; errores?: Record<number, string>; // i18n-ignorar (no es texto)
 }) {
   const fila = (i: number) => contactos[i] ?? { nombre: "", telefono: "", prioridad: i + 1 };
   const set = (i: number, campo: "nombre" | "telefono", v: string) => {

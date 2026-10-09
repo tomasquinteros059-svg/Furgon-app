@@ -229,7 +229,7 @@ export interface Datos {
 
   alumnos(): Promise<Alumno[]>;
   crearAlumno(n: NuevoAlumno): Promise<{ alumno_id: string; codigo: string }>;
-  actualizarAlumno(id: string, cambios: Partial<Pick<Alumno, "nombre" | "colegio" | "curso" | "minutos_aviso" | "mensualidad">>): Promise<void>;
+  actualizarAlumno(id: string, cambios: Partial<Pick<Alumno, "nombre" | "colegio" | "curso" | "minutos_aviso" | "mensualidad">>): Promise<void>; // i18n-ignorar (no es texto)
   actualizarDomicilio(alumnoId: string, d: Domicilio): Promise<void>;
   guardarContactos(alumnoId: string, contactos: Contacto[]): Promise<void>;
   codigoFamilia(alumnoId: string): Promise<string>;
@@ -276,5 +276,5 @@ export interface Datos {
 
   llamadas(mes: string): Promise<LlamadaReporte[]>; // mes: YYYY-MM
   empresa(): Promise<Empresa>;
-  guardarEmpresa(e: Omit<Empresa, "id">): Promise<void>;
+  guardarEmpresa(e: Omit<Empresa, "id">): Promise<void>; // i18n-ignorar (no es texto)
 }

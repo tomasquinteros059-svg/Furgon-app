@@ -47,7 +47,8 @@ export function Llamadas() {
       <label className="campo" style={{ maxWidth: 280 }}><span>{t("Tarifa por minuto (CLP)")}</span>
         <input id="tarifa" inputMode="numeric" value={tarifa} onChange={(e) => { const v = Number(e.target.value.replace(/\D/g, "")) || 0; setTarifa(v); try { localStorage.setItem("tarifa_minuto", String(v)); } catch { /* sin almacenamiento */ } }} />
         <small>{t("Revisa la tarifa real en tu cuenta de Twilio. Es solo una estimación.")}</small></label>
-      {!llamadas ? <Cargando /> : llamadas.length === 0 ? <Vacio>{t("Sin llamadas en {mes}.", { mes: nombreMes(mes) })}</Vacio> : (
+      {!llamadas ? <Cargando />
+        : llamadas.length === 0 ? <Vacio>{t("Sin llamadas en {mes}.", { mes: nombreMes(mes) })}</Vacio> : (
         <div className="tabla-cont"><table>
           <thead><tr><th>{t("Fecha")}</th><th>{t("Alumno")}</th><th>{t("Llamado a")}</th><th>{t("Canal")}</th><th>{t("Resultado")}</th><th className="num">{t("Duración")}</th></tr></thead>
           <tbody>{llamadas.slice(0, 200).map((l) => (

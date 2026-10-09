@@ -62,7 +62,8 @@ export function Panel() {
         </section>
         <section className="tarjeta" aria-label={t("Recorridos de hoy")}>
           <header><h2>{t("Recorridos de hoy")}</h2>{r.recorridos_activos ? <Chip tono="ok">● {t("{n} en curso", { n: r.recorridos_activos })}</Chip> : null}</header>
-          {!recorridos ? <Cargando /> : recorridos.length === 0 ? <p className="tenue">{t("Aún no parte ningún recorrido hoy.")}</p> : (
+          {!recorridos ? <Cargando />
+            : recorridos.length === 0 ? <p className="tenue">{t("Aún no parte ningún recorrido hoy.")}</p> : (
             <ul className="lista-tareas">
               {recorridos.map((x) => (
                 <li key={x.id}>
