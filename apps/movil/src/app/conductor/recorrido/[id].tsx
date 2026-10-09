@@ -7,7 +7,7 @@ import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
 import { t } from "../../../lib/idioma";
-import { detenerSeguimiento, enviarCola, iniciarSeguimiento, pendientesEnCola, recorridoActivo } from "../../../ubicacion/seguimiento";
+import { detenerSeguimiento, enviarCola, gpsActivoPara, iniciarSeguimiento, pendientesEnCola } from "../../../ubicacion/seguimiento";
 
 type EstadoParada = "pendiente" | "entregado" | "ausente" | "no_viaja";
 
@@ -22,9 +22,9 @@ interface Parada {
   a_bordo_por: "familia" | "tia" | null;
 }
 
-const etiqueta = (estado: EstadoParada): string => ({
+const etiqueta = (estado: EstadoParada, tipo: "ida" | "vuelta"): string => ({
   pendiente: t("Pendiente"),
-  entregado: t("En su hogar ✅"),
+  entregado: tipo === "ida" ? t("Subió ✅") : t("En su hogar ✅"),
   ausente: t("Ausente"),
   no_viaja: t("Hoy no viaja"),
 })[estado];
@@ -37,8 +37,9 @@ export default function RecorridoConductor() {
   const [marcando, setMarcando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    const [{ data: rec }, { data }] = await Promise.all([
+  /** Carga el recorrido; devuelve si sigue activo (null si no hubo conexión). */
+  const cargar = useCallback(async (): Promise<boolean | null> => {
+    const [r1, r2] = await Promise.all([
       supabase.from("recorridos").select("tipo, estado").eq("id", id).single(),
       supabase
         .from("recorrido_alumnos")
@@ -46,20 +47,26 @@ export default function RecorridoConductor() {
         .eq("recorrido_id", id)
         .order("orden"),
     ]);
-    if (rec) setTipo(rec.tipo);
-    if (rec && rec.estado !== "activo") {
+    setEnCola(await pendientesEnCola());
+    // Sin señal: se mantiene lo último que se vio (no se borra la lista de paradas).
+    if (r1.error || r2.error || !r1.data) return null;
+    setTipo(r1.data.tipo);
+    if (r1.data.estado !== "activo") {
       await detenerSeguimiento();
       router.replace("/conductor");
-      return;
+      return false;
     }
-    setParadas((data as unknown as Parada[]) ?? []);
-    setEnCola(await pendientesEnCola());
+    setParadas((r2.data as unknown as Parada[]) ?? []);
+    return true;
   }, [id]);
 
   useEffect(() => {
-    // Si la app se reabrió y el GPS no estaba corriendo para este recorrido, se reanuda.
-    if (recorridoActivo() !== id) iniciarSeguimiento(id).catch(() => {});
-    cargar();
+    (async () => {
+      // Primero se confirma que el recorrido sigue activo; si el GPS no está corriendo para él
+      // (la app se cerró o el teléfono se reinició), se reanuda.
+      const activo = await cargar();
+      if (activo !== false && !(await gpsActivoPara(id))) iniciarSeguimiento(id).catch(() => {});
+    })();
     const intervalo = setInterval(() => {
       enviarCola().catch(() => {});
       cargar();
@@ -93,7 +100,11 @@ export default function RecorridoConductor() {
           text: t("Finalizar"),
           style: "destructive",
           onPress: async () => {
-            await supabase.rpc("finalizar_recorrido", { p_recorrido: id });
+            setError(null);
+            // Primero se envían las posiciones guardadas; después se cierra el recorrido.
+            await enviarCola().catch(() => {});
+            const { error: e } = await supabase.rpc("finalizar_recorrido", { p_recorrido: id });
+            if (e) return setError(mensajeError(e));
             await detenerSeguimiento();
             router.replace("/conductor");
           },
@@ -153,7 +164,7 @@ export default function RecorridoConductor() {
       {atendidas.map((p) => (
         <Tarjeta key={p.id} estilo={{ opacity: 0.75 }}>
           <View style={[estilos.fila, { justifyContent: "space-between" }]}>
-            <Text style={estilos.texto}>{p.orden}. {p.alumno.nombre} · {etiqueta(p.estado)}</Text>
+            <Text style={estilos.texto}>{p.orden}. {p.alumno.nombre} · {etiqueta(p.estado, tipo)}</Text>
             {p.estado !== "no_viaja" ? (
               <Boton titulo={t("Deshacer")} variante="texto" onPress={() => marcar(p, "pendiente")} />
             ) : null}

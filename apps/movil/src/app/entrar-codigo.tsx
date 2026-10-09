@@ -9,6 +9,7 @@ import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
 import { t } from "../lib/idioma";
+import { nombreDeFamilia } from "../lib/familia";
 
 export default function EntrarConCodigo() {
   const [codigo, setCodigo] = useState("");
@@ -22,13 +23,17 @@ export default function EntrarConCodigo() {
   // Muestra de qué familia es el código mientras se escribe.
   useEffect(() => {
     setFamilia(null); setRevisado(false);
-    if (codigo.trim().length < 6) return;
+    if (codigo.trim().length < 8) return; // los códigos tienen 8 o 9 caracteres
+    let vigente = true;
     const espera = setTimeout(async () => {
-      const { data } = await supabase.rpc("validar_invitacion", { p_codigo: codigo });
+      const { data, error: e } = await supabase.rpc("validar_invitacion", { p_codigo: codigo });
+      if (!vigente) return; // ya se escribió otro código
+      if (e) { setError(mensajeError(e)); return; }
+      setError(null);
       const fila = (data as { rol: string; empresa: string }[] | null)?.find((x) => x.rol === "apoderado");
       setFamilia(fila ? fila.empresa : null); setRevisado(true);
-    }, 400);
-    return () => clearTimeout(espera);
+    }, 600);
+    return () => { vigente = false; clearTimeout(espera); };
   }, [codigo]);
 
   async function entrar() {
@@ -51,7 +56,7 @@ export default function EntrarConCodigo() {
       </Text>
       {error ? <Aviso texto={error} tipo="error" /> : null}
       <Campo etiqueta={t("Código de familia")} value={codigo} onChangeText={setCodigo} autoCapitalize="characters" placeholder="F1A2B3C4" />
-      {familia ? <Aviso tipo="exito" texto={t("Te unirás a {familia}.", { familia })} />
+      {familia ? <Aviso tipo="exito" texto={t("Te unirás a {familia}.", { familia: nombreDeFamilia(familia) })} />
         : revisado ? <Aviso tipo="error" texto={t("Código no válido, vencido o ya usado.")} /> : null}
       <Campo etiqueta={t("Tu nombre")} value={nombre} onChangeText={setNombre} autoComplete="name" placeholder={t("Ej: Rodrigo Pérez")} />
       <Campo etiqueta={t("Tu teléfono")} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" placeholder="9 1234 5678"

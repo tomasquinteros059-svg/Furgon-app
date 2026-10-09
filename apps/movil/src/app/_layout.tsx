@@ -75,12 +75,14 @@ function Navegacion() {
 
 export default function RootLayout() {
   return (
-    <ProveedorTema>
-      <ProveedorIdioma>
-        <ProveedorSesion>
+    // La sesión va por fuera: cambiar el tema o el idioma redibuja las pantallas, pero no vuelve
+    // a cargar la sesión ni el perfil.
+    <ProveedorSesion>
+      <ProveedorTema>
+        <ProveedorIdioma>
           <Navegacion />
-        </ProveedorSesion>
-      </ProveedorIdioma>
-    </ProveedorTema>
+        </ProveedorIdioma>
+      </ProveedorTema>
+    </ProveedorSesion>
   );
 }

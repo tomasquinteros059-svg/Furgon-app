@@ -189,7 +189,10 @@ export function evaluarDisparos(params: {
   paradas.forEach((p, i) => {
     if (p.avisado) return;
     const eta = Math.max(0, Math.round(etasSeg[i] ?? Infinity));
-    if (distanciaM(posicion, p.ubicacion) <= config.radioProximidadM) {
+    // Red de seguridad por cercanía: solo para la próxima parada de la ruta (o una cuyo ETA ya
+    // esté cerca de su ventana). Si el furgón pasa junto a una casa que viene mucho después, no avisa.
+    const cercaDeVerdad = i === 0 || eta <= 2 * ventanaSeg(p, config);
+    if (cercaDeVerdad && distanciaM(posicion, p.ubicacion) <= config.radioProximidadM) {
       disparos.push({ paradaId: p.id, alumnoId: p.alumnoId, motivo: "proximidad", etaSeg: Number.isFinite(eta) ? eta : 0 });
     } else if (eta <= ventanaSeg(p, config)) {
       disparos.push({ paradaId: p.id, alumnoId: p.alumnoId, motivo: fuente, etaSeg: eta });

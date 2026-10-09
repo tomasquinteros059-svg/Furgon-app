@@ -55,8 +55,14 @@ async function enviarPorIdioma(sb: SupabaseClient, dispositivos: (Dispositivo & 
 /** Idioma de la persona detrás de un contacto de llamada (español si no tiene cuenta). */
 export async function idiomaDeContacto(sb: SupabaseClient, contactoId: string | null): Promise<Idioma> {
   if (!contactoId) return "es";
-  const { data } = await sb.from("contactos").select("perfiles(idioma)").eq("id", contactoId).maybeSingle();
-  return idiomaValido((data?.perfiles as unknown as { idioma?: string } | null)?.idioma);
+  const { data } = await sb.from("contactos").select("telefono, alumno_id, perfiles(idioma)").eq("id", contactoId).maybeSingle();
+  const directo = (data?.perfiles as unknown as { idioma?: string } | null)?.idioma;
+  if (directo || !data) return idiomaValido(directo);
+  // Contacto creado al registrar al alumno: se busca al apoderado con ese mismo teléfono
+  // (igual que dispositivos_de_contacto para la llamada por la app).
+  const { data: apoderados } = await sb.from("apoderado_alumno")
+    .select("perfiles!inner(idioma, telefono)").eq("alumno_id", data.alumno_id).eq("perfiles.telefono", data.telefono).limit(1);
+  return idiomaValido((apoderados?.[0]?.perfiles as unknown as { idioma?: string } | undefined)?.idioma);
 }
 
 /** Envía la notificación a todos los dispositivos de los apoderados del alumno. */
@@ -125,6 +131,7 @@ async function enviar(sb: SupabaseClient, dispositivos: { id: string; expo_push_
     method: "POST",
     headers,
     body: JSON.stringify(mensajes),
+    signal: AbortSignal.timeout(8_000), // que un Expo lento no detenga el envío de posiciones
   });
   const cuerpo = await resp.json().catch(() => ({})) as { data?: TicketExpo[] };
   const tickets = cuerpo.data ?? [];

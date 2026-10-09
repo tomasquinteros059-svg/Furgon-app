@@ -19,9 +19,13 @@ export default function EliminarCuenta() {
   const [borrando, setBorrando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase.rpc("resumen_eliminacion").single<Resumen>().then(({ data }) => setResumen(data ?? null));
-  }, []);
+  const cargarResumen = () => {
+    setError(null);
+    supabase.rpc("resumen_eliminacion").single<Resumen>().then(({ data, error: e }) => {
+      if (e) setError(mensajeError(e)); else setResumen(data ?? null);
+    });
+  };
+  useEffect(cargarResumen, []);
 
   async function eliminar() {
     setError(null); setBorrando(true);
@@ -66,6 +70,7 @@ export default function EliminarCuenta() {
       <Text style={estilos.textoSuave}>{t("Los registros de cobros que la ley obliga a guardar y los respaldos de seguridad se eliminan dentro de 30 días.")}</Text>
       {PANEL_URL ? <Boton titulo={t("Ver la política de privacidad")} variante="texto" onPress={() => Linking.openURL(`${PANEL_URL}/privacidad.html`)} /> : null}
       <Campo etiqueta={t("Para confirmar, escribe {palabra}", { palabra })} autoCapitalize="characters" autoCorrect={false} value={texto} onChangeText={setTexto} />
+      {error && !resumen ? <Boton titulo={t("Reintentar")} variante="secundario" onPress={cargarResumen} /> : null}
       {error ? <Aviso tipo="error" texto={error} /> : null}
       <Boton titulo={t("Eliminar mi cuenta para siempre")} variante="peligro" cargando={borrando}
         deshabilitado={texto.trim().toUpperCase() !== palabra || !resumen} onPress={eliminar} />

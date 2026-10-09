@@ -15,6 +15,7 @@ export class ProveedorGoogleRoutes implements ProveedorEta {
     const wp = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
     const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
       method: "POST",
+    signal: AbortSignal.timeout(5_000),
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": this.apiKey,
@@ -60,7 +61,7 @@ export class ProveedorMapbox implements ProveedorEta {
     const coords = puntos.map((p) => `${p.lng},${p.lat}`).join(";");
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}` +
       `?overview=false&steps=false&access_token=${encodeURIComponent(this.token)}`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!resp.ok) throw new Error(`Mapbox HTTP ${resp.status}`);
     const datos = await resp.json() as { routes?: { legs?: { duration?: number }[] }[] };
     return (datos.routes?.[0]?.legs ?? []).map((l) => Number(l.duration));
@@ -89,14 +90,17 @@ export function proveedorDesdeEntorno(): ProveedorEta | null {
 export async function trazadoGoogle(origen: LatLng, destinos: LatLng[]): Promise<string | null> {
   const key = entorno.googleMapsKey();
   if (!key || destinos.length === 0) return null;
+  // Google acepta hasta 25 paradas intermedias: en rutas más largas se dibujan las próximas 26.
+  destinos = destinos.slice(0, 26);
   const wp = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
   const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
+    signal: AbortSignal.timeout(5_000),
     headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": "routes.polyline.encodedPolyline" },
     body: JSON.stringify({
       origin: wp(origen),
       destination: wp(destinos[destinos.length - 1]),
-      intermediates: destinos.slice(0, -1).slice(0, 24).map(wp),
+      intermediates: destinos.slice(0, -1).map(wp),
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_AWARE",
     }),
@@ -121,6 +125,7 @@ export async function rutaGoogle(
   const intermedios = puntos.slice(1, -1);
   const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
+    signal: AbortSignal.timeout(5_000),
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": key,

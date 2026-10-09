@@ -106,10 +106,51 @@ export async function despacharLlamadasVencidas(sb: SupabaseClient): Promise<num
         finalizada_en: new Date().toISOString(),
         error: e instanceof Error ? e.message.slice(0, 500) : String(e),
       }).eq("id", llamada.id);
-      await programarSiguienteLlamada(sb, llamada.aviso_id);
+      // Un fallo al programar el siguiente intento no corta las demás llamadas del lote.
+      await programarSiguienteLlamada(sb, llamada.aviso_id).catch((err) => console.error("siguiente llamada", err));
     }
   }
   return iniciadas;
+}
+
+/**
+ * Respaldo (lo corre procesar-llamadas cada minuto) para que la escalera nunca quede detenida:
+ *  - llamadas telefónicas que quedaron «en curso» sin respuesta de Twilio (el proceso se cortó o
+ *    Twilio no avisó) se dan por fallidas y se sigue con el próximo intento;
+ *  - avisos sin confirmar de recorridos activos que no tienen ningún intento pendiente (p. ej. si
+ *    falló el aviso de estado de Twilio) se vuelven a planificar.
+ */
+export async function rescatarEscaleras(sb: SupabaseClient): Promise<number> {
+  if (!entorno.llamadasHabilitadas()) return 0;
+  const ahora = Date.now();
+  const { data: trabadas } = await sb.from("llamadas")
+    .select("id, aviso_id, iniciada_en, twilio_sid")
+    .eq("canal", "telefono").eq("estado", "en_curso");
+  let rescatadas = 0;
+  for (const l of (trabadas ?? []) as { id: string; aviso_id: string; iniciada_en: string | null; twilio_sid: string | null }[]) {
+    const edadSeg = (ahora - Date.parse(l.iniciada_en ?? new Date(0).toISOString())) / 1000;
+    if (edadSeg < (l.twilio_sid ? 600 : 120)) continue;
+    const { data } = await sb.from("llamadas")
+      .update({ estado: "fallida", finalizada_en: new Date().toISOString(), error: "Sin respuesta de Twilio" })
+      .eq("id", l.id).eq("estado", "en_curso").select("id");
+    if (data?.length) {
+      rescatadas++;
+      await programarSiguienteLlamada(sb, l.aviso_id).catch((err) => console.error("rescate", err));
+    }
+  }
+
+  const desde = new Date(ahora - 2 * 3600_000).toISOString();
+  const { data: avisos } = await sb.from("avisos")
+    .select("id, llamadas(estado), recorridos!inner(estado), recorrido_alumnos!inner(estado)")
+    .is("confirmado_en", null).gte("disparado_en", desde)
+    .eq("recorridos.estado", "activo").eq("recorrido_alumnos.estado", "pendiente");
+  for (const a of (avisos ?? []) as { id: string; llamadas: { estado: string }[] }[]) {
+    const activa = a.llamadas.some((l) => l.estado === "programada" || l.estado === "en_curso");
+    if (a.llamadas.length > 0 && !activa) {
+      await programarSiguienteLlamada(sb, a.id).catch((err) => console.error("replanificar", err));
+    }
+  }
+  return rescatadas;
 }
 
 /** Llamada gratis: push de alta prioridad; la app la muestra como llamada y lee el mensaje en voz alta. */
@@ -197,6 +238,7 @@ async function crearLlamadaTwilio(llamadaId: string, telefono: string): Promise<
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: form,
+    signal: AbortSignal.timeout(10_000), // si Twilio no responde, el intento se marca fallido y sigue la escalera
   });
   const datos = await resp.json() as { sid?: string; message?: string };
   if (!resp.ok || !datos.sid) throw new Error(`Twilio HTTP ${resp.status}: ${datos.message ?? "sin detalle"}`);

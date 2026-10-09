@@ -31,7 +31,17 @@ Deno.serve(async (req) => {
     .eq("apoderado_id", usuario.id).eq("alumno_id", alumnoId).maybeSingle();
   if (!vinculo) return error(403, "no_autorizado", "No autorizado");
 
-  if (llamada.estado !== "en_curso") return json({ ok: true, estado: llamada.estado });
+  if (llamada.estado !== "en_curso") {
+    // Confirmó desde la notificación después de que la llamada venció: igual cuenta como recibido,
+    // así no se le sigue llamando (ni se paga una llamada telefónica de más).
+    if (accion === "confirmar") {
+      const ahora = new Date().toISOString();
+      await sb.from("avisos").update({ confirmado_en: ahora }).eq("id", llamada.aviso_id).is("confirmado_en", null);
+      await sb.from("llamadas").update({ estado: "cancelada", finalizada_en: ahora }).eq("aviso_id", llamada.aviso_id).eq("estado", "programada");
+      return json({ ok: true, estado: "confirmada" });
+    }
+    return json({ ok: true, estado: llamada.estado });
+  }
 
   if (accion === "acuse") {
     if (!llamada.acuse_en) {

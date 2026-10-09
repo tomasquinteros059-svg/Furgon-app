@@ -3,7 +3,7 @@
 // el proveedor vuelve a dibujar la app completa con la nueva paleta.
 import Storage from "expo-sqlite/kv-store";
 import { StatusBar } from "expo-status-bar";
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { PALETA, type Paleta, type PreferenciaTema } from "../../../../diseno/colores.ts";
 import { t } from "../lib/idioma";
@@ -40,10 +40,10 @@ const Contexto = createContext<{ preferencia: PreferenciaTema; cambiar: (p: Pref
 
 export function ProveedorTema({ children }: { children: ReactNode }) {
   const sistema = useColorScheme();
-  const [preferencia, setPreferencia] = useState<PreferenciaTema>("sistema");
-  useEffect(() => {
-    Storage.getItem(CLAVE).then((v) => { if (v === "claro" || v === "oscuro" || v === "sistema") setPreferencia(v); }).catch(() => {});
-  }, []);
+  // Se lee al tiro (no después), para no redibujar la app completa apenas abre.
+  const [preferencia, setPreferencia] = useState<PreferenciaTema>(() => {
+    try { const v = Storage.getItemSync(CLAVE); return v === "claro" || v === "oscuro" ? v : "sistema"; } catch { return "sistema"; }
+  });
   const oscuro = preferencia === "oscuro" || (preferencia === "sistema" && sistema === "dark");
   oscuroActual = oscuro;
   const cambiar = (p: PreferenciaTema) => { setPreferencia(p); Storage.setItem(CLAVE, p).catch(() => {}); };

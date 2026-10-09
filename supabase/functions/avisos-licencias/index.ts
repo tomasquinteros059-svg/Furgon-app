@@ -17,10 +17,11 @@ Deno.serve(async (req) => {
   let enviados = 0;
   for (const l of (data ?? []) as { conductor_id: string; conductor: string; vence_en: string; dias: number }[]) {
     const m = mensajeVencimientoLicencia({ nombre: l.conductor, dias: l.dias, venceEn: l.vence_en });
+    // Un envío que falla no impide avisar a las demás tías.
     enviados += await notificarPerfil(sb, l.conductor_id, {
       tipo: "licencia", titulo: m.titulo, cuerpo: m.cuerpo, data: { pantalla: "licencia" },
       porIdioma: (idioma) => mensajeVencimientoLicencia({ nombre: l.conductor, dias: l.dias, venceEn: l.vence_en, idioma }),
-    });
+    }).catch((e) => { console.error("aviso de licencia", l.conductor_id, e); return 0; });
   }
   return json({ licencias: (data ?? []).length, enviados });
 });

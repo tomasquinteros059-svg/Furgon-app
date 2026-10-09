@@ -46,6 +46,15 @@ export async function configurarCanales(): Promise<void> {
 }
 
 /** Pide permiso, obtiene el token de Expo y lo asocia al usuario en el backend. */
+let tokenRegistrado: string | null = null;
+
+/** Al cerrar sesión: este teléfono deja de recibir alarmas y llamadas de esa cuenta. */
+export async function olvidarDispositivo(): Promise<void> {
+  if (!tokenRegistrado) return;
+  await supabase.from("dispositivos").delete().eq("expo_push_token", tokenRegistrado);
+  tokenRegistrado = null;
+}
+
 export async function registrarParaPush(): Promise<string | null> {
   if (!Device.isDevice) return null; // los emuladores no reciben push
   await configurarCanales();
@@ -63,5 +72,6 @@ export async function registrarParaPush(): Promise<string | null> {
   if (!projectId) throw new Error("Falta EAS_PROJECT_ID para obtener el token de push");
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
   await supabase.rpc("registrar_dispositivo", { p_token: token, p_plataforma: Platform.OS });
+  tokenRegistrado = token;
   return token;
 }

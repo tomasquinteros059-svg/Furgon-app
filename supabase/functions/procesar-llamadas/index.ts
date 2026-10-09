@@ -5,13 +5,14 @@
 
 import { entorno } from "../_shared/entorno.ts";
 import { clienteServicio, error, json } from "../_shared/http.ts";
-import { despacharLlamadasVencidas, vencerLlamadasApp } from "../_shared/servicio-llamadas.ts";
+import { despacharLlamadasVencidas, rescatarEscaleras, vencerLlamadasApp } from "../_shared/servicio-llamadas.ts";
 
 Deno.serve(async (req) => {
   const secreto = entorno.cronSecret();
   if (!secreto || req.headers.get("x-cron-secret") !== secreto) return error(401, "no_autorizado", "Secreto inválido");
   const sb = clienteServicio();
   const vencidas = await vencerLlamadasApp(sb);
+  const rescatadas = await rescatarEscaleras(sb);
   const iniciadas = await despacharLlamadasVencidas(sb);
-  return json({ vencidas, iniciadas });
+  return json({ vencidas, rescatadas, iniciadas });
 });

@@ -319,4 +319,5 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "Recorrido en curso": "Trip in progress",
   "Compartiendo la ubicación del furgón con los apoderados del recorrido.": "Sharing the van's location with the parents on this trip.",
   "Salir de la familia": "Leave family",
+  "la familia de {nombre}": "{nombre}'s family",
 };

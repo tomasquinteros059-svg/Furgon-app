@@ -36,7 +36,10 @@ export default function Solicitud() {
   async function enviar() {
     if (!texto.trim() || !perfil) return;
     const { error } = await supabase.from("solicitud_mensajes").insert({ solicitud_id: id, autor_id: perfil.id, cuerpo: texto.trim() });
-    if (error) return setError(mensajeError(error));
+    if (error) {
+      setError(mensajeError(error));
+      return cargar(); // p. ej. la cerraron mientras escribías: se muestra su estado actual
+    }
     setTexto(""); cargar();
   }
 

@@ -60,7 +60,11 @@ export async function responderLlamada(llamadaId: string, accion: Accion): Promi
   }
 }
 
+// Llamadas ya mostradas: tocar la notificación de una llamada en pantalla no abre otra encima.
+const llamadasAbiertas = new Set<string>();
 export function abrirLlamada(d: DatosLlamada): void {
+  if (llamadasAbiertas.has(d.llamadaId)) return;
+  llamadasAbiertas.add(d.llamadaId);
   router.push({ pathname: "/apoderado/llamada/[id]", params: { id: d.llamadaId, alumno: d.alumno, voz: d.voz } });
 }
 

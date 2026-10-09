@@ -74,6 +74,13 @@ describe("evaluarDisparos", () => {
     expect(r).toEqual([{ paradaId: "c", alumnoId: "alumno-c", motivo: "proximidad", etaSeg: 900 }]);
   });
 
+  it("pasar a 200 m de una casa que viene mucho después en la ruta no dispara su aviso", () => {
+    const primera = parada("1", alNorte(BASE, -6000));
+    const despues = parada("8", alNorte(BASE, 200));
+    const r = evaluarDisparos({ posicion: BASE, paradas: [primera, despues], etasSeg: [900, 2400], fuente: "eta", config: CFG });
+    expect(r).toEqual([]);
+  });
+
   it("en la ida, una casa cercana que viene más adelante en la ruta NO se avisa antes de tiempo", () => {
     // El furgón pasa a 800 m de la casa 3, pero antes debe ir a buscar a 1 y 2 al otro lado.
     const p1 = parada("1", alNorte(BASE, -3000));

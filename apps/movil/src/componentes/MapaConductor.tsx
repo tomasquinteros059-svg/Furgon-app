@@ -35,13 +35,15 @@ export function MapaConductor({ recorridoId, casas, alto = 280 }: { recorridoId:
   // Posición en pantalla (la que se envía al servidor la toma la tarea en segundo plano).
   useEffect(() => {
     let sub: Location.LocationSubscription | null = null;
+    let cerrado = false;
     Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 5 }, (l) => {
       setYo((previo) => {
         if (previo && Math.abs(l.coords.longitude - previo.longitude) > 0.00003) setHaciaIzquierda(previo.longitude > l.coords.longitude);
         return { latitude: l.coords.latitude, longitude: l.coords.longitude };
       });
-    }).then((s) => { sub = s; }).catch(() => {});
-    return () => sub?.remove();
+    }).then((s) => { if (cerrado) s.remove(); else sub = s; }).catch(() => {});
+    // Si se sale de la pantalla antes de que empiece a escuchar, se detiene al llegar.
+    return () => { cerrado = true; sub?.remove(); };
   }, []);
 
   // Ruta por calles desde Google: al empezar, cuando cambian las paradas y cada 2 minutos.

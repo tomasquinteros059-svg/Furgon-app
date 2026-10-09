@@ -6,6 +6,7 @@ import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
 import { t } from "../lib/idioma";
+import { nombreDeFamilia } from "../lib/familia";
 
 const NOMBRE_ROL = { apoderado: "apoderado", conductor: "conductor", admin: "administrador" } as const;
 /** Rol en palabras, en el idioma actual. */
@@ -26,12 +27,16 @@ export default function Registro() {
   // Valida el código mientras se escribe, para mostrar a qué furgón y con qué rol se unirá.
   useEffect(() => {
     setInvitacion(null);
-    if (codigo.trim().length < 6) return;
+    if (codigo.trim().length < 8) return; // los códigos tienen 8 o 9 caracteres
+    let vigente = true;
     const espera = setTimeout(async () => {
-      const { data } = await supabase.rpc("validar_invitacion", { p_codigo: codigo });
+      const { data, error: e } = await supabase.rpc("validar_invitacion", { p_codigo: codigo });
+      if (!vigente) return; // ya se escribió otro código
+      if (e) { setError(mensajeError(e)); return; }
+      setError(null);
       setInvitacion((data as { rol: keyof typeof NOMBRE_ROL; empresa: string }[] | null)?.[0] ?? null);
-    }, 400);
-    return () => clearTimeout(espera);
+    }, 600);
+    return () => { vigente = false; clearTimeout(espera); };
   }, [codigo]);
 
   async function registrar() {
@@ -71,7 +76,7 @@ export default function Registro() {
         </>
       )}
       {sinCodigo ? null : invitacion ? (
-        <Aviso tipo="exito" texto={t(`Te unirás a "{empresa}" como {rol}.`, { empresa: invitacion.empresa, rol: nombreRol(invitacion.rol) })} />
+        <Aviso tipo="exito" texto={t(`Te unirás a "{empresa}" como {rol}.`, { empresa: nombreDeFamilia(invitacion.empresa), rol: nombreRol(invitacion.rol) })} />
       ) : codigo.trim().length >= 6 ? (
         <Aviso tipo="error" texto={t("Código no válido o vencido.")} />
       ) : null}

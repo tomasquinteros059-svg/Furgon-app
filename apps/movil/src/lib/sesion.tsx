@@ -1,6 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import { registrarParaPush } from "../notificaciones";
+import { olvidarDispositivo, registrarParaPush } from "../notificaciones";
 import { detenerSeguimiento } from "../ubicacion/seguimiento";
 import { supabase } from "./supabase";
 import { idioma, sincronizarIdioma } from "../i18n";
@@ -36,11 +36,12 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       setPerfil(null);
       return;
     }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("perfiles")
       .select("id, rol, nombre, empresa_id, puede_administrar, idioma")
       .eq("id", s.user.id)
       .maybeSingle();
+    if (error) return; // sin conexión: se mantiene lo que había
     setPerfil((data as Perfil | null) ?? null);
     if (data) registrarParaPush().catch((e) => console.warn("push no disponible:", e?.message ?? e));
     // El servidor usa el idioma del perfil para avisos, notificaciones y llamadas.
@@ -54,8 +55,16 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       setCargando(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((evento, s) => {
-      setSesion(s);
-      if (evento === "SIGNED_IN" || evento === "SIGNED_OUT" || evento === "USER_UPDATED") cargarPerfil(s);
+      if (evento === "SIGNED_IN" || evento === "SIGNED_OUT" || evento === "USER_UPDATED") {
+        // Sesión y perfil cambian juntos (si no, se ve un instante «Cuenta sin perfil»). Las
+        // consultas van fuera del callback, como recomienda supabase-js.
+        setTimeout(async () => {
+          await cargarPerfil(s);
+          setSesion(s);
+        }, 0);
+      } else {
+        setSesion(s);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [cargarPerfil]);
@@ -67,6 +76,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     recargarPerfil: () => cargarPerfil(sesion),
     cerrarSesion: async () => {
       await detenerSeguimiento();
+      await olvidarDispositivo().catch(() => {});
       await supabase.auth.signOut();
     },
   };

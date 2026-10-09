@@ -32,7 +32,9 @@ export default function CobrosAdmin() {
     setPrecioGeneral(e.data?.mensualidad_defecto ?? 0);
   }, []);
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
-  const hoy = new Date().toISOString().slice(0, 10);
+  // Fecha de hoy en la hora del teléfono (Chile), no en UTC.
+  const ahora = new Date();
+  const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
   const pendiente = cobros.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
   const cobrado = cobros.filter((c) => c.estado === "pagado").reduce((s, c) => s + c.monto, 0);
   const mes = new Intl.DateTimeFormat(locale(), { month: "long" }).format(new Date());
@@ -92,6 +94,10 @@ export default function CobrosAdmin() {
               <Text style={estilos.textoSuave}>{t("Aún no se generan las mensualidades de este mes. Revisa antes los precios en «Precios».")}</Text>
               <Boton titulo={t("Generar mensualidades del mes")} onPress={() => ejecutar(supabase.rpc("generar_cobros", { p_periodo: periodoActual() }), t("Mensualidades generadas."))} />
             </>
+          ) : alumnos.some((a) => !cobros.some((c) => c.alumno_id === a.id)) ? (
+            // Alumnos que llegaron después de generar el mes: generar_cobros no duplica los que ya existen.
+            <Boton titulo={t("Generar mensualidades de alumnos nuevos")} variante="secundario"
+              onPress={() => ejecutar(supabase.rpc("generar_cobros", { p_periodo: periodoActual() }), t("Mensualidades generadas."))} />
           ) : null}
           {cobros.map((c) => {
             const vencido = c.estado === "pendiente" && c.vence_en < hoy;

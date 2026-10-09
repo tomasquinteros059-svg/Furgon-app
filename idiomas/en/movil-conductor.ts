@@ -284,4 +284,5 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "Esta app es para la tía o el tío del furgón y para las familias.": "This app is for school van drivers and families.",
   "Abrir el panel web": "Open the web panel",
   "Vencimiento: {fecha}": "Expires: {fecha}",
+  "Generar mensualidades de alumnos nuevos": "Generate fees for new students",
 };

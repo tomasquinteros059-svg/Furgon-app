@@ -24,7 +24,10 @@ export default function NuevoAlumnoAdmin() {
   const [creado, setCreado] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
-    supabase.from("rutas").select("id, nombre").eq("activa", true).order("nombre").then(({ data }) => {
+    // Solo las rutas de esta tía (con permiso de administrar, RLS también mostraría las de otras).
+    supabase.auth.getUser().then(({ data: u }) =>
+      supabase.from("rutas").select("id, nombre").eq("activa", true).eq("conductor_id", u.user?.id ?? "").order("nombre"),
+    ).then(({ data }) => {
       setRutas(data ?? []); setElegidas((data ?? []).map((r) => r.id));
     });
   }, []);

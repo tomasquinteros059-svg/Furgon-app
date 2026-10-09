@@ -51,12 +51,8 @@ export default function RutasAdmin() {
     if (!hoy) return;
     const marcar = (tramo: string, v: boolean) => supabase.rpc("marcar_no_viaja", { p_alumno: alumnoId, p_fecha: hoy, p_tipo: tramo, p_no_viaja: v });
     setError(null); setExito(null);
-    let res = await marcar(tipo, valor);
-    // Si la familia había marcado todo el día, se deja marcado solo el otro tramo.
-    if (!res.error && !valor && noVan.some((x) => x.alumno_id === alumnoId && x.tipo === "ambos")) {
-      res = await marcar("ambos", false);
-      if (!res.error) res = await marcar(tipo === "ida" ? "vuelta" : "ida", true);
-    }
+    // Si estaba marcado el día completo, el servidor deja marcado solo el otro tramo.
+    const res = await marcar(tipo, valor);
     if (res.error) setError(mensajeError(res.error));
     else setExito(valor ? t("{nombre} no va hoy: tu ruta de hoy se salta su casa y su familia no recibe aviso.", { nombre }) : t("{nombre} sí va hoy.", { nombre }));
     cargar();

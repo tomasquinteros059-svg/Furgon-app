@@ -21,6 +21,11 @@ export function recorridoActivo(): string | null {
   return Storage.getItemSync(CLAVE_RECORRIDO);
 }
 
+/** ¿El GPS está enviando para este recorrido? (Tras reiniciar el teléfono la clave queda, pero el GPS no.) */
+export async function gpsActivoPara(recorridoId: string): Promise<boolean> {
+  return recorridoActivo() === recorridoId && await Location.hasStartedLocationUpdatesAsync(TAREA_GPS).catch(() => false);
+}
+
 export type ResultadoInicio = { ok: true } | { ok: false; mensaje: string };
 
 // Aviso destacado antes de pedir el permiso (lo exige Google Play para la ubicación en segundo plano).

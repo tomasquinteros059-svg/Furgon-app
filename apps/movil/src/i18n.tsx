@@ -3,7 +3,7 @@
 // El idioma también se guarda en el perfil, para que avisos, notificaciones y llamadas lleguen
 // en el idioma de cada persona.
 import Storage from "expo-sqlite/kv-store";
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { Pressable, View } from "react-native";
 import { type Idioma, NOMBRE_IDIOMA, type PreferenciaIdioma } from "../../../idiomas/index.ts";
 import { Text } from "./componentes/icono";
@@ -24,10 +24,10 @@ const CLAVE = "idioma";
 const Contexto = createContext<{ preferencia: PreferenciaIdioma; cambiar: (p: PreferenciaIdioma) => void } | null>(null);
 
 export function ProveedorIdioma({ children }: { children: ReactNode }) {
-  const [preferencia, setPreferencia] = useState<PreferenciaIdioma>("sistema");
-  useEffect(() => {
-    Storage.getItem(CLAVE).then((v) => { if (v === "sistema" || v === "es" || v === "en") setPreferencia(v); }).catch(() => {});
-  }, []);
+  // Se lee al tiro (no después), para no redibujar la app completa apenas abre.
+  const [preferencia, setPreferencia] = useState<PreferenciaIdioma>(() => {
+    try { const v = Storage.getItemSync(CLAVE); return v === "es" || v === "en" ? v : "sistema"; } catch { return "sistema"; }
+  });
   const actual: Idioma = preferencia === "sistema" ? idiomaSistema() : preferencia;
   fijarIdioma(actual);
   const cambiar = (p: PreferenciaIdioma) => {
