@@ -22,6 +22,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       UIBackgroundModes: ["location", "remote-notification"],
       // Para abrir la navegación en la app de Google Maps si está instalada.
       LSApplicationQueriesSchemes: ["comgooglemaps", "waze"],
+      // Textos en español para permisos que agregan las librerías (la app no usa el movimiento).
+      NSLocationAlwaysUsageDescription:
+        "Durante el recorrido, el furgón comparte su ubicación con los apoderados para avisarles cuando está por llegar. Solo mientras hay un recorrido activo.",
+      NSMotionUsageDescription: "La app no usa los sensores de movimiento.",
+      // Solo usa el cifrado estándar del sistema (HTTPS): evita la pregunta de exportación en cada envío.
+      ITSAppUsesNonExemptEncryption: false,
     },
     entitlements: {
       // Permite que el aviso atraviese el modo Concentración (iOS 15+).
@@ -37,6 +43,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
     permissions: ["POST_NOTIFICATIONS", "ACCESS_NOTIFICATION_POLICY"],
+    // Permisos que agregan las librerías y la app no usa (las tiendas preguntan por cada uno).
+    blockedPermissions: [
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ],
   },
   plugins: [
     "expo-router",
@@ -67,6 +80,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         photosPermission: "Para subir la foto de tu licencia de conducir y que la empresa la verifique.",
         cameraPermission: "Para fotografiar tu licencia de conducir y que la empresa la verifique.",
+        microphonePermission: false,
       },
     ],
     [

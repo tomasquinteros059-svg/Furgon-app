@@ -152,14 +152,20 @@ No hay que configurar nada en el número de Twilio: cada llamada le indica a Twi
    - `furgon-ios`: restringida a apps iOS, bundle `cl.furgonapp.movil`.
 
    Ponlas en `GOOGLE_MAPS_ANDROID_API_KEY` y `GOOGLE_MAPS_IOS_API_KEY` de `apps/movil/.env`.
-3. **Android** (gratis para probar): `npx eas-cli build --profile development --platform android`
-   genera un APK que se instala con el enlace o código QR que entrega EAS.
-4. **iPhone**: requiere la **Apple Developer Program** (USD 99 al año). Luego
+3. **Compilar** (lo hace Claude con `EXPO_TOKEN` en el entorno):
+   `npm run compilar-app -- --plataforma android --perfil preview`. Como `apps/movil/.env` no se
+   sube a Expo, el script copia antes sus valores (URL y anon key de Supabase, claves de Maps,
+   dirección del panel) a las variables de entorno de EAS. La primera vez se ejecuta `eas init`
+   para crear el proyecto en Expo y su ID queda en `EAS_PROJECT_ID`. Para iPhone, la primera
+   compilación necesita entrar con la cuenta de Apple para crear los certificados.
+4. **Android** (gratis para probar): el perfil `preview` genera un APK que se instala con el
+   enlace o código QR que entrega EAS. El perfil `production` genera el paquete para Google Play.
+5. **iPhone**: requiere la **Apple Developer Program** (USD 99 al año). Luego
    `npx eas-cli device:create` (registra tu iPhone) y
    `npx eas-cli build --profile development --platform ios`.
-5. **Notificaciones**: en Android, EAS pide subir la clave de Firebase (FCM v1); en iOS crea la
+6. **Notificaciones**: en Android, EAS pide subir la clave de Firebase (FCM v1); en iOS crea la
    clave de push automáticamente. `npx eas-cli credentials` guía ambos pasos.
-6. Prueba en teléfonos reales: el recorrido con la app en segundo plano (ubicación), la alarma
+7. Prueba en teléfonos reales: el recorrido con la app en segundo plano (ubicación), la alarma
    con el teléfono bloqueado y la llamada gratis. En Android de Xiaomi, Huawei o Samsung, saca la
    app de la optimización de batería.
 
