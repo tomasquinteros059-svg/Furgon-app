@@ -35,3 +35,9 @@ export function crearTraductor(diccionarios: Partial<Record<Idioma, Diccionario>
 
 /** Variables que usa un texto ({nombre} → ["nombre"]), para revisar las traducciones. */
 export const variablesDe = (texto: string) => [...texto.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+
+/** Traduce un texto con datos variables usando patrones [regex, reemplazo con $1…]; null si ninguno calza. */
+export function traducirConPatrones(texto: string, patrones: readonly (readonly [RegExp, string])[]): string | null {
+  for (const [re, reemplazo] of patrones) if (re.test(texto)) return texto.replace(re, reemplazo);
+  return null;
+}
