@@ -4,9 +4,10 @@ import { Pressable, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import { Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { supabase } from "../../../lib/supabase";
+import { locale, t } from "../../../lib/idioma";
 
 interface Resumen { alumnos_activos: number; alumnos_sin_ruta: number; familias_sin_app: number; por_cobrar_mes: number; morosos: number; solicitudes_abiertas: number }
-const pesos = (n: number) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+const pesos = (n: number) => new Intl.NumberFormat(locale(), { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
 export default function MenuAdministrar() {
   const [r, setR] = useState<Resumen | null>(null);
@@ -20,13 +21,19 @@ export default function MenuAdministrar() {
     </Pressable>
   );
   return (
-    <Pantalla titulo="Administración" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
-      {opcion("👧 Alumnos", r ? `${r.alumnos_activos} activos${r.familias_sin_app ? ` · ${r.familias_sin_app} familia(s) sin la app` : ""}` : "…", "/conductor/administrar/alumnos")}
-      {opcion("🗺️ Rutas", r?.alumnos_sin_ruta ? `${r.alumnos_sin_ruta} alumno(s) sin ruta` : "Ruta recomendada, orden y «hoy no va»", "/conductor/administrar/rutas", !!r?.alumnos_sin_ruta)}
-      {opcion("💳 Cobros", r ? `${pesos(r.por_cobrar_mes)} por cobrar este mes · precios${r.morosos ? ` · ${r.morosos} vencido(s)` : ""}` : "…", "/conductor/administrar/cobros", !!r?.morosos)}
-      {opcion("💬 Solicitudes", r ? (r.solicitudes_abiertas ? `${r.solicitudes_abiertas} sin responder` : "Todo respondido") : "…", "/conductor/administrar/solicitudes", !!r?.solicitudes_abiertas)}
+    <Pantalla titulo={t("Administración")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
+      {opcion(t("👧 Alumnos"), r ? [
+        r.alumnos_activos === 1 ? t("1 activo") : t("{n} activos", { n: r.alumnos_activos }),
+        ...(r.familias_sin_app === 1 ? [t("1 familia sin la app")] : r.familias_sin_app ? [t("{n} familias sin la app", { n: r.familias_sin_app })] : []),
+      ].join(" · ") : "…", "/conductor/administrar/alumnos")}
+      {opcion(t("🗺️ Rutas"), r?.alumnos_sin_ruta === 1 ? t("1 alumno sin ruta") : r?.alumnos_sin_ruta ? t("{n} alumnos sin ruta", { n: r.alumnos_sin_ruta }) : t("Ruta recomendada, orden y «hoy no va»"), "/conductor/administrar/rutas", !!r?.alumnos_sin_ruta)}
+      {opcion(t("💳 Cobros"), r ? [
+        t("{monto} por cobrar este mes · precios", { monto: pesos(r.por_cobrar_mes) }),
+        ...(r.morosos === 1 ? [t("1 vencido")] : r.morosos ? [t("{n} vencidos", { n: r.morosos })] : []),
+      ].join(" · ") : "…", "/conductor/administrar/cobros", !!r?.morosos)}
+      {opcion(t("💬 Solicitudes"), r ? (r.solicitudes_abiertas ? t("{n} sin responder", { n: r.solicitudes_abiertas }) : t("Todo respondido")) : "…", "/conductor/administrar/solicitudes", !!r?.solicitudes_abiertas)}
       <View style={{ marginTop: 8 }}>
-        <Text style={estilos.textoSuave}>También puedes entrar al panel web de administración con esta misma cuenta.</Text>
+        <Text style={estilos.textoSuave}>{t("También puedes entrar al panel web de administración con esta misma cuenta.")}</Text>
       </View>
     </Pantalla>
   );

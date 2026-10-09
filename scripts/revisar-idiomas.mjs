@@ -18,8 +18,11 @@ const archivos = (dir) => readdirSync(dir).flatMap((f) => {
 /** Textos de las llamadas t("…") o t(`…`) (sin ${} dentro). */
 export function clavesDe(codigo) {
   const claves = [];
-  for (const m of codigo.matchAll(/\bt\(\s*(?:"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g)) {
-    claves.push(JSON.parse(`"${(m[1] ?? m[2]).replace(/"/g, '\\"').replace(/\\`/g, "`")}"`));
+  // Sin comentarios (los ejemplos de la documentación no son textos de la app).
+  const sinComentarios = codigo.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  for (const m of sinComentarios.matchAll(/\bt\(\s*(?:"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g)) {
+    // Comillas dobles: ya es el contenido de un string JSON. Backticks: se escapan las comillas.
+    claves.push(JSON.parse(m[1] !== undefined ? `"${m[1]}"` : `"${m[2].replace(/\\`/g, "`").replace(/"/g, '\\"')}"`));
   }
   return claves;
 }

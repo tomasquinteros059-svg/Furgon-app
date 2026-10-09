@@ -4,12 +4,14 @@ import { TextInput, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { mensajeError, supabase } from "../../../lib/supabase";
+import { locale, t } from "../../../lib/idioma";
 
 interface Cobro { id: string; alumno_id: string; monto: number; vence_en: string; estado: string; medio: string | null; nota: string | null; alumnos: { nombre: string } }
 interface AlumnoPrecio { id: string; nombre: string; mensualidad: number | null }
-const pesos = (n: number) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+const pesos = (n: number) => new Intl.NumberFormat(locale(), { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 const periodoActual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`; };
-const soloDigitos = (t: string) => t.replace(/\D/g, "");
+const soloDigitos = (texto: string) => texto.replace(/\D/g, "");
+const medioDePago = (medio: string | null) => medio === "efectivo" ? t("efectivo") : medio === "transferencia" ? t("transferencia") : (medio ?? "");
 const estiloEntrada = { borderWidth: 1, borderColor: colores.borde, borderRadius: 10, paddingHorizontal: 12, minHeight: 44, fontSize: 17, color: colores.texto, backgroundColor: "#fff" };
 
 export default function CobrosAdmin() {
@@ -33,7 +35,7 @@ export default function CobrosAdmin() {
   const hoy = new Date().toISOString().slice(0, 10);
   const pendiente = cobros.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
   const cobrado = cobros.filter((c) => c.estado === "pagado").reduce((s, c) => s + c.monto, 0);
-  const mes = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(new Date());
+  const mes = new Intl.DateTimeFormat(locale(), { month: "long" }).format(new Date());
   const precio = (a: AlumnoPrecio) => a.mensualidad ?? precioGeneral;
 
   async function ejecutar(p: PromiseLike<{ error: { message: string } | null }>, ok: string) {
@@ -44,18 +46,18 @@ export default function CobrosAdmin() {
   }
 
   return (
-    <Pantalla titulo={`Cobros de ${mes}`} accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={t("Cobros de {mes}", { mes })} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       <View style={estilos.fila}>
-        <Boton titulo="Cobros del mes" variante={vista === "cobros" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => { setVista("cobros"); setEditando(null); }} />
-        <Boton titulo="Precios" variante={vista === "precios" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => { setVista("precios"); setEditando(null); }} />
+        <Boton titulo={t("Cobros del mes")} variante={vista === "cobros" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => { setVista("cobros"); setEditando(null); }} />
+        <Boton titulo={t("Precios")} variante={vista === "precios" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => { setVista("precios"); setEditando(null); }} />
       </View>
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
 
       {vista === "precios" ? (
         <>
           <Tarjeta>
-            <Text style={estilos.texto}>Ingreso mensual esperado: <Text style={{ fontWeight: "700" }}>{pesos(alumnos.reduce((s, a) => s + precio(a), 0))}</Text></Text>
-            <Text style={estilos.textoSuave}>Toca «Cambiar» para poner el precio de cada alumno. También se actualiza su cobro pendiente de {mes}.</Text>
+            <Text style={estilos.texto}>{t("Ingreso mensual esperado:")} <Text style={{ fontWeight: "700" }}>{pesos(alumnos.reduce((s, a) => s + precio(a), 0))}</Text></Text>
+            <Text style={estilos.textoSuave}>{t("Toca «Cambiar» para poner el precio de cada alumno. También se actualiza su cobro pendiente de {mes}.", { mes })}</Text>
           </Tarjeta>
           {alumnos.map((a) => (
             <Tarjeta key={a.id}>
@@ -63,32 +65,32 @@ export default function CobrosAdmin() {
                 <Text style={[estilos.texto, { fontWeight: "700", flex: 1 }]}>{a.nombre}</Text>
                 <Text style={[estilos.texto, { fontWeight: "700" }]}>{pesos(precio(a))}</Text>
               </View>
-              {a.mensualidad == null ? <Text style={estilos.textoSuave}>Precio general</Text> : null}
+              {a.mensualidad == null ? <Text style={estilos.textoSuave}>{t("Precio general")}</Text> : null}
               {editando?.id === a.id ? (
                 <View style={{ gap: 6 }}>
-                  <TextInput accessibilityLabel={`Precio mensual de ${a.nombre}`} keyboardType="number-pad" autoFocus style={estiloEntrada}
-                    value={editando.valor} onChangeText={(t) => setEditando({ id: a.id, valor: soloDigitos(t) })} />
+                  <TextInput accessibilityLabel={t("Precio mensual de {nombre}", { nombre: a.nombre })} keyboardType="number-pad" autoFocus style={estiloEntrada}
+                    value={editando.valor} onChangeText={(v) => setEditando({ id: a.id, valor: soloDigitos(v) })} />
                   <View style={estilos.fila}>
-                    <Boton titulo="Guardar" variante="exito" estilo={{ flex: 1 }} deshabilitado={!editando.valor}
+                    <Boton titulo={t("Guardar")} variante="exito" estilo={{ flex: 1 }} deshabilitado={!editando.valor}
                       onPress={() => ejecutar(supabase.rpc("fijar_mensualidad", { p_alumno: a.id, p_monto: Number(editando.valor), p_desde: periodoActual() }),
-                        `Precio de ${a.nombre}: ${pesos(Number(editando.valor))} al mes.`)} />
-                    <Boton titulo="Cancelar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setEditando(null)} />
+                        t("Precio de {nombre}: {monto} al mes.", { nombre: a.nombre, monto: pesos(Number(editando.valor)) }))} />
+                    <Boton titulo={t("Cancelar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setEditando(null)} />
                   </View>
                 </View>
-              ) : <Boton titulo="Cambiar precio" variante="secundario" onPress={() => setEditando({ id: a.id, valor: String(precio(a)) })} />}
+              ) : <Boton titulo={t("Cambiar precio")} variante="secundario" onPress={() => setEditando({ id: a.id, valor: String(precio(a)) })} />}
             </Tarjeta>
           ))}
         </>
       ) : (
         <>
           <Tarjeta>
-            <Text style={estilos.texto}>Cobrado: <Text style={{ fontWeight: "700", color: colores.verde }}>{pesos(cobrado)}</Text></Text>
-            <Text style={estilos.texto}>Por cobrar: <Text style={{ fontWeight: "700" }}>{pesos(pendiente)}</Text></Text>
+            <Text style={estilos.texto}>{t("Cobrado:")} <Text style={{ fontWeight: "700", color: colores.verde }}>{pesos(cobrado)}</Text></Text>
+            <Text style={estilos.texto}>{t("Por cobrar:")} <Text style={{ fontWeight: "700" }}>{pesos(pendiente)}</Text></Text>
           </Tarjeta>
           {cobros.length === 0 ? (
             <>
-              <Text style={estilos.textoSuave}>Aún no se generan las mensualidades de este mes. Revisa antes los precios en «Precios».</Text>
-              <Boton titulo="Generar mensualidades del mes" onPress={() => ejecutar(supabase.rpc("generar_cobros", { p_periodo: periodoActual() }), "Mensualidades generadas.")} />
+              <Text style={estilos.textoSuave}>{t("Aún no se generan las mensualidades de este mes. Revisa antes los precios en «Precios».")}</Text>
+              <Boton titulo={t("Generar mensualidades del mes")} onPress={() => ejecutar(supabase.rpc("generar_cobros", { p_periodo: periodoActual() }), t("Mensualidades generadas."))} />
             </>
           ) : null}
           {cobros.map((c) => {
@@ -100,28 +102,28 @@ export default function CobrosAdmin() {
                   <Text style={[estilos.texto, { fontWeight: "700" }]}>{pesos(c.monto)}</Text>
                 </View>
                 <Text style={{ color: c.estado === "pagado" ? colores.verde : vencido ? colores.rojo : colores.suave, fontWeight: "600" }}>
-                  {c.estado === "pagado" ? `Pagado · ${c.medio}` : c.estado === "anulado" ? "Anulado" : vencido ? "Vencido" : "Pendiente"}{c.nota ? ` · ${c.nota}` : ""}
+                  {c.estado === "pagado" ? t("Pagado · {medio}", { medio: medioDePago(c.medio) }) : c.estado === "anulado" ? t("Anulado") : vencido ? t("Vencido") : t("Pendiente")}{c.nota ? ` · ${c.nota}` : ""}
                 </Text>
                 {c.estado === "pendiente" && editando?.id === c.id ? (
                   <View style={{ gap: 6 }}>
-                    <TextInput accessibilityLabel={`Monto de ${c.alumnos.nombre}`} keyboardType="number-pad" autoFocus style={estiloEntrada}
-                      value={editando.valor} onChangeText={(t) => setEditando({ id: c.id, valor: soloDigitos(t) })} />
+                    <TextInput accessibilityLabel={t("Monto de {nombre}", { nombre: c.alumnos.nombre })} keyboardType="number-pad" autoFocus style={estiloEntrada}
+                      value={editando.valor} onChangeText={(v) => setEditando({ id: c.id, valor: soloDigitos(v) })} />
                     <View style={estilos.fila}>
-                      <Boton titulo="Guardar monto" variante="exito" estilo={{ flex: 1 }} deshabilitado={!editando.valor}
+                      <Boton titulo={t("Guardar monto")} variante="exito" estilo={{ flex: 1 }} deshabilitado={!editando.valor}
                         onPress={() => ejecutar(supabase.rpc("cambiar_monto_cobro", { p_cobro: c.id, p_monto: Number(editando.valor), p_nota: null }),
-                          `Cobro de ${c.alumnos.nombre}: ahora ${pesos(Number(editando.valor))}.`)} />
-                      <Boton titulo="Cancelar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setEditando(null)} />
+                          t("Cobro de {nombre}: ahora {monto}.", { nombre: c.alumnos.nombre, monto: pesos(Number(editando.valor)) }))} />
+                      <Boton titulo={t("Cancelar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setEditando(null)} />
                     </View>
                   </View>
                 ) : c.estado === "pendiente" ? (
                   <>
                     <View style={[estilos.fila, { marginTop: 6 }]}>
-                      <Boton titulo="Pagó en efectivo" variante="exito" estilo={{ flex: 1 }}
-                        onPress={() => ejecutar(supabase.rpc("registrar_pago", { p_cobro: c.id, p_medio: "efectivo", p_nota: null }), `Pago de ${c.alumnos.nombre} registrado.`)} />
-                      <Boton titulo="Transferencia" variante="secundario" estilo={{ flex: 1 }}
-                        onPress={() => ejecutar(supabase.rpc("registrar_pago", { p_cobro: c.id, p_medio: "transferencia", p_nota: null }), `Pago de ${c.alumnos.nombre} registrado.`)} />
+                      <Boton titulo={t("Pagó en efectivo")} variante="exito" estilo={{ flex: 1 }}
+                        onPress={() => ejecutar(supabase.rpc("registrar_pago", { p_cobro: c.id, p_medio: "efectivo", p_nota: null }), t("Pago de {nombre} registrado.", { nombre: c.alumnos.nombre }))} />
+                      <Boton titulo={t("Transferencia")} variante="secundario" estilo={{ flex: 1 }}
+                        onPress={() => ejecutar(supabase.rpc("registrar_pago", { p_cobro: c.id, p_medio: "transferencia", p_nota: null }), t("Pago de {nombre} registrado.", { nombre: c.alumnos.nombre }))} />
                     </View>
-                    <Boton titulo="Cambiar monto de este mes" variante="texto" onPress={() => setEditando({ id: c.id, valor: String(c.monto) })} />
+                    <Boton titulo={t("Cambiar monto de este mes")} variante="texto" onPress={() => setEditando({ id: c.id, valor: String(c.monto) })} />
                   </>
                 ) : null}
               </Tarjeta>

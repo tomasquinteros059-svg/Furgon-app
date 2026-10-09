@@ -8,6 +8,7 @@ import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../
 import { type Conexion, misConexiones } from "../../lib/conexiones";
 import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
+import { t } from "../../lib/idioma";
 
 interface Familia { id: string; nombre: string; conexion: string | null }
 interface MiRuta { id: string; nombre: string; tipo: "ida" | "vuelta" }
@@ -57,21 +58,25 @@ export default function Conexiones() {
   function confirmarRutas() {
     if (!eligiendo) return;
     const rutas = [...rutasElegidas];
-    const nombres = misRutas.filter((r) => rutasElegidas.has(r.id)).map((r) => r.nombre).join(" y ");
-    const destino = rutas.length ? `Sus hijos entrarán solos a ${nombres}, en el lugar que menos alarga el recorrido.` : "Sin rutas elegidas: agrégalos después en Rutas.";
+    const nombres = misRutas.filter((r) => rutasElegidas.has(r.id)).map((r) => r.nombre).join(t(" y "));
     const e = eligiendo;
+    const vars = { nombre: e.nombre, rutas: nombres };
     setEligiendo(null);
     if (e.tipo === "aceptar") {
-      ejecutar(supabase.rpc("responder_conexion", { p_conexion: e.id, p_aceptar: true, p_rutas: rutas }), `${e.nombre} quedó conectada a tu furgón. ${destino}`);
+      ejecutar(supabase.rpc("responder_conexion", { p_conexion: e.id, p_aceptar: true, p_rutas: rutas }), rutas.length
+        ? t("{nombre} quedó conectada a tu furgón. Sus hijos entrarán solos a {rutas}, en el lugar que menos alarga el recorrido.", vars)
+        : t("{nombre} quedó conectada a tu furgón. Sin rutas elegidas: agrégalos después en Rutas.", vars));
     } else {
-      ejecutar(supabase.rpc("solicitar_conexion", { p_otro: e.id, p_mensaje: null, p_rutas: rutas }), `Invitación enviada a ${e.nombre}. Cuando acepte: ${destino.charAt(0).toLowerCase()}${destino.slice(1)}`);
+      ejecutar(supabase.rpc("solicitar_conexion", { p_otro: e.id, p_mensaje: null, p_rutas: rutas }), rutas.length
+        ? t("Invitación enviada a {nombre}. Cuando acepte: sus hijos entrarán solos a {rutas}, en el lugar que menos alarga el recorrido.", vars)
+        : t("Invitación enviada a {nombre}. Cuando acepte: sin rutas elegidas: agrégalos después en Rutas.", vars));
     }
   }
 
   const selectorRutas = (
     <View style={{ gap: 6 }}>
-      <Text style={estilos.etiqueta}>¿En qué rutas va?</Text>
-      {misRutas.length === 0 ? <Text style={estilos.textoSuave}>Aún no tienes rutas asignadas.</Text> : (
+      <Text style={estilos.etiqueta}>{t("¿En qué rutas va?")}</Text>
+      {misRutas.length === 0 ? <Text style={estilos.textoSuave}>{t("Aún no tienes rutas asignadas.")}</Text> : (
         <View style={[estilos.fila, { flexWrap: "wrap" }]}>
           {misRutas.map((r) => {
             const si = rutasElegidas.has(r.id);
@@ -84,8 +89,8 @@ export default function Conexiones() {
         </View>
       )}
       <View style={estilos.fila}>
-        <Boton titulo={eligiendo?.tipo === "aceptar" ? "Aceptar" : "Enviar invitación"} variante="exito" estilo={{ flex: 1 }} onPress={confirmarRutas} />
-        <Boton titulo="Cancelar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setEligiendo(null)} />
+        <Boton titulo={eligiendo?.tipo === "aceptar" ? t("Aceptar") : t("Enviar invitación")} variante="exito" estilo={{ flex: 1 }} onPress={confirmarRutas} />
+        <Boton titulo={t("Cancelar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setEligiendo(null)} />
       </View>
     </View>
   );
@@ -98,18 +103,18 @@ export default function Conexiones() {
   const conectadas = conexiones.filter((c) => c.estado === "aceptada");
 
   return (
-    <Pantalla titulo="Conexiones con familias" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={t("Conexiones con familias")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
 
       {recibidas.map((c) => (
         <Tarjeta key={c.id} estilo={{ borderColor: colores.verde, borderWidth: 2 }}>
-          <Text style={estilos.subtitulo}>🤝 {c.otro_nombre} quiere conectarse</Text>
+          <Text style={estilos.subtitulo}>{t("🤝 {nombre} quiere conectarse", { nombre: c.otro_nombre })}</Text>
           {c.mensaje ? <Text style={estilos.texto}>“{c.mensaje}”</Text> : null}
           {eligiendo?.tipo === "aceptar" && eligiendo.id === c.id ? selectorRutas : (
             <View style={estilos.fila}>
-              <Boton titulo="Aceptar" variante="exito" estilo={{ flex: 1 }} onPress={() => elegirRutas("aceptar", c.id, c.otro_nombre)} />
-              <Boton titulo="Rechazar" variante="secundario" estilo={{ flex: 1 }}
-                onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: false }), "Solicitud rechazada.")} />
+              <Boton titulo={t("Aceptar")} variante="exito" estilo={{ flex: 1 }} onPress={() => elegirRutas("aceptar", c.id, c.otro_nombre)} />
+              <Boton titulo={t("Rechazar")} variante="secundario" estilo={{ flex: 1 }}
+                onPress={() => ejecutar(supabase.rpc("responder_conexion", { p_conexion: c.id, p_aceptar: false }), t("Solicitud rechazada."))} />
             </View>
           )}
         </Tarjeta>
@@ -118,49 +123,49 @@ export default function Conexiones() {
       <Tarjeta>
         <View style={[estilos.fila, { justifyContent: "space-between" }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[estilos.texto, { fontWeight: "700" }]}>Que las familias me encuentren</Text>
-            <Text style={estilos.textoSuave}>Apareces en la búsqueda con tu nombre, tu furgón y tus comunas. Nunca se muestran tu teléfono ni tus rutas.</Text>
+            <Text style={[estilos.texto, { fontWeight: "700" }]}>{t("Que las familias me encuentren")}</Text>
+            <Text style={estilos.textoSuave}>{t("Apareces en la búsqueda con tu nombre, tu furgón y tus comunas. Nunca se muestran tu teléfono ni tus rutas.")}</Text>
           </View>
           <Switch value={visible} trackColor={{ true: colores.verde }}
-            onValueChange={(v) => { setVisible(v); guardarPerfil({ visible_en_busqueda: v }, v ? "Ahora las familias te pueden encontrar." : "Ya no apareces en la búsqueda."); }} />
+            onValueChange={(v) => { setVisible(v); guardarPerfil({ visible_en_busqueda: v }, v ? t("Ahora las familias te pueden encontrar.") : t("Ya no apareces en la búsqueda.")); }} />
         </View>
-        <Campo etiqueta="Comunas donde trabajas" value={comunas} onChangeText={setComunas} placeholder="Ej: Ñuñoa, La Reina, Providencia" />
-        <Campo etiqueta="Presentación (opcional)" value={presentacion} onChangeText={setPresentacion} placeholder="Ej: 12 años de experiencia, Colegio X" maxLength={300} />
-        <Boton titulo="Guardar" variante="secundario" onPress={() => guardarPerfil({ comunas: comunas.trim(), presentacion: presentacion.trim() }, "Datos guardados.")} />
+        <Campo etiqueta={t("Comunas donde trabajas")} value={comunas} onChangeText={setComunas} placeholder={t("Ej: Ñuñoa, La Reina, Providencia")} />
+        <Campo etiqueta={t("Presentación (opcional)")} value={presentacion} onChangeText={setPresentacion} placeholder={t("Ej: 12 años de experiencia, Colegio X")} maxLength={300} />
+        <Boton titulo={t("Guardar")} variante="secundario" onPress={() => guardarPerfil({ comunas: comunas.trim(), presentacion: presentacion.trim() }, t("Datos guardados."))} />
       </Tarjeta>
 
       <Tarjeta>
-        <Text style={estilos.subtitulo}>Buscar una familia</Text>
-        <Text style={estilos.textoSuave}>Por privacidad, solo con su correo o su teléfono exactos.</Text>
-        <Campo etiqueta="Correo o teléfono" value={texto} onChangeText={(t) => { setTexto(t); setFamilias(null); }} autoCapitalize="none" placeholder="ana@correo.cl o 9 1234 5678" />
-        <Boton titulo="Buscar" deshabilitado={texto.trim().length < 6} onPress={buscar} />
-        {familias?.length === 0 ? <Text style={estilos.textoSuave}>No hay una familia registrada con ese correo o teléfono. Puedes enviarle un código de invitación.</Text> : null}
+        <Text style={estilos.subtitulo}>{t("Buscar una familia")}</Text>
+        <Text style={estilos.textoSuave}>{t("Por privacidad, solo con su correo o su teléfono exactos.")}</Text>
+        <Campo etiqueta={t("Correo o teléfono")} value={texto} onChangeText={(v) => { setTexto(v); setFamilias(null); }} autoCapitalize="none" placeholder={t("ana@correo.cl o 9 1234 5678")} />
+        <Boton titulo={t("Buscar")} deshabilitado={texto.trim().length < 6} onPress={buscar} />
+        {familias?.length === 0 ? <Text style={estilos.textoSuave}>{t("No hay una familia registrada con ese correo o teléfono. Puedes enviarle un código de invitación.")}</Text> : null}
         {familias?.map((f) => (
           <View key={f.id} style={{ paddingTop: 10, gap: 6 }}>
             <Text style={[estilos.texto, { fontWeight: "700" }]}>{f.nombre}</Text>
-            {f.conexion === "aceptada" ? <Text style={{ color: colores.verde, fontWeight: "700" }}>✓ Conectados</Text>
-              : f.conexion === "pendiente" ? <Text style={estilos.textoSuave}>Solicitud pendiente</Text>
+            {f.conexion === "aceptada" ? <Text style={{ color: colores.verde, fontWeight: "700" }}>{t("✓ Conectados")}</Text>
+              : f.conexion === "pendiente" ? <Text style={estilos.textoSuave}>{t("Solicitud pendiente")}</Text>
               : eligiendo?.tipo === "invitar" && eligiendo.id === f.id ? selectorRutas
-              : <Boton titulo="🤝 Invitar a conectarse" onPress={() => elegirRutas("invitar", f.id, f.nombre)} />}
+              : <Boton titulo={t("🤝 Invitar a conectarse")} onPress={() => elegirRutas("invitar", f.id, f.nombre)} />}
           </View>
         ))}
       </Tarjeta>
 
-      {enviadas.length ? <Text style={estilos.etiqueta}>Invitaciones enviadas</Text> : null}
+      {enviadas.length ? <Text style={estilos.etiqueta}>{t("Invitaciones enviadas")}</Text> : null}
       {enviadas.map((c) => (
         <Tarjeta key={c.id}>
           <Text style={[estilos.texto, { fontWeight: "700" }]}>{c.otro_nombre}</Text>
-          <Text style={estilos.textoSuave}>Esperando respuesta</Text>
-          <Boton titulo="Retirar invitación" variante="texto" onPress={() => ejecutar(supabase.rpc("cancelar_conexion", { p_conexion: c.id }), "Invitación retirada.")} />
+          <Text style={estilos.textoSuave}>{t("Esperando respuesta")}</Text>
+          <Boton titulo={t("Retirar invitación")} variante="texto" onPress={() => ejecutar(supabase.rpc("cancelar_conexion", { p_conexion: c.id }), t("Invitación retirada."))} />
         </Tarjeta>
       ))}
 
-      {conectadas.length ? <Text style={estilos.etiqueta}>Familias conectadas ({conectadas.length})</Text> : null}
+      {conectadas.length ? <Text style={estilos.etiqueta}>{t("Familias conectadas ({n})", { n: conectadas.length })}</Text> : null}
       {conectadas.map((c) => (
         <Tarjeta key={c.id}>
           <Text style={[estilos.texto, { fontWeight: "700" }]}>✓ {c.otro_nombre}</Text>
-          <Text style={estilos.textoSuave}>{c.hijos?.length ? `Hijos: ${c.hijos.join(", ")}` : "Aún no registra a sus hijos: entrarán solos a tus rutas"}</Text>
-          {c.rutas?.length ? <Text style={estilos.textoSuave}>Va en: {c.rutas.join(" y ")}</Text> : null}
+          <Text style={estilos.textoSuave}>{c.hijos?.length ? t("Hijos: {hijos}", { hijos: c.hijos.join(", ") }) : t("Aún no registra a sus hijos: entrarán solos a tus rutas")}</Text>
+          {c.rutas?.length ? <Text style={estilos.textoSuave}>{t("Va en: {rutas}", { rutas: c.rutas.join(t(" y ")) })}</Text> : null}
         </Tarjeta>
       ))}
     </Pantalla>

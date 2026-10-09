@@ -8,22 +8,23 @@ import { useSesion } from "../../lib/sesion";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
 import { SelectorIdioma } from "../../i18n";
+import { t } from "../../lib/idioma";
 
 const PANEL_URL = process.env.EXPO_PUBLIC_PANEL_URL ?? "";
 
 export default function AdminEnLaWeb() {
   const { perfil, cerrarSesion } = useSesion();
   return (
-    <Pantalla titulo={`Hola, ${perfil?.nombre.split(" ")[0] ?? ""}`}>
+    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })}>
       <Text style={estilos.texto}>
-        La administración del furgón se hace en el panel web, desde el computador o el navegador del teléfono.
+        {t("La administración del furgón se hace en el panel web, desde el computador o el navegador del teléfono.")}
       </Text>
-      <Aviso texto="Esta app es para la tía o el tío del furgón y para las familias." />
-      {PANEL_URL ? <Boton titulo="Abrir el panel web" onPress={() => Linking.openURL(PANEL_URL)} /> : null}
-      <Boton titulo="Cerrar sesión" variante="secundario" onPress={cerrarSesion} />
+      <Aviso texto={t("Esta app es para la tía o el tío del furgón y para las familias.")} />
+      {PANEL_URL ? <Boton titulo={t("Abrir el panel web")} onPress={() => Linking.openURL(PANEL_URL)} /> : null}
+      <Boton titulo={t("Cerrar sesión")} variante="secundario" onPress={cerrarSesion} />
       <Tarjeta><SelectorTema /></Tarjeta>
       <Tarjeta><SelectorIdioma /></Tarjeta>
-      <Boton titulo="Eliminar mi cuenta" variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
+      <Boton titulo={t("Eliminar mi cuenta")} variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
       <EnlacePrivacidad />
     </Pantalla>
   );

@@ -11,6 +11,7 @@ import { normalizarTelefono } from "../../../lib/core";
 import { mensajeError, supabase } from "../../../lib/supabase";
 import { compartirCodigo } from "../../../lib/familia";
 import { esOscuro } from "../../../componentes/tema";
+import { t } from "../../../lib/idioma";
 
 export default function NuevoAlumnoAdmin() {
   const mapa = useRef<MapView>(null);
@@ -31,24 +32,25 @@ export default function NuevoAlumnoAdmin() {
   async function buscar() {
     try {
       const [r] = await Location.geocodeAsync(f.direccion);
-      if (!r) return setError("No encontramos esa dirección: ubica el pin tocando el mapa.");
+      if (!r) return setError(t("No encontramos esa dirección: ubica el pin tocando el mapa."));
       const p = { latitude: r.latitude, longitude: r.longitude };
       setPin(p); mapa.current?.animateToRegion({ ...p, latitudeDelta: 0.004, longitudeDelta: 0.004 }, 500);
-    } catch { setError("No pudimos buscar la dirección: ubica el pin tocando el mapa."); }
+    } catch { setError(t("No pudimos buscar la dirección: ubica el pin tocando el mapa.")); }
   }
 
   async function guardar() {
     setError(null);
-    if (!f.nombre.trim() || !f.direccion.trim()) return setError("Falta el nombre o la dirección.");
-    if (!pin) return setError("Marca la casa en el mapa: así el aviso llega a tiempo.");
+    if (!f.nombre.trim() || !f.direccion.trim()) return setError(t("Falta el nombre o la dirección."));
+    if (!pin) return setError(t("Marca la casa en el mapa: así el aviso llega a tiempo."));
     const t1 = normalizarTelefono(f.c1t);
-    if (!t1) return setError("Revisa el teléfono principal (ej: 9 1234 5678).");
+    if (!t1) return setError(t("Revisa el teléfono principal (ej: 9 1234 5678)."));
     const t2 = f.c2t.trim() ? normalizarTelefono(f.c2t) : null;
-    if (f.c2t.trim() && !t2) return setError("Revisa el teléfono secundario.");
+    if (f.c2t.trim() && !t2) return setError(t("Revisa el teléfono secundario."));
     setGuardando(true);
     const { data, error } = await supabase.rpc("admin_crear_alumno", { p_datos: {
       nombre: f.nombre.trim(), curso: f.curso.trim(), colegio: f.colegio.trim(), minutos_aviso: 5,
       domicilio: { direccion: f.direccion.trim(), lat: pin.latitude, lng: pin.longitude, indicaciones: f.indicaciones.trim() || null },
+      // Nombres por defecto de los contactos: se guardan como dato, en español. // i18n-ignorar
       contactos: [{ nombre: f.c1n.trim() || "Principal", telefono: t1, prioridad: 1 }, ...(t2 ? [{ nombre: f.c2n.trim() || "Secundario", telefono: t2, prioridad: 2 }] : [])],
       ruta_ids: elegidas,
     } });
@@ -59,25 +61,25 @@ export default function NuevoAlumnoAdmin() {
 
   if (creado) {
     return (
-      <Pantalla titulo={`${creado.nombre} quedó en tu ruta`}>
-        <Aviso tipo="exito" texto="Ya aparece en tu recorrido. Envía el código a la familia para que reciba los avisos." />
-        <Boton titulo="Enviar código a la familia" onPress={() => compartirCodigo(creado.id, creado.nombre).catch((e) => setError(mensajeError(e)))} />
-        <Boton titulo="Listo" variante="secundario" onPress={() => router.back()} />
+      <Pantalla titulo={t("{nombre} quedó en tu ruta", { nombre: creado.nombre })}>
+        <Aviso tipo="exito" texto={t("Ya aparece en tu recorrido. Envía el código a la familia para que reciba los avisos.")} />
+        <Boton titulo={t("Enviar código a la familia")} onPress={() => compartirCodigo(creado.id, creado.nombre).catch((e) => setError(mensajeError(e)))} />
+        <Boton titulo={t("Listo")} variante="secundario" onPress={() => router.back()} />
       </Pantalla>
     );
   }
 
   const campo = (k: keyof typeof f, etiqueta: string, extra: object = {}) => (
-    <Campo etiqueta={etiqueta} value={f[k]} onChangeText={(t) => setF({ ...f, [k]: t })} {...extra} />
+    <Campo etiqueta={etiqueta} value={f[k]} onChangeText={(v) => setF({ ...f, [k]: v })} {...extra} />
   );
   return (
-    <Pantalla titulo="Agregar alumno" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={t("Agregar alumno")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       {error ? <Aviso tipo="error" texto={error} /> : null}
-      {campo("nombre", "Nombre y apellido")}
-      {campo("curso", "Curso", { placeholder: "Ej: 3° Básico" })}
-      {campo("colegio", "Colegio")}
-      {campo("direccion", "Dirección", { placeholder: "Calle, número, comuna", onSubmitEditing: buscar, returnKeyType: "search" })}
-      <Boton titulo="Buscar en el mapa" variante="secundario" onPress={buscar} />
+      {campo("nombre", t("Nombre y apellido"))}
+      {campo("curso", t("Curso"), { placeholder: t("Ej: 3° Básico") })}
+      {campo("colegio", t("Colegio"))}
+      {campo("direccion", t("Dirección"), { placeholder: t("Calle, número, comuna"), onSubmitEditing: buscar, returnKeyType: "search" })}
+      <Boton titulo={t("Buscar en el mapa")} variante="secundario" onPress={buscar} />
       <View style={{ height: 260, borderRadius: 14, overflow: "hidden", marginVertical: 10 }}>
         <MapView ref={mapa} provider={PROVEEDOR_MAPA} customMapStyle={estiloMapa(esOscuro())} style={{ flex: 1 }}
           initialRegion={{ latitude: -33.4489, longitude: -70.6693, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
@@ -85,13 +87,13 @@ export default function NuevoAlumnoAdmin() {
           {pin ? <Marker coordinate={pin} draggable onDragEnd={(e) => setPin(e.nativeEvent.coordinate)} anchor={{ x: 0.5, y: 1 }}><PinCasa numero="🏠" color={colores.rojo} /></Marker> : null}
         </MapView>
       </View>
-      {campo("indicaciones", "Indicaciones (opcional)", { placeholder: "Ej: portón verde" })}
-      <Text style={estilos.subtitulo}>Teléfonos para los avisos</Text>
-      {campo("c1n", "Principal · nombre", { placeholder: "Ej: Ana (mamá)" })}
-      {campo("c1t", "Principal · teléfono", { keyboardType: "phone-pad", placeholder: "9 1234 5678" })}
-      {campo("c2n", "Secundario · nombre (opcional)")}
-      {campo("c2t", "Secundario · teléfono", { keyboardType: "phone-pad" })}
-      <Text style={estilos.subtitulo}>Rutas</Text>
+      {campo("indicaciones", t("Indicaciones (opcional)"), { placeholder: t("Ej: portón verde") })}
+      <Text style={estilos.subtitulo}>{t("Teléfonos para los avisos")}</Text>
+      {campo("c1n", t("Principal · nombre"), { placeholder: t("Ej: Ana (mamá)") })}
+      {campo("c1t", t("Principal · teléfono"), { keyboardType: "phone-pad", placeholder: "9 1234 5678" })}
+      {campo("c2n", t("Secundario · nombre (opcional)"))}
+      {campo("c2t", t("Secundario · teléfono"), { keyboardType: "phone-pad" })}
+      <Text style={estilos.subtitulo}>{t("Rutas")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {rutas.map((r) => {
           const on = elegidas.includes(r.id);
@@ -104,7 +106,7 @@ export default function NuevoAlumnoAdmin() {
           );
         })}
       </View>
-      <Boton titulo="Guardar alumno" onPress={guardar} cargando={guardando} />
+      <Boton titulo={t("Guardar alumno")} onPress={guardar} cargando={guardando} />
     </Pantalla>
   );
 }

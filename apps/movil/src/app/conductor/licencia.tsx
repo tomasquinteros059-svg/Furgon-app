@@ -9,11 +9,12 @@ import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../
 import { useSesion } from "../../lib/sesion";
 import { aFecha, type EstadoLic, textoLicencia } from "../../lib/licencia";
 import { mensajeError, supabase } from "../../lib/supabase";
+import { t } from "../../lib/idioma";
 
 const CLASES = ["A1", "A3", "A2", "A4", "A5", "B"] as const;
 /** dd-mm-aaaa → aaaa-mm-dd (o null si no es una fecha válida). */
-function leerFecha(t: string): string | null {
-  const m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(t.trim());
+function leerFecha(texto: string): string | null {
+  const m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(texto.trim());
   if (!m) return null;
   const iso = `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
   const d = new Date(`${iso}T12:00:00`);
@@ -38,7 +39,7 @@ export default function MiLicencia() {
 
   async function tomarFoto(lado: "frente" | "reverso", camara: boolean) {
     const permiso = camara ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permiso.granted) return setMsg({ ok: false, txt: "Necesitamos permiso para la cámara o las fotos." });
+    if (!permiso.granted) return setMsg({ ok: false, txt: t("Necesitamos permiso para la cámara o las fotos.") });
     const opciones: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.6, allowsEditing: true, aspect: [16, 10] };
     const r = camara ? await ImagePicker.launchCameraAsync(opciones) : await ImagePicker.launchImageLibraryAsync(opciones);
     if (!r.canceled && r.assets[0]) setFotos((f) => ({ ...f, [lado]: r.assets[0].uri }));
@@ -55,16 +56,16 @@ export default function MiLicencia() {
   async function enviar() {
     setMsg(null);
     const iso = leerFecha(vence);
-    if (numero.trim().length < 3) return setMsg({ ok: false, txt: "Escribe el número de la licencia (tu RUT)." });
-    if (!iso) return setMsg({ ok: false, txt: "Escribe la fecha de vencimiento como 31-12-2027." });
-    if (!fotos.frente) return setMsg({ ok: false, txt: "Falta la foto del frente de la licencia." });
+    if (numero.trim().length < 3) return setMsg({ ok: false, txt: t("Escribe el número de la licencia (tu RUT).") });
+    if (!iso) return setMsg({ ok: false, txt: t("Escribe la fecha de vencimiento como 31-12-2027.") });
+    if (!fotos.frente) return setMsg({ ok: false, txt: t("Falta la foto del frente de la licencia.") });
     setEnviando(true);
     try {
       const frente = await subirFoto(fotos.frente, "frente");
       const reverso = fotos.reverso ? await subirFoto(fotos.reverso, "reverso") : null;
       const { error } = await supabase.rpc("subir_licencia", { p_numero: numero, p_clase: clase, p_vence_en: iso, p_foto_frente: frente, p_foto_reverso: reverso });
       if (error) throw error;
-      setMsg({ ok: true, txt: "Licencia enviada. Te avisaremos cuando la empresa la verifique." });
+      setMsg({ ok: true, txt: t("Licencia enviada. Te avisaremos cuando la empresa la verifique.") });
       setNumero(""); setVence(""); setFotos({ frente: null, reverso: null });
       cargar();
     } catch (e) {
@@ -77,36 +78,36 @@ export default function MiLicencia() {
   const estado = textoLicencia(lic);
   const pedirNueva = !lic || lic.estado !== "por_verificar";
   return (
-    <Pantalla titulo="Mi licencia" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={t("Mi licencia")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       <Aviso tipo={estado.tono} texto={estado.txt} />
       {lic?.numero ? (
         <Tarjeta>
-          <Text style={estilos.texto}>N° {lic.numero} · Clase {lic.clase}</Text>
-          {lic.vence_en ? <Text style={estilos.textoSuave}>Vence el {aFecha(lic.vence_en)}</Text> : null}
+          <Text style={estilos.texto}>{t("N° {numero} · Clase {clase}", { numero: lic.numero, clase: lic.clase })}</Text>
+          {lic.vence_en ? <Text style={estilos.textoSuave}>{t("Vence el {fecha}", { fecha: aFecha(lic.vence_en) })}</Text> : null}
         </Tarjeta>
       ) : null}
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
       {pedirNueva ? (
         <Tarjeta>
-          <Text style={estilos.subtitulo}>{lic?.numero ? "Subir licencia renovada" : "Subir mi licencia"}</Text>
-          <Campo etiqueta="Número (RUT)" value={numero} onChangeText={setNumero} placeholder="12.345.678-9" autoCapitalize="characters" />
-          <Text style={estilos.etiqueta}>Clase</Text>
+          <Text style={estilos.subtitulo}>{lic?.numero ? t("Subir licencia renovada") : t("Subir mi licencia")}</Text>
+          <Campo etiqueta={t("Número (RUT)")} value={numero} onChangeText={setNumero} placeholder="12.345.678-9" autoCapitalize="characters" />
+          <Text style={estilos.etiqueta}>{t("Clase")}</Text>
           <View style={[estilos.fila, { flexWrap: "wrap", marginBottom: 10 }]}>
             {CLASES.map((c) => <Boton key={c} titulo={c} variante={clase === c ? "primario" : "secundario"} estilo={{ minHeight: 40, paddingHorizontal: 14 }} onPress={() => setClase(c)} />)}
           </View>
-          <Campo etiqueta="Vence el" value={vence} onChangeText={setVence} placeholder="31-12-2027" keyboardType="numbers-and-punctuation" />
+          <Campo etiqueta={t("Vence el")} value={vence} onChangeText={setVence} placeholder="31-12-2027" keyboardType="numbers-and-punctuation" />
           {(["frente", "reverso"] as const).map((lado) => (
             <View key={lado} style={{ gap: 6, marginBottom: 10 }}>
-              <Text style={estilos.etiqueta}>Foto del {lado}{lado === "reverso" ? " (opcional)" : ""}</Text>
+              <Text style={estilos.etiqueta}>{lado === "reverso" ? t("Foto del reverso (opcional)") : t("Foto del frente")}</Text>
               {fotos[lado] ? <Image source={{ uri: fotos[lado]! }} style={{ width: "100%", aspectRatio: 1.6, borderRadius: 10, borderWidth: 1, borderColor: colores.borde }} /> : null}
               <View style={estilos.fila}>
-                <Boton titulo="📷 Tomar foto" variante="secundario" estilo={{ flex: 1 }} onPress={() => tomarFoto(lado, true)} />
-                <Boton titulo="🖼️ Elegir" variante="secundario" estilo={{ flex: 1 }} onPress={() => tomarFoto(lado, false)} />
+                <Boton titulo={t("📷 Tomar foto")} variante="secundario" estilo={{ flex: 1 }} onPress={() => tomarFoto(lado, true)} />
+                <Boton titulo={t("🖼️ Elegir")} variante="secundario" estilo={{ flex: 1 }} onPress={() => tomarFoto(lado, false)} />
               </View>
             </View>
           ))}
-          <Boton titulo="Enviar para verificar" cargando={enviando} onPress={enviar} />
-          <Text style={estilos.textoSuave}>🔒 Las fotos solo las ve la empresa para verificarla.</Text>
+          <Boton titulo={t("Enviar para verificar")} cargando={enviando} onPress={enviar} />
+          <Text style={estilos.textoSuave}>{t("🔒 Las fotos solo las ve la empresa para verificarla.")}</Text>
         </Tarjeta>
       ) : null}
     </Pantalla>

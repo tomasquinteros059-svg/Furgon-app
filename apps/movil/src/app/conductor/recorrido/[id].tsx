@@ -6,6 +6,7 @@ import { navegarConGoogleMaps, navegarConWaze } from "../../../componentes/mapa"
 import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
+import { t } from "../../../lib/idioma";
 import { detenerSeguimiento, enviarCola, iniciarSeguimiento, pendientesEnCola, recorridoActivo } from "../../../ubicacion/seguimiento";
 
 type EstadoParada = "pendiente" | "entregado" | "ausente" | "no_viaja";
@@ -21,12 +22,12 @@ interface Parada {
   a_bordo_por: "familia" | "tia" | null;
 }
 
-const ETIQUETA: Record<EstadoParada, string> = {
-  pendiente: "Pendiente",
-  entregado: "En su hogar ✅",
-  ausente: "Ausente",
-  no_viaja: "Hoy no viaja",
-};
+const etiqueta = (estado: EstadoParada): string => ({
+  pendiente: t("Pendiente"),
+  entregado: t("En su hogar ✅"),
+  ausente: t("Ausente"),
+  no_viaja: t("Hoy no viaja"),
+})[estado];
 
 export default function RecorridoConductor() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -82,12 +83,14 @@ export default function RecorridoConductor() {
   function finalizar() {
     const quedan = paradas.filter((p) => p.estado === "pendiente").length;
     Alert.alert(
-      "Finalizar recorrido",
-      quedan ? `Quedan ${quedan} alumno(s) pendientes. ¿Finalizar de todas formas?` : "Se dejará de compartir la ubicación.",
+      t("Finalizar recorrido"),
+      quedan === 1 ? t("Queda 1 alumno pendiente. ¿Finalizar de todas formas?")
+        : quedan ? t("Quedan {n} alumnos pendientes. ¿Finalizar de todas formas?", { n: quedan })
+        : t("Se dejará de compartir la ubicación."),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("Cancelar"), style: "cancel" },
         {
-          text: "Finalizar",
+          text: t("Finalizar"),
           style: "destructive",
           onPress: async () => {
             await supabase.rpc("finalizar_recorrido", { p_recorrido: id });
@@ -101,14 +104,16 @@ export default function RecorridoConductor() {
 
   const pendientes = paradas.filter((p) => p.estado === "pendiente");
   const atendidas = paradas.filter((p) => p.estado !== "pendiente");
-  const textoEntregado = tipo === "ida" ? "Subió ✅" : "En su hogar ✅";
+  const textoEntregado = tipo === "ida" ? t("Subió ✅") : t("En su hogar ✅");
 
   return (
-    <Pantalla titulo={tipo === "ida" ? "Recorrido de ida" : "Recorrido de vuelta"}>
+    <Pantalla titulo={tipo === "ida" ? t("Recorrido de ida") : t("Recorrido de vuelta")}>
       <View style={[estilos.fila, { marginBottom: 12 }]}>
         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colores.verde }} />
         <Text style={estilos.textoSuave}>
-          Compartiendo ubicación{enCola > 0 ? ` · ${enCola} posiciones esperando señal` : ""}
+          {enCola === 1 ? t("Compartiendo ubicación · 1 posición esperando señal")
+            : enCola > 0 ? t("Compartiendo ubicación · {n} posiciones esperando señal", { n: enCola })
+            : t("Compartiendo ubicación")}
         </Text>
       </View>
       {error ? <Aviso texto={error} tipo="error" /> : null}
@@ -123,9 +128,9 @@ export default function RecorridoConductor() {
           <Text style={estilos.texto}>{p.domicilio.direccion}</Text>
           {p.domicilio.indicaciones ? <Text style={estilos.textoSuave}>{p.domicilio.indicaciones}</Text> : null}
           <Text style={[estilos.textoSuave, { marginTop: 4 }]}>
-            {p.a_bordo_por === "familia" ? "✓ Su familia confirmó que subió · " : ""}
-            {p.avisos.length ? "🔔 Apoderado avisado" : "Aún sin aviso"}
-            {p.eta_seg !== null ? ` · llegada en ~${Math.max(1, Math.round(p.eta_seg / 60))} min` : ""}
+            {p.a_bordo_por === "familia" ? `${t("✓ Su familia confirmó que subió")} · ` : ""}
+            {p.avisos.length ? t("🔔 Apoderado avisado") : t("Aún sin aviso")}
+            {p.eta_seg !== null ? ` · ${t("llegada en ~{min} min", { min: Math.max(1, Math.round(p.eta_seg / 60)) })}` : ""}
           </Text>
           {i === 0 ? (
             <View style={estilos.fila}>
@@ -136,27 +141,27 @@ export default function RecorridoConductor() {
           <View style={[estilos.fila, { marginTop: 10 }]}>
             <Boton titulo={textoEntregado} variante="exito" grande estilo={{ flex: 2 }}
               cargando={marcando === p.id} onPress={() => marcar(p, "entregado")} />
-            <Boton titulo="Ausente" variante="peligro" grande estilo={{ flex: 1 }}
+            <Boton titulo={t("Ausente")} variante="peligro" grande estilo={{ flex: 1 }}
               deshabilitado={marcando === p.id} onPress={() => marcar(p, "ausente")} />
           </View>
         </Tarjeta>
       ))}
 
-      {pendientes.length === 0 ? <Aviso tipo="exito" texto="No quedan alumnos pendientes." /> : null}
+      {pendientes.length === 0 ? <Aviso tipo="exito" texto={t("No quedan alumnos pendientes.")} /> : null}
 
-      {atendidas.length ? <Text style={estilos.subtitulo}>Atendidos</Text> : null}
+      {atendidas.length ? <Text style={estilos.subtitulo}>{t("Atendidos")}</Text> : null}
       {atendidas.map((p) => (
         <Tarjeta key={p.id} estilo={{ opacity: 0.75 }}>
           <View style={[estilos.fila, { justifyContent: "space-between" }]}>
-            <Text style={estilos.texto}>{p.orden}. {p.alumno.nombre} · {ETIQUETA[p.estado]}</Text>
+            <Text style={estilos.texto}>{p.orden}. {p.alumno.nombre} · {etiqueta(p.estado)}</Text>
             {p.estado !== "no_viaja" ? (
-              <Boton titulo="Deshacer" variante="texto" onPress={() => marcar(p, "pendiente")} />
+              <Boton titulo={t("Deshacer")} variante="texto" onPress={() => marcar(p, "pendiente")} />
             ) : null}
           </View>
         </Tarjeta>
       ))}
 
-      <Boton titulo="Finalizar recorrido" variante="secundario" onPress={finalizar} estilo={{ marginTop: 16 }} />
+      <Boton titulo={t("Finalizar recorrido")} variante="secundario" onPress={finalizar} estilo={{ marginTop: 16 }} />
     </Pantalla>
   );
 }

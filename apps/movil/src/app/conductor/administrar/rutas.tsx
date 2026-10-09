@@ -4,6 +4,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
+import { locale, t } from "../../../lib/idioma";
 
 interface Ruta {
   id: string;
@@ -13,7 +14,7 @@ interface Ruta {
 }
 interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
 
-const km = (m: number) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
+const km = (m: number) => `${(m / 1000).toLocaleString(locale(), { maximumFractionDigits: 1 })} km`;
 const botonChico = { minHeight: 40, paddingHorizontal: 12 };
 
 export default function RutasAdmin() {
@@ -48,7 +49,7 @@ export default function RutasAdmin() {
   const noVaHoy = (alumnoId: string, tipo: string) => noVan.some((x) => x.alumno_id === alumnoId && (x.tipo === tipo || x.tipo === "ambos"));
   async function cambiarHoyNoVa(alumnoId: string, nombre: string, tipo: "ida" | "vuelta", valor: boolean) {
     if (!hoy) return;
-    const marcar = (t: string, v: boolean) => supabase.rpc("marcar_no_viaja", { p_alumno: alumnoId, p_fecha: hoy, p_tipo: t, p_no_viaja: v });
+    const marcar = (tramo: string, v: boolean) => supabase.rpc("marcar_no_viaja", { p_alumno: alumnoId, p_fecha: hoy, p_tipo: tramo, p_no_viaja: v });
     setError(null); setExito(null);
     let res = await marcar(tipo, valor);
     // Si la familia había marcado todo el día, se deja marcado solo el otro tramo.
@@ -57,7 +58,7 @@ export default function RutasAdmin() {
       if (!res.error) res = await marcar(tipo === "ida" ? "vuelta" : "ida", true);
     }
     if (res.error) setError(mensajeError(res.error));
-    else setExito(valor ? `${nombre} no va hoy: tu ruta de hoy se salta su casa y su familia no recibe aviso.` : `${nombre} sí va hoy.`);
+    else setExito(valor ? t("{nombre} no va hoy: tu ruta de hoy se salta su casa y su familia no recibe aviso.", { nombre }) : t("{nombre} sí va hoy.", { nombre }));
     cargar();
   }
 
@@ -73,8 +74,8 @@ export default function RutasAdmin() {
   }
 
   return (
-    <Pantalla titulo="Rutas" accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
-      <Text style={estilos.textoSuave}>El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Recomendar ruta» calcula el orden más corto con las direcciones de tus alumnos.</Text>
+    <Pantalla titulo={t("Rutas")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
+      <Text style={estilos.textoSuave}>{t("El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Recomendar ruta» calcula el orden más corto con las direcciones de tus alumnos.")}</Text>
       {error ? <Aviso tipo="error" texto={error} /> : null}
       {exito ? <Aviso tipo="exito" texto={exito} /> : null}
       {rutas.map((r) => {
@@ -86,30 +87,30 @@ export default function RutasAdmin() {
           <Tarjeta key={r.id}>
             <Text style={estilos.subtitulo}>{r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}</Text>
             {paradas.length >= 2 && !rec ? (
-              <Boton titulo={calculando === r.id ? "Calculando…" : "✨ Recomendar ruta"} variante="secundario" cargando={calculando === r.id} onPress={() => recomendar(r)} />
+              <Boton titulo={calculando === r.id ? t("Calculando…") : t("✨ Recomendar ruta")} variante="secundario" cargando={calculando === r.id} onPress={() => recomendar(r)} />
             ) : null}
             {rec ? (
               <View style={{ gap: 6, padding: 10, borderRadius: 12, borderWidth: 2, borderColor: colores.amarillo }}>
                 {rec.cambia ? (
                   <>
-                    <Text style={[estilos.texto, { fontWeight: "700" }]}>✨ Ruta recomendada: {km(rec.metros)} (antes {km(rec.metrosActual)})</Text>
-                    <Text style={estilos.textoSuave}>Ahorras {km(rec.ahorroM)} por recorrido. {rec.fuente === "google" ? "Calculada por calles con Google Maps." : "Calculada por distancia (aproximada)."}</Text>
+                    <Text style={[estilos.texto, { fontWeight: "700" }]}>{t("✨ Ruta recomendada: {km} (antes {antes})", { km: km(rec.metros), antes: km(rec.metrosActual) })}</Text>
+                    <Text style={estilos.textoSuave}>{t("Ahorras {km} por recorrido.", { km: km(rec.ahorroM) })} {rec.fuente === "google" ? t("Calculada por calles con Google Maps.") : t("Calculada por distancia (aproximada).")}</Text>
                     {rec.orden.map((id, i) => {
                       const antes = paradas.findIndex((p) => p.alumno_id === id);
-                      return <Text key={id} style={estilos.texto}>{i + 1}. {nombre(id)} <Text style={estilos.textoSuave}>{antes === i ? "" : `(antes ${antes + 1}°)`}</Text></Text>;
+                      return <Text key={id} style={estilos.texto}>{i + 1}. {nombre(id)} <Text style={estilos.textoSuave}>{antes === i ? "" : t("(antes {n}°)", { n: antes + 1 })}</Text></Text>;
                     })}
                     <View style={estilos.fila}>
-                      <Boton titulo="Aplicar" variante="exito" estilo={{ flex: 1 }} onPress={() => {
+                      <Boton titulo={t("Aplicar")} variante="exito" estilo={{ flex: 1 }} onPress={() => {
                         setRecomendacion(null);
-                        hacer(supabase.rpc("aplicar_orden_ruta", { p_ruta: r.id, p_alumnos: rec.orden }), `Listo: ${r.nombre} quedó con el orden recomendado.`);
+                        hacer(supabase.rpc("aplicar_orden_ruta", { p_ruta: r.id, p_alumnos: rec.orden }), t("Listo: {ruta} quedó con el orden recomendado.", { ruta: r.nombre }));
                       }} />
-                      <Boton titulo="Descartar" variante="secundario" estilo={{ flex: 1 }} onPress={() => setRecomendacion(null)} />
+                      <Boton titulo={t("Descartar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setRecomendacion(null)} />
                     </View>
                   </>
                 ) : (
                   <>
-                    <Text style={estilos.texto}>👍 El orden actual ya es el más corto (≈ {km(rec.metrosActual)}).</Text>
-                    <Boton titulo="Cerrar" variante="texto" onPress={() => setRecomendacion(null)} />
+                    <Text style={estilos.texto}>{t("👍 El orden actual ya es el más corto (≈ {km}).", { km: km(rec.metrosActual) })}</Text>
+                    <Boton titulo={t("Cerrar")} variante="texto" onPress={() => setRecomendacion(null)} />
                   </>
                 )}
               </View>
@@ -129,22 +130,22 @@ export default function RutasAdmin() {
                         onPress={() => hacer(supabase.from("ruta_paradas").delete().eq("ruta_id", r.id).eq("alumno_id", p.alumno_id))} />
                     </View>
                   </View>
-                  <Boton titulo={noVa ? "📅 Hoy no va · tocar si sí va" : "Hoy no va"} variante={noVa ? "peligro" : "secundario"} estilo={botonChico}
+                  <Boton titulo={noVa ? t("📅 Hoy no va · tocar si sí va") : t("Hoy no va")} variante={noVa ? "peligro" : "secundario"} estilo={botonChico}
                     onPress={() => cambiarHoyNoVa(p.alumno_id, p.alumnos?.nombre ?? "", r.tipo, !noVa)} />
                 </View>
               );
             })}
             {agregando === r.id ? (
               <View style={{ gap: 6, marginTop: 8 }}>
-                {fuera.length === 0 ? <Text style={estilos.textoSuave}>Todos los alumnos ya están en esta ruta.</Text> : fuera.map((a) => (
+                {fuera.length === 0 ? <Text style={estilos.textoSuave}>{t("Todos los alumnos ya están en esta ruta.")}</Text> : fuera.map((a) => (
                   <Pressable key={a.id} accessibilityRole="button" onPress={() => { setAgregando(null); hacer(supabase.rpc("asignar_a_ruta", { p_alumno: a.id, p_ruta: r.id })); }}
                     style={{ padding: 10, borderRadius: 10, backgroundColor: colores.fondo }}>
                     <Text style={estilos.texto}>+ {a.nombre}</Text>
                   </Pressable>
                 ))}
-                <Boton titulo="Cancelar" variante="texto" onPress={() => setAgregando(null)} />
+                <Boton titulo={t("Cancelar")} variante="texto" onPress={() => setAgregando(null)} />
               </View>
-            ) : <Boton titulo="+ Agregar alumno a esta ruta" variante="texto" onPress={() => setAgregando(r.id)} />}
+            ) : <Boton titulo={t("+ Agregar alumno a esta ruta")} variante="texto" onPress={() => setAgregando(r.id)} />}
           </Tarjeta>
         );
       })}

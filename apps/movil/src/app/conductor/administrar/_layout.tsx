@@ -5,6 +5,7 @@ import { Text } from "../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla } from "../../../componentes/ui";
 import { useSesion } from "../../../lib/sesion";
 import { supabase } from "../../../lib/supabase";
+import { t } from "../../../lib/idioma";
 
 export default function LayoutAdministrar() {
   const { perfil } = useSesion();
@@ -15,24 +16,24 @@ export default function LayoutAdministrar() {
       setManejando((data ?? []).length > 0);
     };
     revisar();
-    const t = setInterval(revisar, 20_000);
-    return () => clearInterval(t);
+    const intervalo = setInterval(revisar, 20_000);
+    return () => clearInterval(intervalo);
   }, [perfil?.id]);
 
   if (!perfil?.puede_administrar) {
     return (
-      <Pantalla titulo="Administración">
-        <Aviso tipo="error" texto="Tu cuenta no tiene permiso para administrar. Pídeselo al administrador principal." />
-        <Boton titulo="Volver" variante="secundario" onPress={() => router.back()} />
+      <Pantalla titulo={t("Administración")}>
+        <Aviso tipo="error" texto={t("Tu cuenta no tiene permiso para administrar. Pídeselo al administrador principal.")} />
+        <Boton titulo={t("Volver")} variante="secundario" onPress={() => router.back()} />
       </Pantalla>
     );
   }
   if (manejando) {
     return (
-      <Pantalla titulo="Administración">
-        <Aviso texto="Tienes un recorrido en curso. La administración se abre cuando lo termines: no se administra manejando." />
-        <Text style={estilos.textoSuave}>Los avisos a las familias siguen funcionando solos.</Text>
-        <Boton titulo="Volver al recorrido" onPress={() => router.back()} />
+      <Pantalla titulo={t("Administración")}>
+        <Aviso texto={t("Tienes un recorrido en curso. La administración se abre cuando lo termines: no se administra manejando.")} />
+        <Text style={estilos.textoSuave}>{t("Los avisos a las familias siguen funcionando solos.")}</Text>
+        <Boton titulo={t("Volver al recorrido")} onPress={() => router.back()} />
       </Pantalla>
     );
   }

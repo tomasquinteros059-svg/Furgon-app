@@ -5,6 +5,7 @@ import { Text } from "../../../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla } from "../../../../componentes/ui";
 import { useSesion } from "../../../../lib/sesion";
 import { mensajeError, supabase } from "../../../../lib/supabase";
+import { t } from "../../../../lib/idioma";
 
 export default function SolicitudAdmin() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,10 +28,10 @@ export default function SolicitudAdmin() {
     if (!error) setTexto("");
     cargar();
   };
-  const responder = () => hacer(supabase.from("solicitud_mensajes").insert({ solicitud_id: id, autor_id: perfil?.id, cuerpo: texto.trim() }), "Respuesta enviada.");
+  const responder = () => hacer(supabase.from("solicitud_mensajes").insert({ solicitud_id: id, autor_id: perfil?.id, cuerpo: texto.trim() }), t("Respuesta enviada."));
 
   return (
-    <Pantalla titulo={s?.asunto ?? "Solicitud"} accion={<Boton titulo="Volver" variante="texto" onPress={() => router.back()} />}>
+    <Pantalla titulo={s?.asunto ?? t("Solicitud")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
       {mensajes.map((m) => {
         const mio = m.autor_id === perfil?.id;
@@ -42,22 +43,22 @@ export default function SolicitudAdmin() {
       })}
       {s && s.estado !== "cerrada" ? (
         <>
-          <TextInput multiline value={texto} onChangeText={setTexto} placeholder="Escribe tu respuesta"
+          <TextInput multiline value={texto} onChangeText={setTexto} placeholder={t("Escribe tu respuesta")}
             style={[estilos.input, { minHeight: 80, textAlignVertical: "top", marginTop: 8 }]} />
           {s.tipo === "cancelacion_servicio" ? (
             <>
-              <Boton titulo="Aprobar cancelación y dar de baja" variante="peligro" onPress={() => hacer(supabase.rpc("resolver_cancelacion", { p_solicitud: id, p_aprobar: true, p_mensaje: texto.trim() }), "Cancelación aprobada: el alumno salió de tus rutas.")} />
-              <Boton titulo="Rechazar" variante="secundario" onPress={() => hacer(supabase.rpc("resolver_cancelacion", { p_solicitud: id, p_aprobar: false, p_mensaje: texto.trim() }), "Solicitud rechazada.")} />
-              <Boton titulo="Solo responder" variante="texto" deshabilitado={!texto.trim()} onPress={responder} />
+              <Boton titulo={t("Aprobar cancelación y dar de baja")} variante="peligro" onPress={() => hacer(supabase.rpc("resolver_cancelacion", { p_solicitud: id, p_aprobar: true, p_mensaje: texto.trim() }), t("Cancelación aprobada: el alumno salió de tus rutas."))} />
+              <Boton titulo={t("Rechazar")} variante="secundario" onPress={() => hacer(supabase.rpc("resolver_cancelacion", { p_solicitud: id, p_aprobar: false, p_mensaje: texto.trim() }), t("Solicitud rechazada."))} />
+              <Boton titulo={t("Solo responder")} variante="texto" deshabilitado={!texto.trim()} onPress={responder} />
             </>
           ) : (
             <>
-              <Boton titulo="Responder" deshabilitado={!texto.trim()} onPress={responder} />
-              <Boton titulo="Cerrar consulta" variante="secundario" onPress={() => hacer(supabase.from("solicitudes").update({ estado: "cerrada" }).eq("id", id), "Consulta cerrada.")} />
+              <Boton titulo={t("Responder")} deshabilitado={!texto.trim()} onPress={responder} />
+              <Boton titulo={t("Cerrar consulta")} variante="secundario" onPress={() => hacer(supabase.from("solicitudes").update({ estado: "cerrada" }).eq("id", id), t("Consulta cerrada."))} />
             </>
           )}
         </>
-      ) : s ? <Aviso texto={s.resolucion ? `Cerrada · cancelación ${s.resolucion}.` : "Consulta cerrada."} /> : null}
+      ) : s ? <Aviso texto={s.resolucion === "aprobada" ? t("Cerrada · cancelación aprobada.") : s.resolucion === "rechazada" ? t("Cerrada · cancelación rechazada.") : t("Consulta cerrada.")} /> : null}
     </Pantalla>
   );
 }
