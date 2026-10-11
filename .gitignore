@@ -16,3 +16,7 @@ supabase/.branches/
 supabase/.temp/
 supabase/functions/.env
 supabase/functions/deno.lock
+
+# Firebase (notificaciones de Android): se sube a EAS, no al repositorio
+google-services.json
+GoogleService-Info.plist

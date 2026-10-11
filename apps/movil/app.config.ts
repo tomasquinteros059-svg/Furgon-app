@@ -36,6 +36,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: "cl.furgonapp.movil",
+    // Notificaciones de Android (Firebase). El archivo no va en el repositorio: en EAS se sube como
+    // variable de entorno de tipo archivo llamada GOOGLE_SERVICES_JSON (ver docs/PUESTA-EN-MARCHA.md).
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON || undefined,
     adaptiveIcon: {
       backgroundColor: "#F5B700",
       foregroundImage: "./assets/android-icon-foreground.png",

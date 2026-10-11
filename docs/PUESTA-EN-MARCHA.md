@@ -163,8 +163,14 @@ No hay que configurar nada en el número de Twilio: cada llamada le indica a Twi
 5. **iPhone**: requiere la **Apple Developer Program** (USD 99 al año). Luego
    `npx eas-cli device:create` (registra tu iPhone) y
    `npx eas-cli build --profile development --platform ios`.
-6. **Notificaciones**: en Android, EAS pide subir la clave de Firebase (FCM v1); en iOS crea la
-   clave de push automáticamente. `npx eas-cli credentials` guía ambos pasos.
+6. **Notificaciones**:
+   - En Firebase, agrega una app Android con el paquete `cl.furgonapp.movil` y descarga
+     `google-services.json`. En expo.dev → proyecto → *Environment variables*, créala como variable
+     de tipo **archivo** llamada `GOOGLE_SERVICES_JSON` (entornos preview y production). No se sube
+     al repositorio.
+   - En Firebase → Configuración del proyecto → *Cuentas de servicio* → *Generar nueva clave
+     privada*, y súbela en expo.dev → proyecto → *Credentials* → Android → *FCM V1*.
+   - En iOS, EAS crea la clave de push automáticamente.
 7. Prueba en teléfonos reales: el recorrido con la app en segundo plano (ubicación), la alarma
    con el teléfono bloqueado y la llamada gratis. En Android de Xiaomi, Huawei o Samsung, saca la
    app de la optimización de batería.
