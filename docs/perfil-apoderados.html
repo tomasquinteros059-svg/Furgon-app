@@ -129,7 +129,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--bus); outli
 .hoja-seg { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px 16px; box-shadow: 0 -8px 24px rgba(0,0,0,.16); display: flex; flex-direction: column; gap: 10px; }
 .asa { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
 .eta-grande { font-family: var(--font-display); font-size: 34px; line-height: 1; }
-.pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pasos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .pasos div { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
 .pasos i { height: 5px; border-radius: 3px; background: var(--line); }
 .pasos i.ok { background: var(--ok); }
@@ -175,6 +175,17 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
 .seg.tema button { flex: 1; min-height: 40px; border-radius: 9px; font-size: 14px; color: var(--muted); }
 .seg.tema button[aria-pressed="true"] { background: var(--bus); color: var(--bus-ink); }
 .btn.sec .ico { --ico-acento: var(--bus); }
+.btn.peligro { background: var(--alert); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.aviso-error { border-radius: 10px; padding: 10px 12px; background: var(--alert-soft); color: var(--alert); font-weight: 700; }
+.legales { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; font-size: 13px; }
+.legales button { border: 0; background: transparent; color: var(--navy); font-weight: 700; padding: 6px 2px; font-size: 13px; }
+.legales span { color: var(--muted); }
+.idioma-mini { display: flex; justify-content: center; }
+.idioma-mini .seg button { font-size: 13px; padding: 6px 10px; }
+.velo { position: absolute; inset: 0; z-index: 10; background: rgba(0,0,0,.42); display: flex; align-items: flex-end; }
+.hoja-modal { background: var(--surface); width: 100%; border-radius: 22px 22px 0 0; padding: 8px 18px 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -8px 24px rgba(0,0,0,.2); }
+ul.borra { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -298,6 +309,9 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     if (n.tipo === "aviso") sonar();
   }
   const linea = (txt) => R.linea.push([hora(R.t), txt]);
+  // Privacidad: cerca (< 300 m) de la casa de otro niño, la familia ve solo una zona aproximada.
+  const cercaDeOtraCasa = (d) => { const pos = puntoEn(d); return R.paradas.some((x) => !x.mia && dist(pos, x) < CFG.proximidad); };
+  const AVISO_PRIVACIDAD = "El furgón está en una parada: ubicación aproximada para cuidar la privacidad de otras familias.";
 
   function paso() {
     R.t++;
@@ -333,7 +347,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       if (dist(pos, p) <= CFG.proximidad || p.eta <= h.minutos * 60 + CFG.margen) {
         p.avisoT = R.t; p.dAviso = R.d;
         const m = Math.max(1, Math.round(p.eta / 60));
-        notificar({ tipo: "aviso", hijo: h.id, titulo: `🚐 ${h.nombre} llega pronto a casa`, cuerpo: `El furgón llegará en aproximadamente ${m} minutos con ${h.nombre} ${h.apellido}. Por favor, que alguien esté esperando en casa.` });
+        notificar({ tipo: "aviso", hijo: h.id, titulo: `🚐 ${h.nombre} llega pronto a casa`, cuerpo: `El furgón llegará en aproximadamente ${m} ${m === 1 ? "minuto" : "minutos"} con ${h.nombre} ${h.apellido}. Por favor, que alguien esté esperando en casa.` });
         linea(`🔔 Aviso: ${h.nombre} llega en ~${m} min${FAMILIA.unido && (!FAMILIA.hijos || FAMILIA.hijos.includes(h.id)) ? " (sonó en el teléfono de Ana y en el de Rodrigo)" : ""}`);
         if (app.llamadaAuto) iniciarLlamada(p, 1);
       }
@@ -411,8 +425,253 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     } catch (e) { /* sin audio */ }
   }
 
+  // ---------- Idioma (Automático · Español · English) ----------
+  // Igual que la app: el texto en español es la clave; las frases salen de idiomas/en/*.ts.
+  // Los datos de la demo (nombres, direcciones, colegios, vehículo) no se traducen.
+  let prefIdioma = (() => { try { const v = localStorage.getItem("idioma"); return v === "es" || v === "en" ? v : "sistema"; } catch (e) { return "sistema"; } })();
+  const idioma = () => prefIdioma !== "sistema" ? prefIdioma : /^en/i.test(navigator.language || "") ? "en" : "es";
+  function cambiarIdioma(v) {
+    prefIdioma = v;
+    try { if (v === "sistema") localStorage.removeItem("idioma"); else localStorage.setItem("idioma", v); } catch (e) { /* sin almacenamiento */ }
+  }
+  const EN = {
+    // Comunes
+    "Automático": "Automatic", "Idioma": "Language", "Apariencia": "Appearance", "Claro": "Light", "Oscuro": "Dark",
+    "Volver": "Back", "‹ Volver": "‹ Back", "Cancelar": "Cancel", "Guardar": "Save", "Listo": "Done", "Listo.": "Done.", "Aceptar": "Accept", "Rechazar": "Decline",
+    "Perfil · Padres y apoderados": "Profile · Parents and guardians", "Furgón Escolar · Apoderados": "Furgón Escolar · Parents",
+    "Inicio": "Home", "Historial": "History", "Perfil": "Profile", "Secciones": "Sections",
+    "Sin internet": "No internet",
+    // Ingreso
+    "Sabe cuándo llega el furgón, sin llamadas del conductor": "Know when the van arrives, without calls from the driver",
+    "Correo": "Email", "Contraseña": "Password", "Ingresar": "Sign in",
+    "¿La mamá o el papá te compartió a los hijos?": "Did a mom or dad share their children with you?",
+    "Entrar con código de familia": "Sign in with a family code",
+    "Cuenta de demostración (Ana, la mamá). Con el código de familia entras como Rodrigo, el papá.": "Demo account (Ana, the mom). With the family code you sign in as Rodrigo, the dad.",
+    "Términos y condiciones": "Terms and conditions", "Política de privacidad": "Privacy policy", "Ver la política de privacidad": "View the privacy policy",
+    "Términos y condiciones · Política de privacidad": "Terms and conditions · Privacy policy",
+    "En la app real, estos enlaces abren las páginas web de los términos y condiciones y de la política de privacidad, publicadas junto al panel web.": "In the real app, these links open the terms and conditions and privacy policy web pages, published with the web panel.",
+    "Esta maqueta es un archivo suelto, así que aquí no se abren.": "This mockup is a standalone file, so they don't open here.",
+    "Entendido": "Got it",
+    "Entrar con código": "Sign in with a code",
+    "Escribe el código que te compartió la mamá o el papá. Entrarás directo a la familia: verás a los mismos hijos y recibirás los avisos del furgón en este teléfono.": "Enter the code the mom or dad shared with you. You'll go straight into the family: you'll see the same children and get the school van alerts on this phone.",
+    "Código de familia": "Family code", "Código de prueba:": "Test code:", "Tu nombre": "Your name", "Ej: Rodrigo Pérez": "E.g. Rodrigo Pérez",
+    "Tu teléfono": "Your phone", "Para llamarte si no contestan el aviso.": "So we can call you if no one answers the alert.",
+    "Entrar": "Sign in", "Ya tengo cuenta": "I already have an account",
+    "Al entrar aceptas los términos y condiciones, y que tratemos tus datos para el transporte escolar según la política de privacidad.": "By signing in, you accept the terms and conditions and agree that we process your data for school transportation as described in the privacy policy.",
+    "Código no válido, vencido o ya usado.": "Invalid, expired, or already used code.", "Escribe tu nombre.": "Enter your name.",
+    "Revisa tu teléfono (ej: 9 1234 5678): lo usamos para la llamada automática.": "Check your phone number (e.g. 9 1234 5678): we use it for the automatic call.",
+    // Proteger cuenta
+    "Protege tu cuenta": "Secure your account", "Proteger mi cuenta": "Secure my account", "Mínimo 8 caracteres": "At least 8 characters",
+    "Entraste con un código, así que tu cuenta solo vive en este teléfono. Agrega tu correo y una contraseña para no perderla si cambias de teléfono o cierras sesión.": "You signed in with a code, so your account only exists on this phone. Add your email and a password so you don't lose it if you change phones or sign out.",
+    "Entraste con un código. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.": "You signed in with a code. Add your email and a password so you don't lose it if you change phones.",
+    "Revisa el correo.": "Check the email.", "La contraseña debe tener al menos 8 caracteres.": "Your password must be at least 8 characters.",
+    "Cuenta protegida": "Account secured", "Ya puedes entrar con tu correo en cualquier teléfono.": "You can now sign in with your email on any phone.",
+    // Inicio
+    "Martes 7 de octubre": "Tuesday, October 7", "Demostración": "Demo",
+    "Simula la vuelta de hoy: el furgón sale del colegio y deja a tus hijos en casa. Sube el volumen para oír la alarma.": "Simulate today's trip home: the van leaves school and drops your children at home. Turn up the volume to hear the alarm.",
+    "Simular la vuelta de hoy": "Simulate today's trip home", "La vuelta terminó. Revisa el historial.": "The trip home is over. Check the history.", "Simular de nuevo": "Simulate again",
+    "El furgón va en camino. Cuando suene la llamada, contesta con 1 o cuelga para ver los reintentos.": "The van is on its way. When the call rings, answer with 1 or hang up to see the retries.",
+    "En pausa.": "Paused.", "Pausar": "Pause", "Continuar": "Continue",
+    "Sin internet, la llamada gratis no llega y se llama por teléfono (con costo).": "Without internet, the free call doesn't get through, so we call the phone (paid).",
+    "Llamadas hoy:": "Calls today:", "por la app (sin costo) ·": "in the app (free) ·", "telefónicas (con costo)": "by phone (paid)",
+    "Ficha ›": "Details ›", "Esperando asignación": "Waiting for assignment", "Hoy no viaja en la vuelta": "Not riding home today",
+    "La tía Marcela no pasará por tu casa.": "Tía Marcela won't stop at your home.", "Hoy no viaja": "Not riding today", "Se saltó en la ruta.": "Skipped on the route.",
+    "Dejado/a por la tía Marcela.": "Dropped off by Tía Marcela.", "El furgón está afuera de tu casa": "The van is outside your home", "En camino": "On the way",
+    "Seguir el furgón en vivo": "Track the van live", "Recibido, estoy atenta": "Got it, I'm ready", "Recibido, estoy atento": "Got it, I'm ready",
+    "Ida (07:00) · ya pasó": "To school (07:00) · already done", "Vuelta (16:30)": "Home (16:30)",
+    "Ver la app como": "See the app as", "Perfil compartido: los dos ven a los mismos hijos y reciben la misma alarma, cada uno en su teléfono.": "Shared profile: both of you see the same children and get the same alarm, each on your own phone.",
+    "Comparte con el papá": "Share with the dad", "quiere conectarse contigo": "wants to connect with you", "Toca para responder": "Tap to reply",
+    "+ Agregar hijo/a": "+ Add child", "Conectar con tía o tío": "Connect with a driver", "Notificaciones": "Notifications",
+    "Ya puedes agregar a tu hijo/a con este furgón.": "You can now add your child with this van.",
+    "Entraste a la familia": "You joined the family", "Desde ahora recibes en este teléfono los avisos del furgón.": "From now on you get the van alerts on this phone.",
+    "Furgón Escolar · alarma": "Furgón Escolar · alarm",
+    "El furgón en camino a tu casa": "The van on its way to your home",
+    // Ficha y agregar
+    "Dirección": "Address", "Ajustar pin": "Adjust pin", "Indicaciones": "Notes", "Mapa del barrio": "Neighborhood map", "Mapa del barrio: toca para ubicar el pin": "Neighborhood map: tap to place the pin",
+    "Toca la puerta de tu casa": "Tap your front door",
+    "El aviso se calcula hasta este pin. Ubícalo justo en la puerta para que llegue a tiempo.": "The alert is calculated to this pin. Place it right at your door so it arrives on time.",
+    "Avisarme antes de que llegue": "Alert me before it arrives", "Minutos de anticipación": "Minutes ahead", "Teléfonos para la llamada": "Phone numbers for the call",
+    "Si el principal no contesta dos veces, llamamos al secundario. Presionar 1 confirma el aviso.": "If the main contact doesn't answer twice, we call the backup. Pressing 1 confirms the alert.",
+    "Furgón": "Van", "Conductora": "Driver", "Vehículo": "Vehicle", "Recorridos": "Trips", "Ida 07:00 · Vuelta 16:30": "To school 07:00 · Home 16:30",
+    "Agregar hijo/a": "Add child", "Nombre": "First name", "Apellido": "Last name", "Curso": "Grade", "Colegio": "School", "2° Básico": "2nd grade",
+    "¿Con qué tía o tío va?": "Which driver do they ride with?", "Calle, número, comuna": "Street, number, district",
+    "Toca el mapa para marcar la puerta de tu casa.": "Tap the map to mark your front door.", "Indicaciones para la tía (opcional)": "Notes for the driver (optional)",
+    "Ej: portón verde, depto 302": "E.g. green gate, apt 302", "Teléfonos para la llamada automática": "Phone numbers for the automatic call",
+    "Principal · nombre": "Main · name", "Secundario · nombre": "Backup · name", "Teléfono": "Phone", "Opcional": "Optional",
+    "La tía o el tío asignará a tu hijo/a a su ruta. Hasta entonces verás “Esperando asignación”.": "The driver will assign your child to their route. Until then you'll see “Waiting for assignment”.",
+    "Este dato es obligatorio.": "This field is required.", "Revisa el número (ej: 9 1234 5678).": "Check the number (e.g. 9 1234 5678).", "Revisa el número.": "Check the number.",
+    "Marca tu casa en el mapa: así el aviso llega a tiempo.": "Mark your home on the map so the alert arrives on time.", "Elige con quién va.": "Choose who they ride with.",
+    // Familia
+    "Familia": "Family", "mamá": "mom", "papá": "dad", "mamá · tú": "mom · you", "papá · tú": "dad · you", "Tú": "You", "👤 Tú": "👤 You",
+    "Comparte a tus hijos con el papá o la mamá (o un abuelo/a). Cada uno entra con su propia cuenta y ambos reciben la alarma, las llamadas, siguen el furgón en vivo y pueden marcar «Ya subió» y «hoy no viaja».": "Share your children with their dad or mom (or a grandparent). Each of you signs in with your own account, and both of you get the alarm and calls, can track the van live, and can mark “On board” and “Not riding today”.",
+    "Compartir con…": "Share with…", "Papá": "Dad", "Mamá": "Mom", "Abuelo/a": "Grandparent", "Otro": "Other", "¿A quiénes?": "Which children?",
+    "Crear código para compartir": "Create a code to share", "Enviar por WhatsApp": "Send via WhatsApp", "Salir de la familia": "Leave family",
+    "Ya no verás a este hijo/a en tu app.": "You won't see this child in your app anymore.",
+    // Conectar
+    "Conectar con tu tía o tío": "Connect with your driver", "Buscar tía o tío del furgón": "Find your school van driver", "Nombre, furgón o comuna": "Name, van, or area",
+    "Prueba con «Rosa», «Ñuñoa» o «Furgones». Solo aparecen quienes activaron «Que las familias me encuentren».": "Try “Rosa”, “Ñuñoa” or “Furgones”. Only drivers who turned on “Let families find me” appear.",
+    "✓ Conectados": "✓ Connected", "Solicitud enviada · esperando respuesta": "Request sent · waiting for a reply", "Te invitó · responde arriba": "Invited you · reply above",
+    "Mensaje (opcional)": "Message (optional)", "Ej: Hola tía, Sofía va en 3° básico": "E.g. Hi! Sofía is in 3rd grade", "Enviar solicitud": "Send request",
+    "Conectar": "Connect", "Solicitudes enviadas": "Sent requests", "Esperando respuesta": "Waiting for a reply", "Retirar solicitud": "Withdraw request",
+    "Conectada con": "Connected with", "Solicitud retirada.": "Request withdrawn.", "Invitación rechazada.": "Invite declined.",
+    "🔒 La tía o el tío solo ve tu nombre y el de tus hijos cuando se conectan. Tu dirección la ve solo en su ruta.": "🔒 The driver only sees your name and your children's names once you connect. They only see your address on their route.",
+    // Historial
+    "Cada aviso, quién lo confirmó y a qué hora llegaron tus hijos.": "Every alert, who confirmed it, and what time your children arrived.", "Ejemplo": "Example", "Hoy": "Today",
+    "Contestaste y presionaste 1": "You answered and pressed 1", "Tocaste “Recibido”": "You tapped “Got it”",
+    "Tu teléfono no tenía internet: la llamada por la app no llegó. Te llamamos por teléfono (con costo)": "Your phone had no internet: the in-app call didn't get through. We called your phone (paid)",
+    "Volvió el internet a tu teléfono": "Your phone is back online", "Tu teléfono se quedó sin internet": "Your phone lost its internet connection",
+    "Tocaste “Recibido”: se cancelan las llamadas": "You tapped “Got it”: the calls are canceled", "Abriste la notificación: se cancelan los reintentos": "You opened the notification: the retries are canceled",
+    "Contestaste la llamada por la app (sin costo) y presionaste 1": "You answered the in-app call (free) and pressed 1", "Contestaste la llamada telefónica (con costo) y presionaste 1": "You answered the phone call (paid) and pressed 1",
+    // Perfil
+    "Mis datos": "My details", "Ver ›": "View ›", "Compartir ›": "Share ›", "Conectar ›": "Connect ›", "Mis tías y tíos": "My drivers",
+    "Comparte a tus hijos con el papá para que él también reciba la alarma y siga el furgón.": "Share your children with the dad so he also gets the alarm and can track the van.",
+    "Avisos": "Alerts", "Alarma sonora": "Alarm sound", "Suena aunque el teléfono esté en silencio (Android)": "Rings even when the phone is on silent (Android)",
+    "Llamada automática": "Automatic call", "Te llamamos con un mensaje de voz": "We call you with a voice message",
+    "Automático sigue el modo del teléfono.": "Automatic follows the phone's setting.", "Automático sigue el idioma del teléfono.": "Automatic follows the phone's language.",
+    "🔒 Ves el furgón exacto mientras tu hijo/a va a bordo o desde tu aviso hasta que llega a su hogar, salvo cuando está cerca de la casa de otra familia. Nadie ve dónde vives.": "🔒 You see the van's exact location while your child is on board, or from your alert until they get home, except when it's near another family's home. No one sees where you live.",
+    "Cerrar sesión": "Sign out", "Eliminar mi cuenta": "Delete my account",
+    // Eliminar cuenta
+    "Esto no se puede deshacer.": "This can't be undone.", "Se borrará:": "What will be deleted:",
+    "Tu perfil, tu correo, tu teléfono y tus preferencias.": "Your profile, email, phone number, and preferences.",
+    "1 hijo que solo está en tu cuenta se da de baja del furgón: se borran su dirección y contactos, y sale de la ruta. Sus cobros quedan registrados para el transportista.": "1 child who is only on your account will be removed from the school van: their address and contacts are deleted and they're taken off the route. Their charges stay on record for the transport provider.",
+    "Los hijos que compartes con otro familiar siguen en su cuenta; solo se quita tu teléfono de las llamadas.": "Children you share with another family member stay on their account; only your phone number is removed from the calls.",
+    "Los registros de cobros que la ley obliga a guardar y los respaldos de seguridad se eliminan dentro de 30 días.": "Charge records we're required by law to keep and security backups are deleted within 30 days.",
+    "Eliminar mi cuenta para siempre": "Delete my account forever", "Cuenta eliminada": "Account deleted",
+    "Demostración: se borraron tu perfil y tus datos. La cuenta de prueba vuelve a estar disponible.": "Demo: your profile and data were deleted. The test account is available again.",
+    // Llamada
+    "Llamada entrante": "Incoming call", "Llamada por internet · sin costo": "Internet call · free", "Llamada telefónica · con costo": "Phone call · paid", "Colgar": "Hang up",
+    // Seguir en vivo
+    "Sin recorrido en curso": "No trip in progress", "El mapa se activa cuando la tía Marcela inicia el recorrido.": "The map turns on when Tía Marcela starts the trip.",
+    "El furgón no pasará por tu casa.": "The van won't stop at your home.", "El furgón está afuera": "The van is outside", "Está llegando": "Arriving now",
+    "Sin internet · última posición": "No internet · last position", "En vivo": "Live", "Zona aproximada": "Approximate area",
+    "Subió": "On board", "Salió del colegio": "Left school", "Aviso": "Alert", "En su hogar": "Home",
+    "Mapa en vivo del furgón y tu casa": "Live map of the van and your home", "Casa": "Home", "por aquí": "around here",
+    "Ubicación exacta en vivo.": "Exact live location.",
+    "El furgón está en una parada: ubicación aproximada para cuidar la privacidad de otras familias.": "The van is at a stop: approximate location to protect other families' privacy.",
+    "El furgón está en otra parada: ubicación aproximada.": "The van is at another stop: approximate location.",
+  };
+  // Frases con nombres, números u horas. Una función recibe los grupos capturados.
+  const yNombres = (s) => s.replace(/ e /g, " and ");
+  const rol = (r) => ({ "mamá": "mom", "papá": "dad", "abuelo": "grandpa", "abuela": "grandma" }[r] ?? r);
+  const minEn = (n) => `${n} ${n === "1" ? "minute" : "minutes"}`;
+  const EN_PATRONES = [
+    [/^Sin internet · (\d+%)$/, "No internet · $1"],
+    [/^Te unirás a la familia de (.+)\.$/, "You'll join $1's family."],
+    [/^Para confirmar, escribe (\S+)$/, "To confirm, type $1"],
+    [/^Hola, (.+)$/, "Hi, $1"],
+    [/^(.+) tiene internet$/, "$1 has internet"],
+    [/^(.+) sin internet$/, "$1 has no internet"],
+    [/^Internet en el teléfono de (.+)$/, "Internet on $1's phone"],
+    [/^(\S+) \((mamá|papá|abuelo|abuela)\)$/, (m, n, r) => `${n} (${rol(r)})`],
+    [/^El dueño del furgón debe agregar a (.+) a una ruta\.$/, "The van owner needs to add $1 to a route."],
+    [/^Vuelta hoy · (\d\d:\d\d)$/, "Home trip today · $1"],
+    [/^Te avisaremos unos (\d+) minutos antes de que llegue el furgón\.$/, "We'll alert you about $1 minutes before the van arrives."],
+    [/^En su hogar desde las (\d\d:\d\d)$/, "Home since $1"],
+    [/^En su hogar desde las (\d\d:\d\d) por la tía Marcela\.$/, "Home since $1, dropped off by Tía Marcela."],
+    [/^(.+) va a bordo$/, "$1 is on board"],
+    [/^(.+) va a bordo desde las (\d\d:\d\d) · hora estimada (\d\d:\d\d)$/, "$1 has been on board since $2 · estimated time $3"],
+    [/^Confirmaste que subió a las (\d\d:\d\d) · llega en ~(\d+) min\. La ves en vivo\.$/, "You confirmed they got on at $1 · arriving in ~$2 min. You can see them live."],
+    [/^Llega en ~(\d+) min$/, "Arriving in ~$1 min"],
+    [/^Llega en (\d+) min$/, "Arriving in $1 min"],
+    [/^Aviso enviado a las (\d\d:\d\d)( · ✓ confirmado)?$/, (m, h, c) => `Alert sent at ${h}${c ? " · ✓ confirmed" : ""}`],
+    [/^El furgón salió del colegio a las (\d\d:\d\d)\. Te avisaremos cuando falten ~(\d+) minutos\.$/, "The van left school at $1. We'll alert you when it's ~$2 minutes away."],
+    [/^Cuando (.+) se suba, toca «Ya subió» y la verás en vivo\. Si no, verás el furgón desde tu aviso\.$/, "When $1 gets on, tap “On board” and you'll see the van live. Otherwise, you'll see it from your alert."],
+    [/^Ya subió (.+)$/, "$1 is on board"],
+    [/^Seguir a (.+) en vivo$/, "Track $1 live"],
+    [/^(.+) no viaja en la (ida|vuelta)$/, (m, n, t) => `${n} isn't riding ${t === "ida" ? "to school" : "home"}`],
+    [/^Que (.+) también reciba la alarma, las llamadas y siga el furgón en vivo desde su teléfono\.$/, "So $1 also gets the alarm and calls and can track the van live from his phone."],
+    [/^(.+) llega pronto a casa$/, "$1 is almost home"],
+    [/^El furgón llegará en aproximadamente (\d+) minutos? con (.+)\. Por favor, que alguien esté esperando en casa\.$/, (m, n, x) => `The school van will arrive in about ${minEn(n)} with ${x}. Please make sure someone is waiting at home.`],
+    [/^Avisamos a (.+)$/, (m, n) => `We alerted ${tr(n)}`],
+    [/^No pudimos comunicarnos contigo\. (.+) recibió el aviso de (.+) y lo confirmó\.$/, (m, a, b) => `We couldn't reach you. ${tr(a)} got the alert for ${b} and confirmed it.`],
+    [/^(.+) está en su hogar$/, "$1 is home"],
+    [/^La tía Marcela marcó a (.+) en su hogar a las (\d\d:\d\d)\.$/, "Tía Marcela marked $1 as home at $2."],
+    [/^(.+) aceptó tu solicitud$/, "$1 accepted your request"],
+    [/^(.+) aceptó: ya están conectados\.$/, "$1 accepted: you're now connected."],
+    [/^Ahora ves el furgón de la tía Marcela en vivo hasta que (.+) llegue a su hogar\.$/, "Now you see Tía Marcela's van live until $1 gets home."],
+    [/^(.+) se unió a la familia$/, "$1 joined the family"],
+    [/^(.+) salió de la familia$/, "$1 left the family"],
+    [/^Ya no recibe los avisos\. Puedes volver a compartir cuando quieras\.$/, "They no longer get the alerts. You can share again anytime."],
+    [/^Desde ahora la alarma y las llamadas también le llegan a él\. Prueba «Ver la app como (.+)»\.$/, "From now on he also gets the alarm and calls. Try “See the app as $1”."],
+    [/^En vivo · a ([\d.]+) km de tu casa$/, "Live · $1 km from your home"],
+    [/^Pin: (.+)$/, "Pin: $1"],
+    [/^Recibirás la alarma y la llamada cuando el furgón esté a unos (\d+) minutos, según el tráfico\.$/, "You'll get the alarm and the call when the van is about $1 minutes away, depending on traffic."],
+    [/^Principal · (.+)$/, (m, n) => `Main · ${tr(n)}`],
+    [/^Secundario · (.+)$/, (m, n) => `Backup · ${tr(n)}`],
+    [/^(.+) se unió con su propia cuenta\. Su teléfono quedó en la llamada automática de (.+)\.$/, (m, a, b) => `${a} joined with his own account. His phone was added to the automatic call for ${yNombres(b)}.`],
+    [/^Dejar de compartir con (.+)$/, "Stop sharing with $1"],
+    [/^Código para (.+)$/, "Code for $1"],
+    [/^Sirve una vez y vence en 7 días\. Esperando que (.+) lo use…$/, "Works once and expires in 7 days. Waiting for $1 to use it…"],
+    [/^(mamá|papá) · recibe los avisos$/, (m, r) => `${rol(r)} · gets the alerts`],
+    [/^¿Dejar de recibir los avisos de (.+)\?$/, "Stop getting alerts for $1?"],
+    [/^Solicitud enviada a (.+)\. Te avisaremos cuando responda\.$/, "Request sent to $1. We'll let you know when they reply."],
+    [/^Listo: ya estás conectada con (.+)\. Agrega a tu hijo\/a y elige que va con este furgón\.$/, "Done: you're now connected with $1. Add your child and choose that they ride with this van."],
+    [/^(.+) quiere conectarse contigo$/, "$1 wants to connect with you"],
+    [/^No encontramos a nadie con «(.+)»\. Pídele a tu tía o tío que active la búsqueda en su app o que te envíe un código\.$/, "We couldn't find anyone matching “$1”. Ask your driver to turn on search in their app, or to send you a code."],
+    [/^(.+) · lleva a (.+)$/, (m, a, b) => `${a} · takes ${yNombres(b)}`],
+    [/^(.+) · aún no lleva a tus hijos: agrégalos con «\+ Agregar hijo\/a»$/, "$1 · doesn't take your children yet: add them with “+ Add child”"],
+    [/^(Lun|Vie) (\d+) oct · (Ida|Vuelta)$/, (m, d, n, t) => `${d === "Lun" ? "Mon" : "Fri"}, Oct ${n} · ${t === "Ida" ? "Morning trip" : "Afternoon trip"}`],
+    [/^Hoy · Vuelta$/, "Today · Afternoon trip"],
+    [/^Aviso: (.+) llega en ~(\d+) min( \(sonó en el teléfono de (.+) y en el de (.+)\))?$/, (m, n, x, s, a, b) => `Alert: ${n} arriving in ~${x} min${s ? ` (rang on ${a}'s phone and on ${b}'s)` : ""}`],
+    [/^Aviso: el furgón pasa por (.+) en ~(\d+) min$/, "Alert: the van picks up $1 in ~$2 min"],
+    [/^(.+) subió al furgón$/, "$1 got on the van"],
+    [/^No contestaste: llamamos a (.+), que confirmó$/, (m, n) => `You didn't answer: we called ${tr(n)}, who confirmed`],
+    [/^Llamada (\d) por la app \(por internet, sin costo\)$/, "In-app call $1 (over the internet, free)"],
+    [/^Llamada (\d) telefónica \(con costo\)$/, "Phone call $1 (paid)"],
+    [/^No contestaste la llamada (\d)$/, "You didn't answer call $1"],
+    [/^No contestaste la llamada 2: llamamos a (.+)$/, (m, n) => `You didn't answer call 2: we called ${tr(n)}`],
+    [/^Llamada telefónica \(con costo\) a (.+), que no tiene la app$/, (m, n) => `Phone call (paid) to ${tr(n)}, who doesn't have the app`],
+    [/^(.+) contestó y confirmó$/, (m, n) => `${tr(n)} answered and confirmed`],
+    [/^Marcaste que (.+) no viaja hoy$/, "You marked that $1 isn't riding today"],
+    [/^Confirmaste que (.+) subió al furgón: la sigues en vivo$/, "You confirmed that $1 got on the van: you're tracking it live"],
+    [/^(Apoderada|Apoderado) de (.+)$/, (m, a, b) => `Parent of ${yNombres(b)}`],
+    [/^(\d+) hijos que solo están en tu cuenta se dan de baja del furgón: se borran su dirección y contactos, y salen de la ruta\. Sus cobros quedan registrados para el transportista\.$/, "$1 children who are only on your account will be removed from the school van: their addresses and contacts are deleted and they're taken off the route. Their charges stay on record for the transport provider."],
+    [/^Llamada de la app · intento (\d)$/, "In-app call · attempt $1"],
+    [/^(.+) · intento (\d)$/, "$1 · attempt $2"],
+    [/^“Hola\. Le avisamos del furgón escolar\. El furgón llegará en aproximadamente (\d+) minutos? con (.+)\. Por favor, que alguien esté esperando en casa\. Para confirmar, presione 1\.”$/, (m, n, x) => `“Hello. This is a message about the school van. The van will arrive in about ${minEn(n)} with ${x}. Please make sure someone is waiting at home. To confirm, press 1.”`],
+    [/^Si no presionas 1 en (\d+) s, cuenta como no contestada\.$/, "If you don't press 1 within $1 s, it counts as unanswered."],
+    [/^Hora estimada (\d\d:\d\d) · aviso enviado a las (\d\d:\d\d)( · confirmado ✓)?$/, (m, a, b, c) => `Estimated time ${a} · alert sent at ${b}${c ? " · confirmed ✓" : ""}`],
+    [/^Hora estimada (\d\d:\d\d) · faltan (\d+) paradas? antes de tu casa$/, (m, a, n) => `Estimated time ${a} · ${n} ${n === "1" ? "stop" : "stops"} left before your home`],
+    [/^Hora estimada (\d\d:\d\d) · tu casa es la próxima parada$/, "Estimated time $1 · your home is the next stop"],
+    [/^🔒 Ves el furgón exacto mientras (.+) va a bordo \(desde que tocas «Ya subió»\) o desde tu aviso\. Si no, o cerca de la casa de otra familia, una zona aproximada \(~1 km\)\.$/, "🔒 You see the van's exact location while $1 is on board (from when you tap “On board”) or from your alert. Otherwise, or near another family's home, an approximate area (~1 km)."],
+  ];
+  // Traduce un texto: exacto, luego con patrones; si empieza con un emoji o símbolo, lo conserva y traduce el resto.
+  function tr(s) {
+    if (idioma() !== "en") return s;
+    const t = s.replace(/\s+/g, " ").trim();
+    const exacto = (x) => Object.prototype.hasOwnProperty.call(EN, x) ? EN[x] : null;
+    const patron = (x) => { for (const [re, en] of EN_PATRONES) if (re.test(x)) return x.replace(re, en); return null; };
+    const m = /^([^\p{L}\p{N}¿¡«“"(]+)(.+)$/u.exec(t), pre = m ? m[1] : "", nucleo = m ? m[2] : null;
+    let r = exacto(t); if (r !== null) return r;
+    if (nucleo !== null && (r = exacto(nucleo)) !== null) return pre + r;
+    if ((r = patron(t)) !== null) return r;
+    if (nucleo !== null && (r = patron(nucleo)) !== null) return pre + r;
+    return s;
+  }
+  // Traduce el HTML ya armado: nodos de texto y los atributos aria-label, placeholder y title.
+  function traducirHtml(html) {
+    if (idioma() !== "en") return html;
+    return html.split(/(<[^>]*>)/).map((parte) => {
+      if (parte.startsWith("<")) return parte.replace(/\b(aria-label|placeholder|title)="([^"]*)"/g, (x, k, v) => `${k}="${tr(v)}"`);
+      if (!/\p{L}/u.test(parte)) return parte;
+      const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(parte);
+      return m[1] + tr(m[2]) + m[3];
+    }).join("");
+  }
+
+  // Voz de la llamada simulada (en el idioma de la app).
+  function hablar(texto) {
+    try {
+      if (!window.speechSynthesis || !app.alarma) return;
+      const u = new SpeechSynthesisUtterance(texto.replace(/[“”]/g, ""));
+      u.lang = idioma() === "en" ? "en-US" : "es-CL";
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) { /* sin voz */ }
+  }
+  const callar = () => { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) { /* sin voz */ } };
+
   // ---------- Vistas ----------
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const esc =(s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const $tel = document.getElementById("tel");
   let previo = "", presionando = false;
   addEventListener("pointerdown", () => { presionando = true; }, true);
@@ -434,11 +693,26 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <button class="btn sec xl" data-a="loginCodigo">👨‍👩‍👧 Entrar con código de familia</button>
       </div>
       <p class="nota">Cuenta de demostración (Ana, la mamá). Con el código de familia entras como Rodrigo, el papá.</p>
+      ${legales()}
+      <div class="idioma-mini">${selectorIdioma()}</div>
     </div>`;
   }
 
+  // Enlaces a Términos y Privacidad (en la app real abren las páginas web publicadas con el panel).
+  const legales = () => `<div class="legales"><button data-a="legal">Términos y condiciones</button><span aria-hidden="true">·</span><button data-a="legal">Política de privacidad</button></div>`;
+  // Selector de idioma: Automático (según el teléfono) · Español · English.
+  const selectorIdioma = () => `<span class="seg" role="group" aria-label="Idioma">${[["sistema", "Automático"], ["es", "Español"], ["en", "English"]].map(([v, n]) => `<button data-a="idioma" data-v="${v}" aria-pressed="${prefIdioma === v}">${n}</button>`).join("")}</span>`;
+  function vLegal() {
+    return `<div class="velo" data-a="cerrarHoja"><div class="hoja-modal" role="dialog" aria-label="Términos y condiciones · Política de privacidad">
+      <div class="asa"></div><h3>Términos y condiciones · Política de privacidad</h3>
+      <span>En la app real, estos enlaces abren las páginas web de los términos y condiciones y de la política de privacidad, publicadas junto al panel web.</span>
+      <span class="muted" style="font-size:14px">Esta maqueta es un archivo suelto, así que aquí no se abren.</span>
+      <button class="btn" data-a="cerrarHoja">Entendido</button></div></div>`;
+  }
+
   // Entrar con código de familia: directo al perfil compartido, sin correo ni contraseña.
-  const CODIGO_DEMO = "F7K2Q9M3";
+  // Los códigos son «F» + 7 caracteres (8 en total), como los que crea la base de datos.
+  const CODIGO_DEMO = "F7KQ2MXP9";
   function vLoginCodigo() {
     const f = app.form ?? (app.form = { codigo: "", nombre: "", tel: "" });
     const valido = (c) => [CODIGO_DEMO, FAMILIA.codigo].includes(String(c).trim().toUpperCase());
@@ -450,8 +724,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <div class="campo"><label for="f-codigo">Código de familia</label><input id="f-codigo" data-f="codigo" value="${esc(f.codigo)}" placeholder="F1A2B3C4" autocapitalize="characters" autocomplete="off"><small>Código de prueba: <b class="mono">${FAMILIA.codigo ?? CODIGO_DEMO}</b></small></div>
       <div class="campo"><label for="f-nombre">Tu nombre</label><input id="f-nombre" data-f="nombre" value="${esc(f.nombre)}" placeholder="Ej: Rodrigo Pérez"></div>
       <div class="campo"><label for="f-tel">Tu teléfono</label><input id="f-tel" data-f="tel" value="${esc(f.tel)}" inputmode="tel" placeholder="9 3333 4444"><small>Para llamarte si no contestan el aviso.</small></div>
-      ${app.errorCodigo ? `<p class="nota" style="color:var(--alert);margin:0">${esc(app.errorCodigo)}</p>` : c.length >= 6 && valido(c) ? `<p class="nota" style="color:var(--ok);margin:0">✓ Te unirás a la familia de Ana Pérez (${HIJOS.filter((h) => !FAMILIA.hijos || FAMILIA.hijos.includes(h.id)).map((h) => h.nombre).join(" e ")}).</p>` : ""}
+      ${app.errorCodigo ? `<p class="nota" style="color:var(--alert);margin:0">${esc(app.errorCodigo)}</p>` : c.length >= 6 && valido(c) ? `<p class="nota" style="color:var(--ok);margin:0">✓ Te unirás a la familia de ${PERSONAS.ana.corto}.</p>` : ""}
       <button class="btn xl" data-a="entrarCodigo">Entrar</button>
+      <button class="btn link" style="align-self:center" data-a="volverLogin">Ya tengo cuenta</button>
+      <span class="muted" style="font-size:13px;text-align:center">Al entrar aceptas los términos y condiciones, y que tratemos tus datos para el transporte escolar según la política de privacidad.</span>
+      ${legales()}
     </div>`;
   }
 
@@ -461,7 +738,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     return `<div class="vista">
       <button class="volver" data-a="atras">‹ Volver</button>
       <h1>Protege tu cuenta</h1>
-      <span class="muted" style="font-size:14px">Entraste con un código, así que tu cuenta solo vive en este teléfono. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.</span>
+      <span class="muted" style="font-size:14px">Entraste con un código, así que tu cuenta solo vive en este teléfono. Agrega tu correo y una contraseña para no perderla si cambias de teléfono o cierras sesión.</span>
       <div class="campo"><label for="f-email">Correo</label><input id="f-email" data-f="email" type="email" value="${esc(f.email)}" placeholder="rodrigo@correo.cl"></div>
       <div class="campo"><label for="f-pass">Contraseña</label><input id="f-pass" data-f="pass" type="password" value="${esc(f.pass)}"><small>Mínimo 8 caracteres</small></div>
       ${app.errorCodigo ? `<p class="nota" style="color:var(--alert);margin:0">${esc(app.errorCodigo)}</p>` : ""}
@@ -514,7 +791,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <div class="fila"><div style="display:flex; gap:10px; align-items:center; min-width:0"><div class="avatar chico">${esc(h.nombre[0])}</div><div style="min-width:0"><h2>${esc(h.nombre)} ${esc(h.apellido)}</h2><span class="muted" style="font-size:13px">${esc(h.curso)} · ${esc(h.colegio)}</span></div></div>
           <button class="btn link" data-a="ficha" data-id="${h.id}">Ficha ›</button></div>
         ${estadoHijo(h)}
-        ${verMapa ? miniMapa(p) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Cuando ${esc(h.nombre)} se suba, toca «Ya subió» y la verás en vivo. Si no, verás el furgón desde tu aviso.</div>` : ""}
+        ${verMapa ? (cercaDeOtraCasa(R.d) ? `<div class="privado">🔒 ${AVISO_PRIVACIDAD}</div>` : miniMapa(p)) : R && p && p.estado === "pendiente" ? `<div class="privado">🔒 Cuando ${esc(h.nombre)} se suba, toca «Ya subió» y la verás en vivo. Si no, verás el furgón desde tu aviso.</div>` : ""}
         ${R && !R.fin && p && p.estado === "pendiente" && !aBordo ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
         ${R && !R.fin && p && p.estado === "pendiente" ? `<button class="btn" data-a="seguir" data-id="${h.id}">🗺️ ${aBordo ? `Seguir a ${esc(h.nombre)} en vivo` : "Seguir el furgón en vivo"}</button>` : ""}
         ${p && p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy ${AP.atento}</button>` : ""}
@@ -527,7 +804,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     }).join("");
     return `<div class="vista">
       <div><span class="muted">Martes 7 de octubre</span><h1>Hola, ${AP.corto}</h1></div>
-      ${AP.sinProteger ? `<button class="card invita" data-a="proteger" style="border-color:var(--bus)">🔒 <b>Protege tu cuenta</b><span class="muted" style="font-size:13px">Entraste con un código: agrega tu correo y una contraseña para no perderla si cambias de teléfono.</span></button>` : ""}
+      ${AP.sinProteger ? `<button class="card invita" data-a="proteger" style="border-color:var(--bus)">🔒 <b>Protege tu cuenta</b><span class="muted" style="font-size:13px">Entraste con un código. Agrega tu correo y una contraseña para no perderla si cambias de teléfono.</span></button>` : ""}
       ${demo}
       ${FAMILIA.unido ? `<div class="card"><div class="fila"><b>👨‍👩‍👧 Ver la app como</b></div>
           <span class="seg" role="group" aria-label="Ver la app como">${Object.values(PERSONAS).map((x) => `<button data-a="verComo" data-v="${x.id}" aria-pressed="${AP.id === x.id}">${x.corto} (${x.rol})</button>`).join("")}</span>
@@ -610,17 +887,27 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   // Familia: compartir el perfil con el papá (o la mamá).
   function vFamilia() {
     const lista = FAMILIA.hijos ?? HIJOS.map((h) => h.id);
-    const msj = (c) => `Hola. Te comparto a ${HIJOS.filter((h) => lista.includes(h.id)).map((h) => h.nombre).join(" e ")} en la app «Furgón Escolar» para que también recibas los avisos del furgón y lo sigas en vivo. 1) Descarga la app. 2) Toca «Crear cuenta» y escribe este código: ${c}. Si ya tienes cuenta, ve a Familia → «Tengo un código».`;
+    const unir = (n) => n.join(idioma() === "en" ? " and " : " e ");
+    const nombres = HIJOS.filter((h) => lista.includes(h.id)).map((h) => h.nombre);
+    // Mismo mensaje que la app real (idiomas/en/movil-familias.ts), en el idioma de la app.
+    const msj = (c) => idioma() === "en"
+      ? `Hi! I'm sharing ${unir(nombres)} with you in the “Furgón Escolar” app so you also get the school van alerts and can track it live.\n1) Download the app.\n2) If you don't have an account, tap “Create account” and enter this code: ${c}\n   If you already have an account, go to “Family” → “I have a family code”.\nThe code works once and expires in 7 days.`
+      : `Hola. Te comparto a ${unir(nombres)} en la app «Furgón Escolar» para que también recibas los avisos del furgón y lo sigas en vivo.\n1) Descarga la app.\n2) Si no tienes cuenta, toca «Crear cuenta» y escribe este código: ${c}\n   Si ya tienes cuenta, ve a «Familia» → «Tengo un código».\nEl código sirve una vez y vence en 7 días.`;
+    const soyPapa = AP.id === "rodrigo";
     return `<div class="vista">
       <button class="volver" data-a="atras">‹ Volver</button>
       <h1>Familia</h1>
-      <span class="muted" style="font-size:14px">Comparte a tus hijos con el papá o la mamá (o un abuelo/a). Cada uno entra con su propia cuenta y los dos reciben la alarma, las llamadas, siguen el furgón en vivo y pueden marcar «Ya subió» y «hoy no viaja».</span>
-      ${HIJOS.map((h) => `<div class="card"><b>${esc(h.nombre)} ${esc(h.apellido)}</b>
-        <div class="dato"><span>👤 Ana Pérez</span><span class="muted">mamá${AP.id === "ana" ? " · tú" : ""}</span></div>
-        ${FAMILIA.unido && lista.includes(h.id) ? `<div class="dato"><span>👥 Rodrigo Pérez</span><span class="muted">papá${AP.id === "rodrigo" ? " · tú" : ""}</span></div>` : ""}
+      <span class="muted" style="font-size:14px">Comparte a tus hijos con el papá o la mamá (o un abuelo/a). Cada uno entra con su propia cuenta y ambos reciben la alarma, las llamadas, siguen el furgón en vivo y pueden marcar «Ya subió» y «hoy no viaja».</span>
+      ${hijosVisibles().map((h) => `<div class="card"><b>${esc(h.nombre)} ${esc(h.apellido)}</b>
+        <div class="dato"><span>👤 Ana Pérez</span><span class="muted">${AP.id === "ana" ? "mamá · tú" : "mamá"}</span></div>
+        ${FAMILIA.unido && lista.includes(h.id) ? `<div class="dato"><span>👥 ${esc(PERSONAS.rodrigo.nombre)}</span><span class="muted">${soyPapa ? "papá · tú" : "papá"}</span></div>` : ""}
+        ${soyPapa && FAMILIA.unido && lista.includes(h.id) ? (app.salirFam === h.id
+          ? `<div class="card" style="border:2px solid var(--alert)"><b>¿Dejar de recibir los avisos de ${esc(h.nombre)}?</b><span class="muted" style="font-size:13px">Ya no verás a este hijo/a en tu app.</span>
+              <div class="dos"><button class="btn sec" data-a="cancelarSalirFam">Cancelar</button><button class="btn peligro" data-a="confirmarSalirFam" data-id="${h.id}">Salir de la familia</button></div></div>`
+          : `<button class="btn link" style="align-self:flex-start;color:var(--alert)" data-a="salirFam" data-id="${h.id}">Salir de la familia</button>`) : ""}
       </div>`).join("")}
-      ${FAMILIA.unido ? `<p class="nota" style="color:var(--ok)">✓ Rodrigo se unió con su propia cuenta. Su teléfono quedó en la llamada automática de ${HIJOS.filter((h) => lista.includes(h.id)).map((h) => h.nombre).join(" e ")}.</p>
-          ${AP.id === "ana" ? `<button class="btn sec" data-a="dejarCompartir">Dejar de compartir con Rodrigo</button>` : ""}`
+      ${FAMILIA.unido ? `<p class="nota" style="color:var(--ok)">✓ ${esc(PERSONAS.rodrigo.corto)} se unió con su propia cuenta. Su teléfono quedó en la llamada automática de ${nombres.join(" e ")}.</p>
+          ${AP.id === "ana" ? `<button class="btn sec" data-a="dejarCompartir">Dejar de compartir con ${esc(PERSONAS.rodrigo.corto)}</button>` : ""}`
         : FAMILIA.codigo ? `<div class="card" style="border:2px solid var(--bus)"><b>Código para Rodrigo</b>
           <div class="codigo-fam">${FAMILIA.codigo}</div>
           <span class="muted" style="font-size:13px">Sirve una vez y vence en 7 días. Esperando que Rodrigo lo use…</span>
@@ -705,8 +992,39 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <div class="card"><h3>Apariencia</h3>
         <span class="seg tema" role="group" aria-label="Apariencia">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button data-a="tema" data-v="${v}" aria-pressed="${temaActual() === v}">${n}</button>`).join("")}</span>
         <span class="muted" style="font-size:13px">Automático sigue el modo del teléfono.</span></div>
-      <p class="nota">🔒 Ves el furgón exacto mientras tu hijo/a va a bordo o desde tu aviso hasta que llega a su hogar. Nadie ve dónde vives.</p>
+      <div class="card"><h3>Idioma</h3>
+        ${selectorIdioma().replace('class="seg"', 'class="seg tema"')}
+        <span class="muted" style="font-size:13px">Automático sigue el idioma del teléfono.</span></div>
+      <p class="nota">🔒 Ves el furgón exacto mientras tu hijo/a va a bordo o desde tu aviso hasta que llega a su hogar, salvo cuando está cerca de la casa de otra familia. Nadie ve dónde vives.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
+      <button class="btn link" style="align-self:center;color:var(--alert)" data-a="eliminar">Eliminar mi cuenta</button>
+      ${legales()}
+    </div>`;
+  }
+
+  // Eliminar la cuenta (como apps/movil/src/app/eliminar-cuenta.tsx): qué se borra y escribir ELIMINAR para confirmar.
+  function vEliminar() {
+    const f = app.form ?? (app.form = { palabra: "" });
+    const palabra = idioma() === "en" ? "DELETE" : "ELIMINAR";
+    // Hijos solo en esta cuenta (los compartidos siguen con el otro familiar).
+    const compartidos = FAMILIA.unido ? (FAMILIA.hijos ?? HIJOS.map((h) => h.id)) : [];
+    const n = AP.id === "ana" ? HIJOS.filter((h) => !compartidos.includes(h.id)).length : 0;
+    const que = ["Tu perfil, tu correo, tu teléfono y tus preferencias."];
+    if (n) que.push(n === 1
+      ? "1 hijo que solo está en tu cuenta se da de baja del furgón: se borran su dirección y contactos, y sale de la ruta. Sus cobros quedan registrados para el transportista."
+      : `${n} hijos que solo están en tu cuenta se dan de baja del furgón: se borran su dirección y contactos, y salen de la ruta. Sus cobros quedan registrados para el transportista.`);
+    que.push("Los hijos que compartes con otro familiar siguen en su cuenta; solo se quita tu teléfono de las llamadas.");
+    const ok = String(f.palabra).trim().toUpperCase() === palabra;
+    return `<div class="vista">
+      <button class="volver" data-a="atras">‹ Volver</button>
+      <h1>Eliminar mi cuenta</h1>
+      <div class="aviso-error" role="alert">⚠️ Esto no se puede deshacer.</div>
+      <div class="card"><b>Se borrará:</b><ul class="borra">${que.map((x) => `<li>${x}</li>`).join("")}</ul></div>
+      <span class="muted" style="font-size:13px">Los registros de cobros que la ley obliga a guardar y los respaldos de seguridad se eliminan dentro de 30 días.</span>
+      <button class="btn link" data-a="legal">Ver la política de privacidad</button>
+      <div class="campo"><label for="f-palabra">Para confirmar, escribe ${palabra}</label><input id="f-palabra" data-f="palabra" value="${esc(f.palabra)}" autocapitalize="characters" autocomplete="off" spellcheck="false"></div>
+      <button class="btn xl peligro" data-a="confirmarEliminar" ${ok ? "" : "disabled"}>Eliminar mi cuenta para siempre</button>
+      <button class="btn sec" data-a="atras">Volver</button>
     </div>`;
   }
 
@@ -719,7 +1037,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       <div>${l.canal === "app"
         ? `<span class="pildora" style="background:var(--bus);color:var(--bus-ink)">📲 Llamada por internet · sin costo</span><div class="quien" style="margin-top:10px">Furgón Escolar</div><span style="opacity:.8">Llamada de la app · intento ${l.intento}</span>`
         : `<span class="pildora">📞 Llamada telefónica · con costo</span><div class="quien" style="margin-top:10px">Furgón Escolar</div><span class="mono" style="opacity:.8">+56 2 2123 4567 · intento ${l.intento}</span>`}</div>
-      <div class="voz">🗣️ “Hola. Le avisamos del furgón escolar. El furgón llegará en aproximadamente ${m} minutos con ${esc(h.nombre)} ${esc(h.apellido)}. Por favor, que alguien esté esperando en casa. Para confirmar, presione 1.”</div>
+      <div class="voz">🗣️ “Hola. Le avisamos del furgón escolar. El furgón llegará en aproximadamente ${m} ${m === 1 ? "minuto" : "minutos"} con ${esc(h.nombre)} ${esc(h.apellido)}. Por favor, que alguien esté esperando en casa. Para confirmar, presione 1.”</div>
       <div><div class="teclas"><button class="tecla uno" data-a="uno">1</button><button class="tecla colgar" data-a="colgar">Colgar</button></div>
       <p style="opacity:.8; font-size:13px; margin:12px 0 0">Si no presionas 1 en ${queda} s, cuenta como no contestada.</p></div>
     </div>`;
@@ -760,7 +1078,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <span class="muted">El mapa se activa cuando la tía Marcela inicia el recorrido.</span></div></div>`;
     }
     const aBordo = p.estado === "pendiente" && p.aBordoT != null;
-    const exacta = p.estado === "pendiente" && (p.avisoT !== null || aBordo);
+    const cerca = p.estado === "pendiente" && (p.avisoT !== null || aBordo) && cercaDeOtraCasa(R.d);
+    const exacta = p.estado === "pendiente" && (p.avisoT !== null || aBordo) && !cerca;
     let titulo, detalle;
     if (p.estado === "entregado") { titulo = `${h.nombre} está en su hogar`; detalle = `En su hogar desde las ${hora(p.marcaT)} por la tía Marcela.`; }
     else if (p.estado !== "pendiente") { titulo = "Hoy no viaja"; detalle = "El furgón no pasará por tu casa."; }
@@ -783,13 +1102,14 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
         <div class="asa"></div>
         <span class="eta-grande">${titulo}</span>
         <span class="muted" style="font-size:14px">${detalle}</span>
+        ${cerca ? `<span class="nota" style="margin:0">🔒 ${aBordo ? AVISO_PRIVACIDAD : "El furgón está en otra parada: ubicación aproximada."}</span>` : ""}
         <div class="pasos">${paso(p.aBordoT != null, false, "Subió")}${paso(true, false, "Salió del colegio")}${paso(p.avisoT !== null, p.avisoT === null && p.estado === "pendiente", "Aviso")}${paso(p.estado === "entregado", p.avisoT !== null && p.estado === "pendiente", "En su hogar")}</div>
         ${p.estado === "pendiente" && !aBordo && !R.fin ? `<button class="btn bus" data-a="yaSubio" data-id="${h.id}">🙋 Ya subió ${esc(h.nombre)}</button>` : ""}
         ${p.avisoT !== null && p.estado === "pendiente" && p.confT === null ? `<button class="btn ok" data-a="recibido" data-id="${h.id}">Recibido, estoy ${AP.atento}</button>` : ""}
         <div class="conductora"><div class="avatar chico">M</div>
           <div style="flex:1; min-width:0"><b>${TIA.nombre}</b><br><span class="muted" style="font-size:13px">Hyundai H1 blanca · lleva a ${esc(h.nombre)}</span></div>
           <span class="patente">DEMO-11</span></div>
-        <span class="muted" style="font-size:12px">🔒 Ves el furgón exacto mientras ${esc(h.nombre)} va a bordo (desde que tocas «Ya subió») o desde tu aviso. Si no, una zona aproximada (~1 km).</span>
+        <span class="muted" style="font-size:12px">🔒 Ves el furgón exacto mientras ${esc(h.nombre)} va a bordo (desde que tocas «Ya subió») o desde tu aviso. Si no, o cerca de la casa de otra familia, una zona aproximada (~1 km).</span>
       </div>
     </div>`;
   }
@@ -805,7 +1125,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
     const d = !app.internet && R.dCongelado != null ? R.dCongelado : dSuave(), van = puntoEn(d);
-    const exacta = p.estado === "pendiente" && (p.avisoT !== null || p.aBordoT != null);
+    const exacta = p.estado === "pendiente" && (p.avisoT !== null || p.aBordoT != null) && !cercaDeOtraCasa(R.d);
     const casa = aMundo(p);
     const foco = p.estado === "pendiente" ? (exacta ? aMundo(van) : aMundo(zonaDe(van))) : casa;
     const margen = p.estado !== "pendiente" ? 400 : exacta ? 180 : 1050;
@@ -837,7 +1157,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     const c = P(casa);
     capa += `<g transform="translate(${c.x} ${c.y})"><path d="M0 0 C -14 -18 -17 -25 -17 -32 A 17 17 0 1 1 17 -32 C 17 -25 14 -18 0 0 Z" fill="var(--navy)" stroke="var(--surface)" stroke-width="3"/>
       <path d="M-8 -30 L0 -38 L8 -30 L8 -23 L-8 -23 Z" fill="var(--surface)"/>
-      <rect x="-24" y="6" width="48" height="20" rx="10" fill="var(--surface)"/><text x="0" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)" font-family="var(--font-body)">Casa</text></g>`;
+      <rect x="-24" y="6" width="48" height="20" rx="10" fill="var(--surface)"/><text x="0" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)" font-family="var(--font-body)">${tr("Casa")}</text></g>`;
     if (p.estado === "pendiente") {
       if (exacta) {
         const v = PG(van), r = rumboEn(d);
@@ -847,11 +1167,11 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
           <rect x="-7" y="-13" width="14" height="7" rx="2" fill="var(--bus-ink)" opacity=".75"/>
           <rect x="-7" y="6" width="14" height="5" rx="2" fill="var(--bus-ink)" opacity=".45"/></g>`;
       } else {
-        const z = PG(zonaDe(van)), rz = 1000 / cam.s;
+        const z = PG(zonaDe(van)), rz = 1000 / cam.s, ancho = 44 + tr("por aquí").length * 7.4;
         capa += `<circle class="zona" cx="${z.x}" cy="${z.y}" r="${rz}" fill="var(--bus)" fill-opacity=".22" stroke="var(--bus)" stroke-width="2.5"/>
-          <rect x="${z.x - 52}" y="${z.y - 13}" width="104" height="26" rx="13" fill="var(--surface)"/>
-          <g style="color:var(--ink)">${icoPlano("furgon", "currentColor", "#F5B700", 18, z.x - 44, z.y - 9)}</g>
-          <text x="${z.x + 10}" y="${z.y + 5}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)" font-family="var(--font-body)">por aquí</text>`;
+          <rect x="${z.x - ancho / 2}" y="${z.y - 13}" width="${ancho}" height="26" rx="13" fill="var(--surface)"/>
+          <g style="color:var(--ink)">${icoPlano("furgon", "currentColor", "#F5B700", 18, z.x - ancho / 2 + 8, z.y - 9)}</g>
+          <text x="${z.x + 10}" y="${z.y + 5}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)" font-family="var(--font-body)">${tr("por aquí")}</text>`;
       }
     }
     svg.innerHTML = `<rect width="${W}" height="${H}" fill="var(--block)"/><g stroke="var(--road)">${calles}</g>${capa}`;
@@ -867,15 +1187,24 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (app.sub === "seguir") cuerpo = vSeguir();
     else if (app.sub === "conectar") cuerpo = vConectar();
     else if (app.sub === "familia") cuerpo = vFamilia();
+    else if (app.sub === "eliminar") cuerpo = vEliminar();
     else cuerpo = { inicio: vInicio, historial: vHistorial, perfil: vPerfil }[app.tab]();
     const b = app.banner && app.banner.hasta > performance.now() ? app.banner : null;
     const banner = b && !(R && R.llamada && R.llamada.fase === "sonando") ? `<div class="banner ${b.tipo === "aviso" ? "vibra" : "ok"}" data-a="banner" role="status">
       <span class="app-n">${b.tipo === "aviso" ? "🔊 Furgón Escolar · alarma" : "Furgón Escolar"}</span><b>${esc(b.titulo)}</b><span>${esc(b.cuerpo)}</span></div>` : "";
-    return iconizar(barraSis() + cuerpo + (app.vista === "login" || app.vista === "loginCodigo" || app.sub === "seguir" ? "" : tabs()) + banner + (app.vista === "login" || app.vista === "loginCodigo" ? "" : vLlamada()));
+    const html = barraSis() + cuerpo + (app.vista === "login" || app.vista === "loginCodigo" || app.sub === "seguir" ? "" : tabs()) + banner + (app.vista === "login" || app.vista === "loginCodigo" ? "" : vLlamada()) + (app.hoja === "legal" ? vLegal() : "");
+    return iconizar(traducirHtml(html));
   }
 
+  const $rotulo = document.querySelector(".rotulo");
   function render(forzar = false) {
     const html = construir();
+    const len = idioma();
+    if (document.documentElement.lang !== len) {
+      document.documentElement.lang = len;
+      $rotulo.textContent = tr("Perfil · Padres y apoderados");
+      document.title = tr("Furgón Escolar · Apoderados");
+    }
     if (html !== previo && (forzar || !presionando)) {
       const sc = $tel.querySelector(".vista")?.scrollTop ?? 0;
       previo = html; $tel.innerHTML = html;
@@ -910,6 +1239,12 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       app.busqueda = e.target.value; app.eligiendo = null;
       previo = ""; render(true);
       const inp = $tel.querySelector("#buscar"); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+      return;
+    }
+    if (k === "palabra" && app.form) {
+      // Al escribir la palabra se habilita el botón rojo (y vuelve el foco al campo).
+      app.form.palabra = e.target.value; previo = ""; render(true);
+      const inp = $tel.querySelector("#f-palabra"); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
       return;
     }
     if (k === "codigo" && app.form) {
@@ -953,7 +1288,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       const f = app.form, c = String(f.codigo).trim().toUpperCase();
       if (![CODIGO_DEMO, FAMILIA.codigo].includes(c)) app.errorCodigo = "Código no válido, vencido o ya usado.";
       else if (!f.nombre.trim()) app.errorCodigo = "Escribe tu nombre.";
-      else if (!normalizarTelefono(f.tel)) app.errorCodigo = "Revisa tu teléfono (ej: 9 3333 4444).";
+      else if (!normalizarTelefono(f.tel)) app.errorCodigo = "Revisa tu teléfono (ej: 9 1234 5678): lo usamos para la llamada automática.";
       else {
         // Se une a la familia y entra directo, con su propia sesión.
         Object.assign(PERSONAS.rodrigo, { nombre: f.nombre.trim(), corto: f.nombre.trim().split(" ")[0], tel: formatear(normalizarTelefono(f.tel)), sinProteger: true });
@@ -983,7 +1318,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (a === "vel") app.vel = Number(el.dataset.v);
     else if (a === "ficha") { app.sub = "ficha"; app.hijoId = el.dataset.id; app.editPin = false; }
     else if (a === "agregar") { app.sub = "agregar"; app.form = { pin: null }; app.errores = {}; }
-    else if (a === "atras") { app.sub = null; app.form = null; app.busqueda = ""; app.eligiendo = null; }
+    else if (a === "atras") { app.sub = null; app.form = null; app.busqueda = ""; app.eligiendo = null; app.salirFam = null; }
     else if (a === "seguir") { app.sub = "seguir"; app.hijoId = el.dataset.id; cam.s = null; }
     else if (a === "yaSubio") {
       const h = HIJOS.find((x) => x.id === el.dataset.id), p = parDe(h);
@@ -995,6 +1330,32 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       app.sub = "seguir"; app.hijoId = h.id; cam.s = null;
     }
     else if (a === "tema") cambiarTema(el.dataset.v);
+    else if (a === "idioma") cambiarIdioma(el.dataset.v);
+    else if (a === "legal") app.hoja = "legal";
+    else if (a === "cerrarHoja") { if (e.target.closest(".hoja-modal") && !e.target.closest("button")) return; app.hoja = null; }
+    else if (a === "eliminar") { app.sub = "eliminar"; app.form = { palabra: "" }; }
+    else if (a === "confirmarEliminar") {
+      const palabra = idioma() === "en" ? "DELETE" : "ELIMINAR";
+      if (String(app.form?.palabra ?? "").trim().toUpperCase() !== palabra) return;
+      // Demostración: se cierra la sesión y la cuenta de prueba queda disponible otra vez.
+      if (AP.id === "rodrigo") { Object.assign(FAMILIA, { unido: false, codigo: null, hijos: null }); HIJOS.forEach((h) => { h.contactos = h.contactos.filter((c) => !c.papa); }); }
+      AP = PERSONAS.ana; app.vista = "login"; app.sub = null; app.tab = "inicio"; app.form = null; callar();
+      app.banner = { tipo: "ok", titulo: "Cuenta eliminada", cuerpo: "Demostración: se borraron tu perfil y tus datos. La cuenta de prueba vuelve a estar disponible.", hasta: performance.now() + 5000 };
+    }
+    else if (a === "salirFam") app.salirFam = el.dataset.id;
+    else if (a === "cancelarSalirFam") app.salirFam = null;
+    else if (a === "confirmarSalirFam") {
+      // Rodrigo deja de recibir los avisos de ese hijo/a (su teléfono sale de las llamadas).
+      const l = (FAMILIA.hijos ?? HIJOS.map((h) => h.id)).filter((id) => id !== el.dataset.id);
+      const h = HIJOS.find((x) => x.id === el.dataset.id); h.contactos = h.contactos.filter((c) => !c.papa);
+      app.salirFam = null;
+      if (l.length) FAMILIA.hijos = l;
+      else {
+        Object.assign(FAMILIA, { unido: false, codigo: null, hijos: null });
+        AP = PERSONAS.ana; app.sub = null;
+        app.banner = { tipo: "ok", titulo: `👨‍👩‍👧 ${PERSONAS.rodrigo.corto} salió de la familia`, cuerpo: "Ya no recibe los avisos. Puedes volver a compartir cuando quieras.", hasta: performance.now() + 5000 };
+      }
+    }
     else if (a === "familia") app.sub = "familia";
     else if (a === "parentescoFam") FAMILIA.parentesco = el.dataset.v;
     else if (a === "hijoFam") {
@@ -1003,7 +1364,7 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
       FAMILIA.hijos = l.size === HIJOS.length ? null : [...l];
     }
     else if (a === "crearCodigoFam") {
-      FAMILIA.codigo = "F" + Math.random().toString(16).slice(2, 9).toUpperCase().padEnd(7, "0");
+      FAMILIA.codigo = "F" + Array.from({ length: 8 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join(""); // como codigo_aleatorio('F', 8)
       // Demostración: Rodrigo crea su cuenta con el código a los pocos segundos.
       setTimeout(() => {
         FAMILIA.unido = true;
@@ -1048,8 +1409,8 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
     else if (a === "guardar") guardar();
     else if (a === "recibido") { const p = R.paradas.find((x) => x.id === el.dataset.id); confirmar(p, "📱 Tocaste “Recibido”: se cancelan las llamadas"); }
     else if (a === "banner") { const b = app.banner; app.banner = null; if (b && b.tipo === "aviso" && R) { const p = R.paradas.find((x) => x.id === b.hijo); if (p && !(R.llamada && R.llamada.fase === "sonando")) confirmar(p, "📱 Abriste la notificación: se cancelan los reintentos"); app.sub = "seguir"; app.hijoId = b.hijo; cam.s = null; } }
-    else if (a === "uno") { const l = R.llamada; confirmar(l.p, `✅ Contestaste la llamada ${l.canal === "app" ? "por la app (sin costo)" : "telefónica (con costo)"} y presionaste 1`); }
-    else if (a === "colgar") noContesto();
+    else if (a === "uno") { callar(); const l = R.llamada; confirmar(l.p, `✅ Contestaste la llamada ${l.canal === "app" ? "por la app (sin costo)" : "telefónica (con costo)"} y presionaste 1`); }
+    else if (a === "colgar") { callar(); noContesto(); }
     else if (a === "salir") { app.vista = "login"; app.sub = null; }
     previo = ""; render(true);
   });
@@ -1058,7 +1419,13 @@ ul.linea .h { font-family: var(--font-mono); color: var(--muted); font-size: 12p
   function bucle(ahora) {
     const dt = Math.min(0.25, (ahora - ult) / 1000); ult = ahora;
     const sonando = R && R.llamada && R.llamada.fase === "sonando";
-    if (sonando && performance.now() >= R.llamada.hastaReal) noContesto();
+    if (sonando && !R.llamada.hablada) {
+      // La voz de la llamada, en el idioma de la app (como el mensaje real de Twilio).
+      R.llamada.hablada = true;
+      const l = R.llamada, h = hijoDe(l.p), m = Math.max(1, Math.round(l.p.eta / 60));
+      hablar(tr(`“Hola. Le avisamos del furgón escolar. El furgón llegará en aproximadamente ${m} ${m === 1 ? "minuto" : "minutos"} con ${h.nombre} ${h.apellido}. Por favor, que alguien esté esperando en casa. Para confirmar, presione 1.”`));
+    }
+    if (sonando && performance.now() >= R.llamada.hastaReal) { callar(); noContesto(); }
     // La simulación espera mientras suena la llamada, para que alcances a contestar.
     if (R && !R.fin && app.corriendo && !sonando) { acc += dt * app.vel; while (acc >= 1 && !R.fin) { paso(); acc--; } }
     render();
