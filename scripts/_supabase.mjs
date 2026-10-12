@@ -17,8 +17,10 @@ export const TOKEN = () => requerida("SUPABASE_ACCESS_TOKEN");
  * panel (supabase.com/dashboard/project/<ref>/…) o la del proyecto (https://<ref>.supabase.co).
  */
 export const REF = () => {
-  const v = requerida("SUPABASE_PROJECT_REF");
-  const ref = v.match(/\/project\/([a-z0-9]+)/i)?.[1] ?? v.match(/^(?:https?:\/\/)?([a-z0-9]+)\.supabase\.co/i)?.[1] ?? v;
+  // En GitHub Actions, scripts/resolver-proyecto.mjs deja aquí el código ya buscado por nombre.
+  const v = process.env.SUPABASE_REF_RESUELTO?.trim() || requerida("SUPABASE_PROJECT_REF");
+  const ref = v.match(/\/project\/([a-z0-9]+)/i)?.[1] ?? v.match(/^(?:https?:\/\/)?([a-z0-9]+)\.supabase\.co/i)?.[1]
+    ?? v.match(/(?:^|[^a-z0-9])([a-z]{20})(?![a-z0-9])/)?.[1] ?? v; // p. ej. «Project ID: abcd…» pegado entero
   if (!/^[a-z0-9]{20}$/.test(ref)) {
     console.error("SUPABASE_PROJECT_REF no parece un código de proyecto: deben ser 20 letras y números en minúscula,");
     console.error("el final de la dirección supabase.com/dashboard/project/<código>. Revisa que no tenga espacios ni otras partes.");

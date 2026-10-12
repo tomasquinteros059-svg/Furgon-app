@@ -69,6 +69,10 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Código del proyecto de Supabase
+        if: env.SUPABASE_ACCESS_TOKEN != ''
+        run: node scripts/resolver-proyecto.mjs >> "$GITHUB_ENV"
+
       - name: Probar la clave de Google (Routes API)
         if: env.GOOGLE_MAPS_API_KEY != ''
         run: |
@@ -117,5 +121,5 @@ jobs:
           {
             echo "## Servidor publicado ✅"
             echo
-            echo "Proyecto: \`$SUPABASE_PROJECT_REF\`. Siguiente paso: Actions → **APK para probar** → Run workflow."
+            echo "Proyecto: \`$SUPABASE_REF_RESUELTO\`. Siguiente paso: Actions → **APK para probar** → Run workflow."
           } >> "$GITHUB_STEP_SUMMARY"

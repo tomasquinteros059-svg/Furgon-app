@@ -47,6 +47,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Código del proyecto de Supabase
+        if: env.SUPABASE_ACCESS_TOKEN != ''
+        run: node scripts/resolver-proyecto.mjs >> "$GITHUB_ENV"
+
       - name: Instalar dependencias
         run: npm ci
 
@@ -71,7 +75,7 @@ jobs:
           fi
           node scripts/claves-publicas.mjs >> "$GITHUB_ENV"
           [ -z "$GOOGLE_MAPS_ANDROID_API_KEY" ] && echo "::warning::Sin GOOGLE_MAPS_ANDROID_API_KEY: el mapa dentro de la app se verá en blanco." || true
-          echo "Conectada a https://$SUPABASE_PROJECT_REF.supabase.co"
+          echo "Conectada a https://$SUPABASE_REF_RESUELTO.supabase.co"
 
       - name: Numerar la compilación
         id: nombre
