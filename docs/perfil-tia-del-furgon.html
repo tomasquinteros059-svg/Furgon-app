@@ -150,10 +150,18 @@ table.det td.mono { font-size: 12px; }
 .seg.tema button { flex: 1; min-height: 40px; border-radius: 9px; font-size: 14px; color: var(--muted); }
 .seg.tema button[aria-pressed="true"] { background: var(--bus); color: var(--bus-ink); }
 .btn.sec .ico { --ico-acento: var(--bus); }
+.enlaces { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 6px; font-size: 13px; color: var(--muted); }
+.enlace { border: 0; background: transparent; padding: 6px 4px; font-size: 13px; font-weight: 700; color: var(--navy); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.enlace.peligro { color: var(--alert); font-size: 15px; text-decoration: none; }
+.aviso-error { background: var(--alert-soft); color: var(--alert); border: 1px solid var(--alert); border-radius: 12px; padding: 10px 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.lista-borra { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.hoja p { margin: 0; white-space: pre-line; }
+.hoja .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.url { font-family: var(--font-mono); font-size: 13px; background: var(--surface-2); border-radius: 8px; padding: 6px 8px; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
-<span class="rotulo">Perfil · Tía del furgón (conductora)</span>
+<span class="rotulo" id="rotulo">Perfil · Tía del furgón (conductora)</span>
 <div class="telefono" id="tel"></div>
 
 <script>
@@ -182,6 +190,279 @@ table.det td.mono { font-size: 12px; }
       : parte.replace(REGEX_EMOJI, (e) => { const n = nombreIcono(e); return n ? ico(n) : e; })).join("");
   }
   /* ICONOS:fin */
+  // ---------- Idioma: Automático (el del teléfono), Español o English ----------
+  // Como en la app: el texto en español es la clave; las traducciones copian idiomas/en/*.ts.
+  // Los datos de la demo (nombres, direcciones, colegios, rutas, mensajes de las familias) no se traducen.
+  let idiomaPref = "sistema";
+  try { const v = localStorage.getItem("idioma"); if (v === "sistema" || v === "es" || v === "en") idiomaPref = v; } catch { /* sin almacenamiento */ }
+  const idiomaActual = () => idiomaPref === "sistema" ? (/^en/i.test(navigator.language || "") ? "en" : "es") : idiomaPref;
+  function guardarIdioma(v) {
+    idiomaPref = v;
+    try { localStorage.setItem("idioma", v); } catch { /* sin almacenamiento */ }
+    aplicarIdiomaDocumento();
+  }
+  function aplicarIdiomaDocumento() {
+    const en = idiomaActual() === "en";
+    document.documentElement.lang = en ? "en" : "es";
+    document.title = en ? "Furgón Escolar · School van driver" : "Furgón Escolar · Tía del furgón";
+    const r = document.getElementById("rotulo");
+    if (r) r.textContent = en ? "Profile · School van driver" : "Perfil · Tía del furgón (conductora)";
+  }
+  const AVISO_UBICACION = "Furgón Escolar recopila la ubicación de este teléfono para compartir el furgón con las familias de tu recorrido y avisarles antes de que llegue, incluso cuando la app está cerrada o la pantalla apagada. Solo mientras hay un recorrido iniciado; al finalizarlo deja de usarla.\n\nEn la siguiente pantalla elige «Permitir todo el tiempo».";
+  const EN = {
+    // Comunes, ingreso y cuenta (idiomas/en/comun.ts, movil-familias.ts)
+    "Automático": "Automatic", "Idioma": "Language", "Apariencia": "Appearance", "Claro": "Light", "Oscuro": "Dark",
+    "Español": "Español", "English": "English", "Furgón Escolar": "Furgón Escolar", "Google Maps": "Google Maps", "Waze": "Waze", "WhatsApp": "WhatsApp", "Demo": "Demo", "ESCOLAR": "ESCOLAR",
+    "Avisos automáticos de llegada": "Automatic arrival alerts", "Correo": "Email", "Contraseña": "Password", "Ingresar": "Sign in",
+    "Cuenta de demostración. Las cuentas de conductora las crea el dueño del furgón con un código de invitación.": "Demo account. Driver accounts are created by the van owner with an invite code.",
+    "Términos y condiciones": "Terms and conditions", "Política de privacidad": "Privacy policy",
+    "En la app se abre la página web:": "In the app, this opens the web page:",
+    "Se publica junto con el panel web de administración.": "It's published together with the web admin panel.",
+    "Volver": "Back", "‹ Volver": "‹ Back", "Guardar": "Save", "Cancelar": "Cancel", "Aceptar": "Accept", "Rechazar": "Decline", "Cerrar": "Close", "Listo": "Done", "Buscar": "Search",
+    "Cerrar sesión": "Sign out", "Eliminar mi cuenta": "Delete my account", "Sí": "Yes", "No": "No", "Hoy": "Today", "Ejemplo": "Example",
+    // Eliminar cuenta
+    "Esto no se puede deshacer.": "This can't be undone.", "Se borrará:": "What will be deleted:",
+    "Tu perfil, tu correo, tu teléfono y tus preferencias.": "Your profile, email, phone number, and preferences.",
+    "Tu licencia de conducir y sus fotos. Los recorridos que hiciste quedan en el historial del servicio, sin tu nombre.": "Your driver's license and its photos. Trips you drove stay in the service history, without your name.",
+    "Los registros de cobros que la ley obliga a guardar y los respaldos de seguridad se eliminan dentro de 30 días.": "Charge records we're required by law to keep and security backups are deleted within 30 days.",
+    "Ver la política de privacidad": "View the privacy policy", "Eliminar mi cuenta para siempre": "Delete my account forever",
+    "✅ Tu cuenta se eliminó. Cerramos tu sesión.": "✅ Your account was deleted. You've been signed out.",
+    // Aviso de ubicación (apps/movil/src/ubicacion/seguimiento.ts)
+    "Ubicación del furgón": "School van location", "📍 Ubicación del furgón": "📍 School van location",
+    [AVISO_UBICACION]: "Furgón Escolar collects this phone's location to share the van with the families on your trip and alert them before it arrives, even when the app is closed or the screen is off. Only while a trip is in progress; it stops using it when you end the trip.\n\nOn the next screen, choose “Allow all the time”.",
+    "Ahora no": "Not now", "Continuar": "Continue",
+    "Sin la ubicación del furgón no podemos avisar a las familias. Puedes iniciar el recorrido cuando quieras.": "Without the van's location we can't alert families. You can start the trip whenever you're ready.",
+    // Pestañas y barra
+    "Secciones": "Sections", "Administrar": "Manage", "Historial": "History", "Perfil": "Profile", "Sin señal": "No signal",
+    // Hoy
+    "Antes de partir": "Before you set off",
+    "📡 Tu celular es el GPS del furgón: la ubicación que ven los apoderados sale de este teléfono, solo durante el recorrido.": "📡 Your phone is the van's GPS: the location parents see comes from this phone, only during the trip.",
+    "✓ Ubicación “Siempre”": "✓ Location “Always”", "✓ Notificaciones": "✓ Notifications", "✓ Ahorro de batería desactivado": "✓ Battery saver off",
+    "🆕 Se sumaron a tus rutas": "🆕 New on your routes",
+    "Quedaron donde menos alargan el recorrido. Su familia ya recibe los avisos.": "They were placed where they add the least to the trip. Their family already gets alerts.",
+    "🪪 Mi licencia": "🪪 My license", "Mi licencia": "My license", "Toca para responder": "Tap to reply",
+    "Iniciar recorrido": "Start trip",
+    "Inicia el recorrido antes de salir. La app avisa sola a cada apoderado unos 5 minutos antes de llegar. No necesitas llamar a nadie mientras manejas.": "Start the trip before you set off. The app alerts each parent on its own about 5 minutes before you arrive. You don't need to call anyone while driving.",
+    "Casas → colegio": "Homes → school", "Colegio → casas": "School → homes",
+    "🪪 Tu licencia está vencida: sube la renovada en «Mi licencia» para iniciar recorridos.": "🪪 Your license has expired: upload the renewed one in “My license” to start trips.",
+    // Licencia
+    "⏳ Enviada: la empresa la está verificando.": "⏳ Sent: the company is verifying it.",
+    "Te avisaremos cuando la empresa la verifique.": "We'll let you know when the company verifies it.",
+    "Subir licencia renovada": "Upload renewed license", "Número (RUT)": "Number (RUT)", "Clase": "Class", "Vence el": "Expires on",
+    "Foto del frente": "Front photo", "Foto del reverso (opcional)": "Back photo (optional)", "Foto del reverso": "Back photo",
+    "📷 Tomar o elegir foto": "📷 Take or choose a photo", "📷 Cambiar foto": "📷 Change photo",
+    "Escribe el número de la licencia (tu RUT).": "Enter the license number (your RUT).",
+    "Revisa la fecha de vencimiento: debe ser futura.": "Check the expiration date: it must be in the future.",
+    "Falta la foto del frente de la licencia.": "The photo of the front of the license is missing.",
+    "Enviar para verificar": "Send for verification", "🔒 Las fotos solo las ve la empresa para verificarla.": "🔒 Only the company sees the photos, to verify it.",
+    "Te avisamos a los 60, 30, 15, 7 y 1 días del vencimiento. Con la licencia vencida no se pueden iniciar recorridos: así protegemos a los niños y a ti.": "We remind you 60, 30, 15, 7 and 1 days before it expires. With an expired license you can't start trips: that's how we protect the children and you.",
+    "🪪 La empresa verificó tu licencia. ¡Gracias!": "🪪 The company verified your license. Thank you!",
+    // Recorrido
+    "Compartiendo ubicación": "Sharing location", "Conduce tranquila": "Drive calmly",
+    "Los avisos a los apoderados se envían solos. Marca a cada alumno cuando estés detenida.": "Parent alerts go out on their own. Mark each student when you're stopped.",
+    "Mapa del recorrido": "Trip map", "Mapa de la ruta": "Route map", "Google Maps · tráfico en vivo": "Google Maps · live traffic", "Conectando con Google Maps…": "Connecting to Google Maps…",
+    "Google Maps no está disponible en este momento. Se muestra el mapa básico.": "Google Maps isn't available right now. Showing the basic map.",
+    "No se pudo cargar Google Maps. Revisa tu conexión a internet.": "Couldn't load Google Maps. Check your internet connection.",
+    "Google no entregó la ruta por calles (¿«Directions API» habilitada?). Se muestra una ruta aproximada.": "Google didn't return the street route (is the “Directions API” enabled?). Showing an approximate route.",
+    "🙋 Su familia confirmó que subió": "🙋 Their family confirmed they're on board", "Se avisará ~5 min antes": "Will be alerted ~5 min ahead",
+    "Subió ✅": "On board ✅", "En su hogar ✅": "Home ✅", "Ausente": "Absent", "Hoy no viaja": "Not riding today",
+    "¡Listo! No quedan alumnos.": "Done! No students left.", "Finaliza el recorrido para dejar de compartir tu ubicación.": "End the trip to stop sharing your location.",
+    "Avisos automáticos": "Automatic alerts", "Finalizar recorrido": "End trip", "Controles de la demostración": "Demo controls",
+    "Queda 1 alumno pendiente. ¿Finalizar de todas formas?": "1 student is still pending. End the trip anyway?",
+    "Se dejará de compartir la ubicación.": "Location sharing will stop.", "Finalizar": "End",
+    "Recorrido finalizado. El GPS se detuvo.": "Trip ended. GPS stopped.",
+    "Señal de vuelta.": "Signal back.", "Sin señal: las posiciones se guardan en el teléfono.": "No signal: positions are saved on the phone.",
+    // Resumen e historial
+    "✓ GPS detenido": "✓ GPS stopped", "Recorrido terminado": "Trip finished", "Duración": "Duration", "Recorridos": "Driven",
+    "Subieron": "On board", "En su hogar": "Home", "Avisos confirmados": "Alerts confirmed",
+    "Llamadas por la app (sin costo)": "App calls (free)", "Llamadas telefónicas (con costo)": "Phone calls (paid)",
+    "Detalle": "Details", "Alumno": "Student", "Aviso": "Alert", "Confirmó": "Confirmed",
+    "Llamadas que hiciste mientras manejabas:": "Calls you made while driving:",
+    ". Todos los avisos se enviaron solos. Solo se pagó una llamada telefónica cuando el apoderado no tenía internet.": ". All alerts were sent automatically. A phone call was only paid for when the parent had no internet.",
+    "Volver al inicio": "Back to home",
+    "Hora de cada aviso y de cada llegada al hogar. Toca un recorrido para ver el detalle.": "Time of each alert and each arrival home. Tap a trip to see the details.",
+    "No viajó": "Didn't ride", "Pendiente": "Pending", "Sin confirmar": "Not confirmed", "Teléfono (con costo)": "Phone (paid)",
+    "Llamada app (gratis)": "App call (free)", "Recibido en app": "Got it in the app",
+    "tocó Recibido en la app": "tapped Got it in the app", "contestó la llamada por la app y presionó 1 · sin costo": "answered the app call and pressed 1 · free",
+    "contestó la llamada telefónica y presionó 1 · con costo": "answered the phone call and pressed 1 · paid",
+    // Perfil
+    "Mis datos": "My details", "Teléfono": "Phone", "Licencia": "License", "Empresa": "Company", "Furgón asignado": "Assigned van",
+    "Patente": "License plate", "Vehículo": "Vehicle", "Rutas": "Routes", "Alumnos": "Students", "Ida 07:00 · Vuelta 16:30": "Morning 07:00 · Afternoon 16:30",
+    "Permisos del teléfono": "Phone permissions", "Ubicación": "Location", "Siempre ✓": "Always ✓", "Notificaciones": "Notifications",
+    "Activadas ✓": "On ✓", "Ahorro de batería": "Battery saver", "Excluida ✓": "Excluded ✓",
+    "Automático sigue el modo del teléfono.": "Automatic follows your phone's mode.", "Automático usa el idioma del teléfono.": "Automatic uses your phone's language.",
+    "🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.": "🔒 Your location is only shared while a trip is active. When you end it, GPS turns off. Parents' phone numbers aren't shown: the app calls them for you.",
+    // Administrar (idiomas/en/movil-conductor.ts)
+    "‹ Administrar": "‹ Manage", "‹ Solicitudes": "‹ Requests",
+    "Tienes un recorrido en curso. La administración se abre cuando lo termines: no se administra manejando.": "You have a trip in progress. Management opens when you finish it: no managing while driving.",
+    "Eres la dueña del furgón: tú agregas a tus alumnos, ordenas la ruta y llevas los pagos. Se bloquea mientras manejas.": "You own the van: you add your students, set the route order and keep track of payments. It's locked while you drive.",
+    "👧 Mis alumnos": "👧 My students", "Mis alumnos": "My students", "🗺️ Rutas": "🗺️ Routes", "Ruta recomendada, orden y «hoy no va»": "Suggested route, order and “not riding today”",
+    "💳 Cobros y precios": "💳 Payments and prices", "🤝 Conexiones con familias": "🤝 Connections with families", "Busca familias o deja que te encuentren": "Find families or let them find you",
+    "💬 Solicitudes de las familias": "💬 Requests from families", "Todo respondido": "All answered",
+    "También puedes entrar al panel web de administración con esta misma cuenta.": "You can also sign in to the web admin panel with this same account.",
+    "+ Agregar alumno": "+ Add student", "Sin ruta": "No route", "✓ Familia usa la app": "✓ Family uses the app", "Familia sin la app": "Family not on the app",
+    "Enviar código a la familia": "Send code to the family", "Compartir por": "Share via",
+    "Envía este código a la familia para que reciba los avisos.": "Send this code to the family so they get alerts.",
+    "Quedó en tu ruta. Envía este código a la familia para que reciba los avisos.": "They're now on your route. Send this code to the family so they get alerts.",
+    "Agregar alumno": "Add student", "Nombre y apellido": "First and last name", "Curso": "Grade", "Dirección": "Address", "Calle, número, comuna": "Street, number, district",
+    "Toca para ubicar la casa": "Tap to place the home", "📍 Casa ubicada": "📍 Home placed", "Toca la puerta de la casa": "Tap the front door of the home",
+    "Teléfono del apoderado": "Parent's phone", "Precio mensual (CLP)": "Monthly price (CLP)", "Guardar alumno": "Save student",
+    "Falta el nombre o la dirección.": "The name or address is missing.",
+    "Toca el mapa para ubicar la casa: así el aviso llega a tiempo.": "Tap the map to place the home so the alert arrives on time.",
+    "Revisa el teléfono (ej: 9 1234 5678).": "Check the phone number (e.g. 9 1234 5678).",
+    "Escribe el precio mensual (solo números).": "Enter the monthly price (numbers only).",
+    "El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Hoy no va» saca a un alumno solo de la ruta de hoy.": "This is the order you follow and the one the system uses to alert each family on time. “Not riding today” takes a student off today's route only.",
+    "✨ Recomendar ruta": "✨ Suggest route", "👍 Tu orden ya es el más corto": "👍 Your order is already the shortest", "Aplicar": "Apply", "Descartar": "Dismiss",
+    "Subir": "Move up", "Bajar": "Move down", "Quitar": "Remove", "Hoy no va": "Not riding today",
+    "📅 Hoy no va · tocar si sí va": "📅 Not riding today · tap if they are", "📅 Hoy no va (avisó su familia) · tocar si sí va": "📅 Not riding today (their family told you) · tap if they are",
+    "+ Agregar alumno a esta ruta": "+ Add student to this route", "Orden actualizado: el próximo recorrido lo usará.": "Order updated: the next trip will use it.",
+    "Vista": "View", "Cobros del mes": "This month's charges", "Precios": "Prices", "Ingreso mensual esperado": "Expected monthly income", "Alumnos activos": "Active students",
+    "Cobrado": "Collected", "Por cobrar": "To collect", "Guardar monto": "Save amount", "Vencido": "Overdue", "Pagó en efectivo": "Paid in cash", "Transferencia": "Bank transfer",
+    "✏️ Cambiar monto de este mes": "✏️ Change this month's amount", "Generar mensualidades de alumnos nuevos": "Generate fees for new students", "Mensualidades generadas.": "Monthly fees generated.",
+    "efectivo": "cash", "transferencia": "bank transfer", "Sin cambios.": "No changes.", "Escribe un monto (solo números).": "Enter an amount (numbers only).",
+    "Respuesta": "Reply", "Escribe tu respuesta": "Write your reply", "Escribe tu respuesta.": "Write your reply.", "Respuesta enviada a la familia.": "Reply sent to the family.",
+    "Aprobar cancelación y dar de baja": "Approve cancellation and remove student", "Responder": "Reply", "Solicitud rechazada.": "Request declined.",
+    "Cerrada.": "Closed.", "Cerrada · cancelación aprobada.": "Closed · cancellation approved.", "Cerrada · cancelación rechazada.": "Closed · cancellation declined.",
+    "¿En qué rutas va?": "Which routes do they ride?", "Invitar": "Invite", "🤝 Invitar": "🤝 Invite",
+    "Sus hijos entrarán solos a esas rutas, en la parada que menos alarga el recorrido.": "Their children will be added to those routes automatically, at the stop that adds the least to the trip.",
+    "Conexiones con familias": "Connections with families", "Que las familias me encuentren": "Let families find me",
+    "Apareces con tu nombre, tu furgón y tus comunas. Nunca tu teléfono ni tus rutas.": "You show up with your name, your van and your areas. Never your phone number or your routes.",
+    "Comunas donde trabajas": "Areas (comunas) you serve", "Buscar una familia": "Find a family",
+    "Por privacidad, solo con su correo o teléfono exactos. Prueba con daniela@correo.cl o 9 4444 1212.": "For privacy, only by their exact email or phone number. Try daniela@correo.cl or 9 4444 1212.",
+    "Correo o teléfono": "Email or phone",
+    "No hay una familia con ese correo o teléfono. Puedes enviarle un código de invitación desde «Mis alumnos».": "No family is registered with that email or phone. You can send them an invite code from “My students”.",
+    "✓ Conectados": "✓ Connected", "Invitaciones enviadas": "Invitations sent", "Esperando que acepte en su app": "Waiting for them to accept in their app",
+    "Aún no registra a sus hijos: entrarán solos a tus rutas": "Hasn't added their children yet: they'll be added to your routes automatically",
+    "Comunas guardadas: así te encuentran las familias.": "Areas saved: this is how families find you.",
+    "Las familias ya te pueden encontrar.": "Families can now find you.", "Ya no apareces en la búsqueda de las familias.": "You no longer appear in families' search.",
+    "Solicitudes": "Requests", "No hay solicitudes por atender. 🎉": "No requests to handle. 🎉",
+    "Cancelación": "Cancellation", "Pregunta": "Question", "Sin responder": "Unanswered", "Respondida": "Answered",
+  };
+  // Nombres de días y meses (fechas de negocio en hora de Chile).
+  const MES_EN = { enero: "January", febrero: "February", marzo: "March", abril: "April", mayo: "May", junio: "June", julio: "July", agosto: "August", septiembre: "September", octubre: "October", noviembre: "November", diciembre: "December" };
+  const MES_CORTO_EN = { ene: "Jan", feb: "Feb", mar: "Mar", abr: "Apr", may: "May", jun: "Jun", jul: "Jul", ago: "Aug", sep: "Sep", oct: "Oct", nov: "Nov", dic: "Dec" };
+  const DIA_EN = { lunes: "Monday", martes: "Tuesday", miércoles: "Wednesday", jueves: "Thursday", viernes: "Friday", sábado: "Saturday", domingo: "Sunday" };
+  const DIA_CORTO_EN = { lun: "Mon", mar: "Tue", mié: "Wed", jue: "Thu", vie: "Fri", sáb: "Sat", dom: "Sun" };
+  const mesEn = (m) => MES_EN[m.toLowerCase()] ?? m;
+  const tr = (s) => traducirFrase(s);
+  const yEn = (s) => s.replace(/ \(parada (\d+)\)/g, " (stop $1)").replace(/ y /g, " and ");
+  const EN_PATRONES = [
+    // Textos sin palabras que traducir (cifras, horas, unidades, clases de licencia, archivos).
+    [/^[\d\s.,:–·×%~≈-]*(km|min|s)?$/, "$&"], [/^[AB]\d?$/, "$&"], [/^…\/\w+\.html$/, "$&"],
+    [/^(\p{L}+) (\d+) de (\p{L}+)$/u, (_, d, n, m) => `${DIA_EN[d.toLowerCase()] ?? d}, ${mesEn(m)} ${n}`],
+    [/^(\p{L}{3}) (\d+) (\p{L}{3}) · (.+)$/u, (_, d, n, m, r) => `${DIA_CORTO_EN[d.toLowerCase()] ?? d}, ${MES_CORTO_EN[m] ?? m} ${n} · ${r}`],
+    [/^Hoy · (.+)$/, "Today · $1"],
+    [/^Hola, tía (.+)$/, "Hi, $1"], [/^Tía (.+)$/, "$1"], [/^(.+) · Conductora$/, "$1 · Driver"],
+    [/^Sin señal · (\d+%)$/, "No signal · $1"],
+    // Licencia
+    [/^La empresa la rechazó: (.+)\. Súbela de nuevo\.$/, "The company rejected it: $1. Upload it again."],
+    [/^✗ Venció el (\S+)\. No puedes iniciar recorridos hasta subir la renovada\.$/, "✗ Expired on $1. You can't start trips until you upload the renewed one."],
+    [/^⚠ Vence en 1 día \((\S+)\)\. Agenda la renovación y súbela aquí\.$/, "⚠ Expires in 1 day ($1). Schedule the renewal and upload it here."],
+    [/^⚠ Vence en (\d+) días \((\S+)\)\. Agenda la renovación y súbela aquí\.$/, "⚠ Expires in $1 days ($2). Schedule the renewal and upload it here."],
+    [/^✓ Vigente hasta el (\S+) · verificada por la empresa$/, "✓ Valid until $1 · verified by the company"],
+    [/^N° (\S+) · Clase (\S+) · vence el (\S+)$/, "No. $1 · Class $2 · expires on $3"],
+    [/^Clase (\S+) · vence (\S+)$/, "Class $1 · expires $2"],
+    [/^✓ Batería (\d+%)$/, "✓ Battery $1"],
+    // Hoy
+    [/^(.+) · (\d+) asientos$/, "$1 · $2 seats"],
+    [/^(Casas → colegio|Colegio → casas) · (\d+) alumnos?(?: · (\d+) no va hoy)?$/, (_, d, n, no) => `${tr(d)} · ${n} student${n === "1" ? "" : "s"}${no ? ` · ${no} not riding today` : ""}`],
+    [/^✓ Terminado (.+)$/, "✓ Done $1"],
+    [/^· (.+), parada (\d+)$/, "· $1, stop $2"],
+    [/^🤝 (.+) quiere conectarse contigo$/, "🤝 $1 wants to connect with you"],
+    [/^🤝 (.+) quiere conectarse$/, "🤝 $1 wants to connect"],
+    [/^🤝 (.+) aceptó tu invitación\.$/, "🤝 $1 accepted your invitation."],
+    [/^👧 (\S+) registró a (.+): entró sola a (.+)\.$/, (_, f, h, d) => `👧 ${f} added ${h}: they were added automatically to ${yEn(d)}.`],
+    [/^👧 (\S+) registró a (.+)\. Agrégalo a una ruta en Administrar → Rutas\.$/, "👧 $1 added $2. Add them to a route in Manage → Routes."],
+    // Recorrido
+    [/^Sin señal · (\d+) posiciones guardadas$/, "No signal · $1 saved positions"],
+    [/^([\d.]+) de ([\d.]+) km$/, "$1 of $2 km"],
+    [/^Parada (\d+) · estás aquí$/, "Stop $1 · you're here"], [/^Parada (\d+) · llegada en ~(\d+) min$/, "Stop $1 · arriving in ~$2 min"], [/^Parada (\d+)$/, "Stop $1"],
+    [/^✓ (.+) confirmó$/, "✓ $1 confirmed"], [/^🔔 Avisado (\S+) · esperando confirmación$/, "🔔 Alerted $1 · waiting for confirmation"],
+    [/^(\d+)\. (.+) · (Subió ✅|En su hogar ✅|Ausente|Hoy no viaja)(.*)$/, (_, n, a, e, h) => `${n}. ${a} · ${tr(e)}${h}`],
+    [/^Quedan (\d+) alumnos pendientes\. ¿Finalizar de todas formas\?$/, "$1 students are still pending. End the trip anyway?"],
+    [/^Recorrido iniciado\. Compartiendo ubicación cada (\d+) s\.$/, "Trip started. Sharing location every $1 s."],
+    [/^(.+) no va hoy \((lo marcaste tú|lo marcó su apoderado)\): la ruta se salta su casa\.$/, (_, a, q) => `${a} isn't riding today (${q === "lo marcaste tú" ? "you marked it" : "their parent marked it"}): the route skips their home.`],
+    [/^Señal recuperada: se enviaron (\d+) posiciones guardadas\.$/, "Signal back: $1 saved positions were sent."],
+    [/^🔔 Se avisó a (.+) que llegas en ~(\d+) min con (.+)\.$/, "🔔 $1 was alerted that you'll arrive with $3 in ~$2 min."],
+    [/^Aviso automático a (.+) de (.+): alarma en su teléfono\.$/, "Automatic alert to $1 for $2: alarm on their phone."],
+    [/^Llamada por la app a (.+) \(por internet, sin costo\)\.$/, "App call to $1 (over the internet, free)."],
+    [/^(.+) confirmó el aviso de (\S+) \((.+)\)\.$/, (_, a, n, c) => `${a} confirmed the alert for ${n} (${tr(c)}).`],
+    [/^El teléfono de (.+) no tiene internet: la llamada por la app no llegó\. Se llama por teléfono \(con costo\)\.$/, "$1's phone has no internet: the app call didn't get through. Calling by phone (paid)."],
+    [/^Llegaste donde (.+)\. Marca la subida\.$/, "You've arrived at $1's. Mark the pickup."], [/^Llegaste donde (.+)\. Marca la entrega\.$/, "You've arrived at $1's. Mark the drop-off."],
+    [/^(.+) confirmó que (\S+) subió: la sigue en vivo hasta su hogar\.$/, "$1 confirmed $2 is on board: they're following live all the way home."],
+    [/^(.+) marcado ausente\. Se avisó a (.+)\.$/, "$1 marked absent. $2 was notified."],
+    [/^(.+) subió al furgón\. Se avisó a (.+)\.$/, "$1 got on the van. $2 was notified."],
+    [/^(.+) está en su hogar\. Se avisó a (.+)\.$/, "$1 is home. $2 was notified."],
+    [/^✅ (.+) marcado ausente\. Su apoderado ya recibió la confirmación\.$/, "✅ $1 marked absent. Their parent already got the confirmation."],
+    [/^✅ (.+) subió al furgón\. Su apoderado ya recibió la confirmación\.$/, "✅ $1 got on the van. Their parent already got the confirmation."],
+    [/^✅ (.+) está en su hogar\. Su apoderado ya recibió la confirmación\.$/, "✅ $1 is home. Their parent already got the confirmation."],
+    [/^(.+) · (\d\d:\d\d) a (\d\d:\d\d)$/, "$1 · $2 to $3"],
+    // Eliminar cuenta
+    [/^Para confirmar, escribe (\S+)$/, "To confirm, type $1"],
+    // Administrar
+    [/^(\d+) activos?(?: · (\d+) familia\(s\) sin la app)?$/, (_, n, f) => `${n} active${f ? ` · ${f} ${f === "1" ? "family" : "families"} without the app` : ""}`],
+    [/^(.+) por cobrar en (\p{L}+)$/u, (_, m, mes) => `${m} to collect in ${mesEn(mes)}`],
+    [/^(\d+) familia\(s\) quieren conectarse$/, (_, n) => `${n} ${n === "1" ? "family wants" : "families want"} to connect`],
+    [/^(\d+) sin responder$/, "$1 unanswered"],
+    [/^Hola\. Para recibir los avisos del furgón de (.+): 1\) Descarga la app «Furgón Escolar»\. 2\) Toca «Crear cuenta» y escribe este código: (\w+)\. ¡Listo! Te avisaremos unos 5 minutos antes de que llegue el furgón\.$/,
+      "Hi. To get the school van alerts for $1: 1) Download the “Furgón Escolar” app. 2) Tap “Create account” and enter this code: $2. That's it! We'll alert you about 5 minutes before the van arrives."],
+    [/^Ej: (.+)$/, (_, x) => `e.g. ${x.replace(/° Básico$/, "° grade")}`],
+    [/^≈ (.+) por recorrido\.$/, "≈ $1 per trip."],
+    [/^✨ Ruta recomendada: (.+)$/, "✨ Suggested route: $1"],
+    [/^Hoy haces ≈ (.+)\. Ahorras (.+) \(≈ (\d+) min\) en cada recorrido\.$/, "Today you drive ≈ $1. You save $2 (≈ $3 min) on every trip."],
+    [/^\(antes (\d+)°\)$/, "(was #$1)"],
+    [/^≈ (.+) · (\d+) de (\d+) van hoy$/, "≈ $1 · $2 of $3 riding today"],
+    [/^Listo: (.+) quedó con la ruta recomendada \((.+)\)\. El próximo recorrido la usa\.$/, "Done: $1 now uses the suggested route ($2). The next trip will use it."],
+    [/^(\S+) sí va hoy en (.+)\.$/, "$1 is riding today on $2."],
+    [/^(\S+) no va hoy en (.+): la ruta de hoy se salta su casa y su familia no recibe aviso\.$/, "$1 isn't riding today on $2: today's route skips their home and their family won't get an alert."],
+    [/^(.+) salió de (.+)\.$/, "$1 was removed from $2."], [/^(.+) quedó al final de (.+)\.$/, "$1 was added at the end of $2."],
+    [/^Cobros de (\p{L}+)$/u, (_, m) => `${mesEn(m)} payments`],
+    [/^Monto de (\p{L}+) \(CLP\)$/u, (_, m) => `${mesEn(m)} amount (CLP)`],
+    [/^El precio mensual de cada alumno\. Al guardarlo también se actualiza su cobro pendiente de (\p{L}+)\.$/u, (_, m) => `Each student's monthly price. Saving it also updates their pending ${mesEn(m)} charge.`],
+    [/^✓ Pagado · (\p{L}+)$/u, (_, m) => `✓ Paid · ${tr(m)}`],
+    [/^Cobro de (.+) en (\p{L}+): (.+)\.$/u, (_, a, m, x) => `Charge for ${a} in ${mesEn(m)}: ${x}.`],
+    [/^Precio de (.+): (.+) al mes\.$/, "Price for $1: $2 per month."],
+    [/^Pago de (.+) registrado\.$/, "Payment from $1 recorded."],
+    [/^(.+) quedó dado de baja: salió de tus rutas y no se le cobrará más\.$/, "$1 was removed from the service: off your routes and won't be charged again."],
+    [/^(Cancelación|Pregunta) · (Sin responder|Respondida)$/, (_, a, b) => `${tr(a)} · ${tr(b)}`],
+    [/^Familias conectadas \((\d+)\)$/, "Connected families ($1)"],
+    [/^Hijos: (.+)$/, "Children: $1"], [/^Va en: (.+)$/, (_, r) => `Rides on: ${yEn(r)}`],
+    [/^(.+) quedó conectada: sus hijos entrarán solos a (.+)\.$/, (_, f, r) => `${f} is now connected: their children will be added to ${yEn(r)} automatically.`],
+    [/^(.+) quedó conectada: agrega a sus hijos después en Rutas\.$/, "$1 is now connected: add their children later in Routes."],
+    [/^Invitación enviada a (.+)\. Cuando acepte, sus hijos entrarán solos a (.+)\.$/, (_, f, r) => `Invitation sent to ${f}. Once they accept, their children will be added to ${yEn(r)} automatically.`],
+    [/^Invitación enviada a (.+)\. Cuando acepte, agrega a sus hijos después en Rutas\.$/, "Invitation sent to $1. Once they accept, add their children later in Routes."],
+  ];
+  const cacheEn = new Map();
+  function traducirFrase(f) {
+    if (cacheEn.has(f)) return cacheEn.get(f);
+    const plano = f.replace(/\s+/g, " ");
+    let r = EN[f] ?? EN[plano];
+    if (r === undefined) {
+      for (const [re, en] of EN_PATRONES) if (re.test(plano)) { r = plano.replace(re, en); break; }
+    }
+    if (r === undefined) {
+      // «📅 texto», «✅ texto»: se traduce el texto y se conserva el prefijo.
+      const m = /^([^\p{L}\d¡¿«“"(‹]+)(\p{L}[\s\S]*)$/u.exec(plano);
+      const resto = m && (EN[m[2]] ?? EN_PATRONES.find(([re]) => re.test(m[2])));
+      if (resto) r = m[1] + (typeof resto === "string" ? resto : m[2].replace(resto[0], resto[1]));
+    }
+    if (r === undefined) r = f; // datos de la demo: quedan en español
+    if (cacheEn.size > 4000) cacheEn.clear();
+    cacheEn.set(f, r);
+    return r;
+  }
+  // Traduce un texto conservando los espacios de los bordes. Sin letras (horas, cifras, emojis), queda igual.
+  function traducirTexto(t) {
+    const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(t);
+    return m[2] && /\p{L}/u.test(m[2]) ? m[1] + traducirFrase(m[2]) + m[3] : t;
+  }
+  // Recorre el HTML final: textos entre etiquetas y los atributos aria-label, placeholder y title.
+  function traducir(html) {
+    if (idiomaActual() !== "en") return html;
+    return html.split(/(<[^>]*>)/).map((parte) => parte.startsWith("<")
+      ? parte.replace(/\b(aria-label|placeholder|title|alt)="([^"]*)"/g, (_, at, v) => `${at}="${traducirTexto(v)}"`)
+      : traducirTexto(parte)).join("");
+  }
   // ---------- Datos de la demo ----------
   const TIA = { nombre: "Marcela Fuentes", corto: "Marcela", email: "marcela@furgonesdemo.cl", tel: "+56 9 5555 1234" };
   // Licencia de conducir: la empresa la verifica y la app avisa antes de que venza.
@@ -430,7 +711,7 @@ table.det td.mono { font-size: 12px; }
       cambia: mejor.some((v, i) => v !== i),
     };
   }
-  const kmTxt = (m) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
+  const kmTxt = (m) => `${(m / 1000).toLocaleString(idiomaActual() === "en" ? "en-US" : "es-CL", { maximumFractionDigits: 1 })} km`;
   // Mini mapa de una ruta: colegio, casas numeradas en el orden dado y el trazado.
   function mapaRuta(r, orden) {
     const casas = orden.map((id) => ALUMNOS.find((a) => a.id === id)).filter(Boolean);
@@ -515,7 +796,6 @@ table.det td.mono { font-size: 12px; }
       NUEVOS.unshift({ alumno: h.nombre, ruta: r.nombre, tipo: r.tipo, parada });
       return `${r.nombre} (parada ${parada})`;
     });
-    ADM.cobros.push({ id: "k" + Date.now(), alumno: h.id, monto: 60000, estado: "pendiente" });
     app.toast = { txt: donde.length ? `👧 ${fam.nombre.split(" ")[0]} registró a ${h.nombre}: entró sola a ${donde.join(" y ")}.` : `👧 ${fam.nombre.split(" ")[0]} registró a ${h.nombre}. Agrégalo a una ruta en Administrar → Rutas.`, hasta: performance.now() + 6500 };
     if (GM.estado === "listo") prepararRutasGoogle();
     previo = ""; render(true);
@@ -617,6 +897,7 @@ table.det td.mono { font-size: 12px; }
       }
       return `<div class="vista">${volver}<h1>Cobros de ${mesTxt}</h1>${pesta}${msg}
         <div class="cifras"><div class="cifra"><b>${pesosTxt(total("pagado"))}</b><span>Cobrado</span></div><div class="cifra"><b>${pesosTxt(total("pendiente"))}</b><span>Por cobrar</span></div></div>
+        ${activos.some((a) => !ADM.cobros.some((c) => c.alumno === a.id)) ? `<button class="btn sec" data-a="generarCobros">Generar mensualidades de alumnos nuevos</button>` : ""}
         ${lista.map((c) => `<div class="card"><div class="fila"><b>${esc(nombreDe(c.alumno))}</b><b class="mono">${pesosTxt(c.monto)}</b></div>
           ${c.estado === "pagado" ? `<span class="chip ok">✓ Pagado · ${c.medio}</span>` : ADM.editMonto === c.id ? `
             <div class="campo"><label for="adm-m_${c.id}">Monto de ${mesTxt} (CLP)</label><input id="adm-m_${c.id}" data-f="m_${c.id}" inputmode="numeric" value="${esc(f["m_" + c.id] ?? c.monto)}"></div>
@@ -694,7 +975,8 @@ table.det td.mono { font-size: 12px; }
   }
 
   // ---------- Estado de la app ----------
-  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [] };
+  const app = { vista: "login", tab: "hoy", hoja: null, toast: null, vel: 20, senal: true, terminados: [],
+    ubicacionOk: false, rutaPorIniciar: null, legal: null, eliminarTxt: "" };
   let R = null; // recorrido activo
 
   function iniciarRecorrido(rutaId) {
@@ -858,6 +1140,7 @@ table.det td.mono { font-size: 12px; }
       <div class="campo"><label for="pw">Contraseña</label><input id="pw" type="password" value="demo-furgon" autocomplete="current-password"></div>
       <button class="btn xl" data-a="entrar">Ingresar</button>
       <p class="nota">Cuenta de demostración. Las cuentas de conductora las crea el dueño del furgón con un código de invitación.</p>
+      ${enlacesLegales()}
     </div>`;
   }
 
@@ -1068,8 +1351,31 @@ table.det td.mono { font-size: 12px; }
       <div class="card"><h3>Apariencia</h3>
         <span class="seg tema" role="group" aria-label="Apariencia">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button data-a="tema" data-v="${v}" aria-pressed="${temaActual() === v}">${n}</button>`).join("")}</span>
         <span class="muted" style="font-size:13px">Automático sigue el modo del teléfono.</span></div>
+      <div class="card"><h3>Idioma</h3>
+        <span class="seg tema" role="group" aria-label="Idioma">${[["sistema", "Automático"], ["es", "Español"], ["en", "English"]].map(([v, n]) => `<button data-a="idioma" data-v="${v}" aria-pressed="${idiomaPref === v}">${n}</button>`).join("")}</span>
+        <span class="muted" style="font-size:13px">Automático usa el idioma del teléfono.</span></div>
       <p class="nota">🔒 Tu ubicación solo se comparte mientras hay un recorrido activo. Al finalizar, el GPS se apaga. Los teléfonos de los apoderados no se muestran: la app los llama por ti.</p>
       <button class="btn sec" data-a="salir">Cerrar sesión</button>
+      <button class="enlace peligro" data-a="abrirEliminar">Eliminar mi cuenta</button>
+      ${enlacesLegales()}
+    </div>`;
+  }
+
+  // Términos y privacidad: en la app abren las páginas publicadas con el panel web.
+  const enlacesLegales = () => `<div class="enlaces"><button class="enlace" data-a="legal" data-v="terminos">Términos y condiciones</button><span aria-hidden="true">·</span><button class="enlace" data-a="legal" data-v="privacidad">Política de privacidad</button></div>`;
+
+  // Eliminar la cuenta (lo exigen Apple y Google): igual que apps/movil/src/app/eliminar-cuenta.tsx.
+  const palabraEliminar = () => idiomaActual() === "en" ? "DELETE" : "ELIMINAR";
+  const puedeEliminar = () => app.eliminarTxt.trim().toUpperCase() === palabraEliminar();
+  function vEliminar() {
+    return `<div class="vista"><div class="fila"><h1>Eliminar mi cuenta</h1><button class="volver-adm" data-a="cerrarEliminar" style="align-self:center">Volver</button></div>
+      <div class="aviso-error" role="alert">⚠️ <span>Esto no se puede deshacer.</span></div>
+      <div class="card"><b>Se borrará:</b>
+        <ul class="lista-borra"><li>Tu perfil, tu correo, tu teléfono y tus preferencias.</li><li>Tu licencia de conducir y sus fotos. Los recorridos que hiciste quedan en el historial del servicio, sin tu nombre.</li></ul></div>
+      <span class="muted" style="font-size:14px">Los registros de cobros que la ley obliga a guardar y los respaldos de seguridad se eliminan dentro de 30 días.</span>
+      <button class="enlace" style="align-self:flex-start" data-a="legal" data-v="privacidad">Ver la política de privacidad</button>
+      <div class="campo"><label for="borrar-txt">Para confirmar, escribe ${palabraEliminar()}</label><input id="borrar-txt" data-borrar="1" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(app.eliminarTxt)}"></div>
+      <button class="btn peligro xl" data-a="confirmarEliminar" ${puedeEliminar() ? "" : "disabled"}>Eliminar mi cuenta para siempre</button>
     </div>`;
   }
 
@@ -1094,15 +1400,43 @@ table.det td.mono { font-size: 12px; }
     else if (app.vista === "recorrido") cuerpo = vRecorrido();
     else if (app.vista === "resumen") cuerpo = vResumen();
     else if (app.vista === "licencia") cuerpo = vLicencia();
+    else if (app.vista === "eliminar") cuerpo = vEliminar();
     else cuerpo = { hoy: vHoy, admin: vAdmin, historial: vHistorial, perfil: vPerfil }[app.tab]();
     const conTabs = app.vista === "hoy";
     const toast = app.toast && app.toast.hasta > performance.now() ? `<div class="toast" role="status">${esc(app.toast.txt)}</div>` : "";
-    const hoja = app.hoja === "fin" ? `<div class="hoja-fondo" data-a="cerrarHoja"><div class="hoja" role="dialog" aria-label="Finalizar recorrido">
-        <h2>¿Finalizar recorrido?</h2>
-        <span class="muted">${R.paradas.filter((p) => p.estado === "pendiente").length ? `Quedan ${R.paradas.filter((p) => p.estado === "pendiente").length} alumno(s) sin marcar.` : "Todos los alumnos están marcados."} Se dejará de compartir tu ubicación.</span>
-        <button class="btn peligro xl" data-a="finalizar">Finalizar</button><button class="btn sec" data-a="cerrarHoja">Seguir en el recorrido</button>
-      </div></div>` : "";
-    return iconizar(barraSis() + cuerpo + (conTabs ? tabs() : "") + toast + hoja);
+    const hoja = !app.hoja ? "" : `<div class="hoja-fondo" data-a="cerrarHoja">${hojaHtml()}</div>`;
+    return iconizar(traducir(barraSis() + cuerpo + (conTabs ? tabs() : "") + toast + hoja));
+  }
+
+  // Hojas inferiores: finalizar, aviso de ubicación (lo exige Google Play) y enlaces legales.
+  function hojaHtml() {
+    if (app.hoja === "fin") {
+      // Igual que la app: si quedan alumnos sin marcar, lo advierte antes de finalizar.
+      const quedan = R.paradas.filter((p) => p.estado === "pendiente").length;
+      return `<div class="hoja" role="dialog" aria-label="Finalizar recorrido">
+        <h2>Finalizar recorrido</h2>
+        <p>${quedan === 1 ? "Queda 1 alumno pendiente. ¿Finalizar de todas formas?" : quedan ? `Quedan ${quedan} alumnos pendientes. ¿Finalizar de todas formas?` : "Se dejará de compartir la ubicación."}</p>
+        <div class="acciones"><button class="btn sec" data-a="cerrarHoja">Cancelar</button><button class="btn peligro" data-a="finalizar">Finalizar</button></div>
+      </div>`;
+    }
+    if (app.hoja === "ubicacion") {
+      return `<div class="hoja" role="dialog" aria-label="Ubicación del furgón">
+        <h2>📍 Ubicación del furgón</h2>
+        <p>${AVISO_UBICACION}</p>
+        <div class="acciones"><button class="btn sec" data-a="ubicacionNo">Ahora no</button><button class="btn" data-a="ubicacionSi">Continuar</button></div>
+      </div>`;
+    }
+    if (app.hoja === "legal") {
+      const terminos = app.legal === "terminos";
+      return `<div class="hoja" role="dialog" aria-label="${terminos ? "Términos y condiciones" : "Política de privacidad"}">
+        <h2>${terminos ? "Términos y condiciones" : "Política de privacidad"}</h2>
+        <p>En la app se abre la página web:</p>
+        <span class="url">…/${terminos ? "terminos" : "privacidad"}.html</span>
+        <span class="muted" style="font-size:13px">Se publica junto con el panel web de administración.</span>
+        <button class="btn sec" data-a="cerrarHoja">Cerrar</button>
+      </div>`;
+    }
+    return "";
   }
 
   // ---------- Eventos ----------
@@ -1199,7 +1533,6 @@ table.det td.mono { font-size: 12px; }
         ALUMNOS.push({ id, nombre: f.nombre.trim(), curso: f.curso.trim(), apoderado: "Apoderado/a", direccion: f.direccion.trim(), indic: "—",
           lat: f.pin.lat, lng: f.pin.lng, respuesta: "app", activo: true, familiaApp: false, mensualidad: precioNuevo, codigo: nuevoCodigo() });
         f.rutas.forEach((rid) => RUTAS.find((r) => r.id === rid).orden.push(id));
-        ADM.cobros.push({ id: "k" + Date.now(), alumno: id, monto: precioNuevo, estado: "pendiente" });
         ADM.codigo = { nombre: f.nombre.trim(), codigo: ALUMNOS.at(-1).codigo, nuevo: true };
         ADM.vista = "codigo"; ADM.form = null; ADM.msg = null;
       }
@@ -1231,7 +1564,29 @@ table.det td.mono { font-size: 12px; }
     }
     else if (a === "iniciar") {
       if (diasLic() < 0) { app.toast = { txt: "🪪 Tu licencia está vencida: sube la renovada en «Mi licencia» para iniciar recorridos.", hasta: performance.now() + 5000 }; }
+      // Antes del primer recorrido, el aviso de ubicación (Google Play lo exige antes de pedir el permiso).
+      else if (!app.ubicacionOk) { app.rutaPorIniciar = el.dataset.id; app.hoja = "ubicacion"; }
       else iniciarRecorrido(el.dataset.id);
+    }
+    else if (a === "ubicacionSi") { app.ubicacionOk = true; app.hoja = null; iniciarRecorrido(app.rutaPorIniciar); app.rutaPorIniciar = null; }
+    else if (a === "ubicacionNo") {
+      app.hoja = null; app.rutaPorIniciar = null;
+      app.toast = { txt: "Sin la ubicación del furgón no podemos avisar a las familias. Puedes iniciar el recorrido cuando quieras.", hasta: performance.now() + 5000 };
+    }
+    else if (a === "legal") { app.legal = el.dataset.v; app.hoja = "legal"; }
+    else if (a === "idioma") guardarIdioma(el.dataset.v);
+    else if (a === "abrirEliminar") { app.vista = "eliminar"; app.eliminarTxt = ""; }
+    else if (a === "cerrarEliminar") { app.vista = "hoy"; app.tab = "perfil"; }
+    else if (a === "confirmarEliminar") {
+      if (!puedeEliminar()) return;
+      // Demostración: no se borra nada; se cierra la sesión como en la app.
+      app.vista = "login"; app.tab = "hoy"; app.eliminarTxt = ""; R = null;
+      app.toast = { txt: "✅ Tu cuenta se eliminó. Cerramos tu sesión.", hasta: performance.now() + 5000 };
+    }
+    else if (a === "generarCobros") {
+      const nuevos = ALUMNOS.filter((x) => x.activo && !ADM.cobros.some((c) => c.alumno === x.id));
+      nuevos.forEach((x, i) => ADM.cobros.push({ id: "k" + Date.now() + i, alumno: x.id, monto: x.mensualidad, estado: "pendiente" }));
+      ADM.msg = { ok: true, txt: "Mensualidades generadas." };
     }
     else if (a === "tema") cambiarTema(el.dataset.v);
     else if (a === "abrirLic") { app.vista = "licencia"; LIC.error = null; }
@@ -1265,6 +1620,12 @@ table.det td.mono { font-size: 12px; }
     previo = ""; render(true);
   });
   document.addEventListener("input", (e) => {
+    if (e.target.dataset && e.target.dataset.borrar) {
+      // Sin redibujar (no perder el foco): solo se habilita el botón cuando la palabra coincide.
+      app.eliminarTxt = e.target.value;
+      const b = $tel.querySelector('[data-a="confirmarEliminar"]'); if (b) b.disabled = !puedeEliminar();
+      previo = construirHtml(); return;
+    }
     if (e.target.dataset && e.target.dataset.l && LIC.form) { LIC.form[e.target.dataset.l] = e.target.value; previo = construirHtml(); return; }
     const k = e.target.dataset && e.target.dataset.f;
     if (k && ADM.form) { ADM.form[k] = e.target.value; previo = construirHtml(); }
@@ -1297,6 +1658,7 @@ table.det td.mono { font-size: 12px; }
     requestAnimationFrame(bucle);
   }
   cargarGoogle();
+  aplicarIdiomaDocumento();
   render(); requestAnimationFrame(bucle);
 })();
 </script>

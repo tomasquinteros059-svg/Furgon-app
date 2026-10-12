@@ -43,6 +43,7 @@ const html = `<!doctype html>
   main { flex: 1; min-height: 0; position: relative; }
   iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--fondo); }
   iframe[hidden] { display: none; }
+  @media (max-width: 600px) { .nota { display: none; } header { padding: 8px 12px; gap: 8px; } nav button { padding: 7px 10px; font-size: 13px; } }
 </style>
 </head>
 <body>
