@@ -22,6 +22,12 @@ export const REF = () => {
   if (!/^[a-z0-9]{20}$/.test(ref)) {
     console.error("SUPABASE_PROJECT_REF no parece un código de proyecto: deben ser 20 letras y números en minúscula,");
     console.error("el final de la dirección supabase.com/dashboard/project/<código>. Revisa que no tenga espacios ni otras partes.");
+    // Pistas sin mostrar el valor (los registros de GitHub Actions son públicos).
+    const pista = /^sbp_/.test(ref) ? "parece el token de acceso (empieza con sbp_): va en SUPABASE_ACCESS_TOKEN"
+      : /^sb_(publishable|secret)_/.test(ref) || /^eyJ/.test(ref) ? "parece una clave de API del proyecto, no su código"
+      : /[A-Z\s-]/.test(ref) ? "tiene mayúsculas, espacios o guiones: parece el NOMBRE del proyecto, no su código"
+      : `tiene ${ref.length} caracteres (deben ser 20)`;
+    console.error(`  → Lo que hay guardado ${pista}.`);
     process.exit(1);
   }
   return ref;
