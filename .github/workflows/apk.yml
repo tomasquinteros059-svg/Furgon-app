@@ -95,6 +95,16 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/entrega"
           cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/entrega/FurgonEscolar-${{ steps.nombre.outputs.sufijo }}.apk"
 
+      - name: Huella de la firma (para restringir la clave de Google a esta app)
+        run: |
+          huella=$(keytool -printcert -jarfile entrega/*.apk | grep -m1 -E "SHA1:" | awk '{print $2}')
+          {
+            echo "### Para restringir la clave de Maps a la app"
+            echo
+            echo "Nombre del paquete: \`cl.furgonapp.movil\` · Huella SHA-1: \`$huella\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "SHA-1: $huella"
+
       - uses: actions/upload-artifact@v4
         with:
           name: FurgonEscolar-${{ steps.nombre.outputs.sufijo }}
