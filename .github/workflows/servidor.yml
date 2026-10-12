@@ -71,7 +71,17 @@ jobs:
 
       - name: Probar la clave de Google (Routes API)
         if: env.GOOGLE_MAPS_API_KEY != ''
-        run: node scripts/verificar-google.mjs
+        run: |
+          if ! node scripts/verificar-google.mjs; then
+            {
+              echo "### La clave de Google no funciona (el resto se publica igual)"
+              echo
+              echo "En console.cloud.google.com/google/maps-apis/credentials → la clave de \`GOOGLE_MAPS_API_KEY\`:"
+              echo "- **Restricciones de aplicación:** Ninguna."
+              echo "- **Restricciones de API:** debe incluir **Routes API** (y la Routes API debe estar habilitada)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::La clave de Google no funciona con la Routes API: la hora de llegada usará el cálculo de respaldo."
+          fi
 
       - name: Publicar base de datos, funciones y tareas programadas
         run: node scripts/desplegar-supabase.mjs --sin-confirmar-correo

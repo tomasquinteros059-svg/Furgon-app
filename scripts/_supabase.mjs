@@ -12,7 +12,20 @@ export function requerida(nombre) {
 }
 
 export const TOKEN = () => requerida("SUPABASE_ACCESS_TOKEN");
-export const REF = () => requerida("SUPABASE_PROJECT_REF");
+/**
+ * Código del proyecto (20 letras). Acepta también lo que se suele pegar por error: la dirección del
+ * panel (supabase.com/dashboard/project/<ref>/…) o la del proyecto (https://<ref>.supabase.co).
+ */
+export const REF = () => {
+  const v = requerida("SUPABASE_PROJECT_REF");
+  const ref = v.match(/\/project\/([a-z0-9]+)/i)?.[1] ?? v.match(/^(?:https?:\/\/)?([a-z0-9]+)\.supabase\.co/i)?.[1] ?? v;
+  if (!/^[a-z0-9]{20}$/.test(ref)) {
+    console.error("SUPABASE_PROJECT_REF no parece un código de proyecto: deben ser 20 letras y números en minúscula,");
+    console.error("el final de la dirección supabase.com/dashboard/project/<código>. Revisa que no tenga espacios ni otras partes.");
+    process.exit(1);
+  }
+  return ref;
+};
 
 export async function api(metodo, ruta, cuerpo) {
   const r = await fetch(`https://api.supabase.com/v1/projects/${REF()}${ruta}`, {
