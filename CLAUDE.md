@@ -37,6 +37,19 @@ npm run cuentas-revision -- --tia correo --familia correo  # cuentas de prueba c
 npm run compilar-app -- --plataforma android --perfil preview   # APK en EAS (EXPO_TOKEN)
 ```
 
+## Desplegar y compilar desde GitHub (sin claves en el contenedor)
+
+El contenedor de Claude Code no llega a expo.dev, supabase.com ni dl.google.com. Por eso, igual que en
+TuStudIA, el servidor y el APK se hacen con GitHub Actions y las claves viven en los secretos del
+repositorio (Settings → Secrets and variables → Actions):
+
+- `Publicar servidor` (`.github/workflows/servidor.yml`): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`,
+  opcionales `GOOGLE_MAPS_API_KEY` y `CLAVE_CUENTAS_PRUEBA` (contraseña de las cuentas de prueba).
+- `APK para probar` (`.github/workflows/apk.yml`): `expo prebuild` + Gradle, sin EAS ni token de Expo.
+  Publica el APK en Releases. Opcional `GOOGLE_MAPS_ANDROID_API_KEY` (restringida a Android).
+
+El repositorio es público: los registros de Actions también. Nunca imprimir contraseñas ni claves.
+
 ## Reglas del proyecto
 
 - Todo texto visible va con `t("texto en español")` y su traducción en `idiomas/en/*.ts`;

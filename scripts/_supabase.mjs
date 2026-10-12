@@ -30,3 +30,16 @@ export const sql = (query) => api("POST", "/database/query", { query });
 
 /** Comillas simples para literales SQL. */
 export const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
+
+/**
+ * Clave pública del proyecto (la que va dentro de las apps). Los proyectos nuevos listan primero la
+ * `anon` antigua (un `eyJ…`), que puede venir desactivada: se prefiere la `sb_publishable_…`.
+ */
+export async function clavePublica() {
+  const claves = await api("GET", "/api-keys");
+  const k = claves.find((c) => /^sb_publishable_/.test(c.api_key ?? ""))
+    ?? claves.find((c) => c.name === "publishable")
+    ?? claves.find((c) => c.name === "anon");
+  if (!k?.api_key) throw new Error("No se encontró la clave pública (publishable/anon) del proyecto.");
+  return k.api_key;
+}

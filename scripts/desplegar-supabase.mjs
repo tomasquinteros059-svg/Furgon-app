@@ -13,7 +13,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { api, lit, REF, sql, TOKEN } from "./_supabase.mjs";
+import { api, clavePublica, lit, REF, sql, TOKEN } from "./_supabase.mjs";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRACIONES = join(RAIZ, "supabase", "migrations");
@@ -92,9 +92,7 @@ function funciones() {
 }
 
 async function valoresPublicos() {
-  const claves = await api("GET", "/api-keys");
-  const anon = claves.find((k) => k.name === "anon")?.api_key;
-  if (!anon) throw new Error("No se encontró la anon key del proyecto.");
+  const anon = await clavePublica();
   const url = `https://${REF()}.supabase.co`;
   const escribir = (archivo, pares) => {
     const ruta = join(RAIZ, archivo);

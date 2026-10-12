@@ -1,0 +1,103 @@
+# Publica el servidor en Supabase: migraciones, secretos de las funciones, Edge Functions y tareas
+# programadas (scripts/desplegar-supabase.mjs). Opcionalmente crea las cuentas de prueba.
+#
+# Cómo usarlo: pestaña Actions → «Publicar servidor» → Run workflow.
+# Las claves van en Settings → Secrets and variables → Actions (nunca en el código):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF  (obligatorios)
+#   GOOGLE_MAPS_API_KEY                          (opcional: ruta por calles y hora de llegada)
+#   CLAVE_CUENTAS_PRUEBA                         (opcional: contraseña de las cuentas de prueba)
+#
+# Ojo: el repositorio es público y estos registros también. Nada de lo que se imprime es secreto.
+
+name: Publicar servidor
+
+on:
+  workflow_dispatch:
+    inputs:
+      cuentas:
+        description: "Crear o renovar las cuentas de prueba (tía y familia)"
+        type: boolean
+        default: true
+      correo_tia:
+        description: "Correo de la cuenta de prueba de la tía"
+        default: "tia.prueba@furgonapp.cl"
+      correo_familia:
+        description: "Correo de la cuenta de prueba de la familia"
+        default: "familia.prueba@furgonapp.cl"
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+      CLAVE_CUENTAS_PRUEBA: ${{ secrets.CLAVE_CUENTAS_PRUEBA }}
+    steps:
+      - name: Revisar los secretos
+        run: |
+          falta=""
+          [ -z "$SUPABASE_ACCESS_TOKEN" ] && falta="$falta SUPABASE_ACCESS_TOKEN"
+          [ -z "$SUPABASE_PROJECT_REF" ] && falta="$falta SUPABASE_PROJECT_REF"
+          if [ -n "$falta" ]; then
+            {
+              echo "## Faltan secretos:\`$falta\`"
+              echo
+              echo "Agrégalos en **Settings → Secrets and variables → Actions → New repository secret**."
+              echo
+              echo '| Secreto | De dónde sale |'
+              echo '|---|---|'
+              echo '| `SUPABASE_ACCESS_TOKEN` | supabase.com/dashboard/account/tokens → Generate new token (empieza con `sbp_`) |'
+              echo '| `SUPABASE_PROJECT_REF` | el código del final de la dirección del proyecto: supabase.com/dashboard/project/**abcdefgh** |'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Faltan secretos:$falta"
+            exit 1
+          fi
+          [ -z "$GOOGLE_MAPS_API_KEY" ] && echo "::warning::Sin GOOGLE_MAPS_API_KEY: la hora de llegada usa el cálculo de respaldo, sin ruta por calles."
+          echo "Proyecto: $SUPABASE_PROJECT_REF"
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Publicar base de datos, funciones y tareas programadas
+        run: node scripts/desplegar-supabase.mjs --sin-confirmar-correo
+
+      - name: Cuentas de prueba
+        if: inputs.cuentas
+        env:
+          TIA: ${{ inputs.correo_tia }}
+          FAMILIA: ${{ inputs.correo_familia }}
+        run: |
+          if [ -z "$CLAVE_CUENTAS_PRUEBA" ]; then
+            {
+              echo "### Cuentas de prueba · NO CREADAS"
+              echo
+              echo "Falta el secreto \`CLAVE_CUENTAS_PRUEBA\`: la contraseña que quieres para las dos cuentas"
+              echo "(mínimo 8 caracteres). Este registro es público, así que la contraseña no se puede mostrar acá."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Falta CLAVE_CUENTAS_PRUEBA: no se crearon las cuentas de prueba."
+            exit 0
+          fi
+          node scripts/crear-cuentas-revision.mjs --tia "$TIA" --familia "$FAMILIA"
+          {
+            echo "### Cuentas de prueba listas"
+            echo
+            echo "| Rol | Correo | Contraseña |"
+            echo "|---|---|---|"
+            echo "| Tía | \`$TIA\` | la de \`CLAVE_CUENTAS_PRUEBA\` |"
+            echo "| Familia | \`$FAMILIA\` | la de \`CLAVE_CUENTAS_PRUEBA\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Resumen
+        run: |
+          {
+            echo "## Servidor publicado ✅"
+            echo
+            echo "Proyecto: \`$SUPABASE_PROJECT_REF\`. Siguiente paso: Actions → **APK para probar** → Run workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
