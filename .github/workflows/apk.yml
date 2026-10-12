@@ -2,7 +2,7 @@
 # Android y Gradle lo compila con el SDK que ya trae el runner de GitHub.
 #
 # Cómo usarlo: pestaña Actions → «APK para probar» → Run workflow. También corre al subir un commit
-# cuyo mensaje empiece con [apk]. Al terminar, el APK queda en Releases (para bajarlo desde el
+# cuyo mensaje contenga [apk]. Al terminar, el APK queda en Releases (para bajarlo desde el
 # teléfono) y en los Artifacts de la corrida.
 #
 # Secretos (Settings → Secrets and variables → Actions):
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   apk:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, '[apk]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[apk]')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
