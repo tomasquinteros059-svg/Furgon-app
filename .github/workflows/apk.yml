@@ -96,8 +96,10 @@ jobs:
           cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/entrega/FurgonEscolar-${{ steps.nombre.outputs.sufijo }}.apk"
 
       - name: Huella de la firma (para restringir la clave de Google a esta app)
+        continue-on-error: true
         run: |
-          huella=$(keytool -printcert -jarfile entrega/*.apk | grep -m1 -E "SHA1:" | awk '{print $2}')
+          firmador=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          huella=$("$firmador" verify --print-certs entrega/*.apk | grep -m1 "SHA-1 digest" | awk '{print $NF}' | sed 's/../&:/g; s/:$//' | tr a-f A-F || true)
           {
             echo "### Para restringir la clave de Maps a la app"
             echo
