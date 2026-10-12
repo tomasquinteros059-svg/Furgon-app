@@ -20,7 +20,8 @@
     "iconos": "node --experimental-strip-types --no-warnings scripts/generar-iconos.mjs",
     "cuentas-revision": "node scripts/crear-cuentas-revision.mjs",
     "compilar-app": "node scripts/compilar-app.mjs",
-    "idiomas": "node --experimental-strip-types --no-warnings scripts/revisar-idiomas.mjs"
+    "idiomas": "node --experimental-strip-types --no-warnings scripts/revisar-idiomas.mjs",
+    "app-completa": "node scripts/armar-app-completa.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",
