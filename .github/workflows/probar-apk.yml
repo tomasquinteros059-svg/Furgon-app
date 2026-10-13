@@ -26,6 +26,7 @@ jobs:
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
       CLAVE_CUENTAS_PRUEBA: ${{ secrets.CLAVE_CUENTAS_PRUEBA }}
       EXPO_NO_TELEMETRY: "1"
+      EXPO_PUBLIC_PRUEBA_EMULADOR: "1" # registra notificaciones aunque sea emulador, como en un teléfono
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

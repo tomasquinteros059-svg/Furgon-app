@@ -56,7 +56,8 @@ export async function olvidarDispositivo(): Promise<void> {
 }
 
 export async function registrarParaPush(): Promise<string | null> {
-  if (!Device.isDevice) return null; // los emuladores no reciben push
+  // Los emuladores no reciben push. La prueba en emulador (probar-apk.yml) igual recorre este camino.
+  if (!Device.isDevice && process.env.EXPO_PUBLIC_PRUEBA_EMULADOR !== "1") return null;
   await configurarCanales();
   await configurarLlamadas();
 
