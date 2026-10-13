@@ -13,8 +13,6 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "🧭 Calcular la mejor ruta": "🧭 Find the best route",
   "Administrar: disponible cuando termines el recorrido (no se administra manejando).": "Manage: available when you finish the trip (no managing while driving).",
   "🧑‍💼 Administrar (alumnos, rutas, pagos)": "🧑‍💼 Manage (students, routes, payments)",
-  "🪪 Mi licencia · {estado}": "🪪 My license · {estado}",
-  "🤝 Conexiones con familias ({n})": "🤝 Family connections ({n})",
   "Volver a mostrar los avisos": "Show the tips again",
   // Comunes
   "Volver": "Back",

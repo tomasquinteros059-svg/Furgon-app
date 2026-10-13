@@ -309,10 +309,6 @@ export default function RutasConductor() {
                   <Boton titulo={t("🧑‍💼 Administrar (alumnos, rutas, pagos)")} variante="secundario" onPress={() => irA("/conductor/administrar")} />
                 )
               ) : null}
-              <Boton titulo={licencia ? t("🪪 Mi licencia · {estado}", { estado: textoLicencia(licencia).txt }) : t("🪪 Mi licencia")}
-                variante="secundario" onPress={() => irA("/conductor/licencia")} />
-              <Boton titulo={porResponder ? t("🤝 Conexiones con familias ({n})", { n: porResponder }) : t("🤝 Conexiones con familias")}
-                variante="secundario" onPress={() => irA("/conductor/conexiones")} />
               {consejosCerrados || nuevosVistosHasta ? (
                 <Boton titulo={t("Volver a mostrar los avisos")} variante="texto" onPress={() => {
                   guardar(CONSEJOS_CERRADOS, null); guardar(NUEVOS_VISTOS_HASTA, null);

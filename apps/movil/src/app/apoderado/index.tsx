@@ -208,12 +208,7 @@ export default function InicioApoderado() {
         );
       })}
 
-      <View style={[estilos.fila, { marginTop: 4 }]}>
-        <Boton titulo={t("💳 Pagos")} variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/pagos")} />
-        <Boton titulo={t("💬 Ayuda")} variante="secundario" estilo={{ flex: 1 }} onPress={() => router.push("/apoderado/ayuda")} />
-      </View>
-      <Boton titulo={t("👨‍👩‍👧 Familia: compartir con papá o mamá")} variante="secundario" onPress={() => router.push("/apoderado/familia")} />
-      <Boton titulo={t("🤝 Conectar con mi tía o tío")} variante="secundario" onPress={() => router.push("/apoderado/conectar")} />
+      {/* Pagos, Mensajes, Familia y Mi furgón están en la barra de abajo (apoderado/_layout.tsx). */}
       {perfil?.empresa_id ? <Boton titulo={t("+ Registrar alumno")} variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
       <Tarjeta><SelectorTema /></Tarjeta>
       <Tarjeta><SelectorIdioma /></Tarjeta>
