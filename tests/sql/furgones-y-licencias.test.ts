@@ -5,10 +5,14 @@ import { crearBaseDeDatos } from "./entorno.ts";
 let E: Awaited<ReturnType<typeof crearBaseDeDatos>>;
 const ids: Record<string, string> = {};
 // Fechas en hora de Chile, como las calcula la base de datos.
-const enDias = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date(Date.now() + n * 86_400_000));
+// Fechas relativas al «hoy» de la propia base (hora de Chile según PGlite, como estado_licencias): calcularlas con el reloj
+// de Node fallaba cerca de la medianoche, cuando ambos no coinciden en el día.
+let HOY = "";
+const enDias = (n: number) => new Date(Date.parse(`${HOY}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 beforeAll(async () => {
   E = await crearBaseDeDatos();
+  HOY = (await E.uno<{ d: string }>("select ((now() at time zone 'America/Santiago')::date)::text as d")).d;
   const { uno, db, crearUsuario } = E;
   ids.empresa = (await uno<{ id: string }>(`insert into empresas (nombre) values ('Furgones Demo') returning id`)).id;
   ids.admin = await crearUsuario("admin@demo.cl", {});
