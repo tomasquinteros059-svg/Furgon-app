@@ -21,6 +21,7 @@ pantalla() {
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
   adb pull /sdcard/ui.xml "$SALIDA/$1.xml" >/dev/null 2>&1
   adb exec-out screencap -p > "$SALIDA/$1.png" 2>/dev/null
+  echo "   [$1] $(textos "$1")"
 }
 textos() {
   python3 - "$SALIDA/$1.xml" <<'PY'
@@ -59,7 +60,7 @@ viva() { adb shell pidof "$PAQUETE" >/dev/null 2>&1; }
 
 adb logcat -c
 paso "Instalar"
-adb install -r -g "$APK" >/dev/null || { echo "### $NOMBRE: no se pudo instalar" >> "$RESUMEN"; exit 1; }
+adb install -r "$APK" >/dev/null || { echo "### $NOMBRE: no se pudo instalar" >> "$RESUMEN"; exit 1; }
 paso "Abrir"
 adb shell monkey -p "$PAQUETE" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 15
@@ -84,10 +85,16 @@ else
   else
     resultado="⚠️ no encontré el campo de correo"
   fi
-  # Se revisa varias veces: el cierre puede llegar unos segundos después de entrar.
-  for i in 1 2 3 4 5 6; do
+  # Se revisa varias veces: el cierre puede llegar unos segundos después de entrar. Si aparece
+  # una pregunta de permisos, se acepta como lo haría una persona.
+  for i in $(seq 1 12); do
     sleep 5
     viva || { resultado="💥 se cerró después de ingresar (a los ~$((i * 5)) s)"; break; }
+    pantalla "espera-$i" >/dev/null
+    if xy=$(centro "espera-$i" texto "Allow|Permitir|While using the app|Mientras la app está en uso|Only this time"); then
+      echo "   permiso aceptado: $(textos "espera-$i" | cut -c1-160)"
+      adb shell input tap $xy
+    fi
   done
 fi
 pantalla 4-final
