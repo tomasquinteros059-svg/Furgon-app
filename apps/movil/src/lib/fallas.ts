@@ -1,6 +1,7 @@
 // Fallas de JavaScript: en vez de que la app se cierre sin explicación, el error queda guardado y
 // se muestra en pantalla (al tiro, o al volver a abrir la app si alcanzó a cerrarse). Así una
 // captura de pantalla basta para saber qué pasó.
+import { File, Paths } from "expo-file-system";
 import Storage from "expo-sqlite/kv-store";
 
 const CLAVE = "ultima-falla";
@@ -17,13 +18,17 @@ export function guardarFalla(e: unknown): void {
 
 /** La falla que cerró la app la última vez (y la olvida, para mostrarla una sola vez). */
 export function tomarUltimaFalla(): string | null {
+  const fallas: string[] = [];
   try {
     const v = Storage.getItemSync(CLAVE);
-    if (v) Storage.removeItemSync(CLAVE);
-    return v;
-  } catch {
-    return null;
-  }
+    if (v) { Storage.removeItemSync(CLAVE); fallas.push(v); }
+  } catch { /* sin almacenamiento */ }
+  // Error nativo de Android: lo escribe plugins/registro-fallas.js justo antes de cerrarse.
+  try {
+    const nativa = new File(Paths.document, "ultima-falla-nativa.txt");
+    if (nativa.exists) { fallas.push(nativa.textSync()); nativa.delete(); }
+  } catch { /* sin archivo */ }
+  return fallas.length ? fallas.join("\n\n") : null;
 }
 
 /** Guarda cualquier error fatal antes de que React Native cierre la app. */

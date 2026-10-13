@@ -55,6 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   },
   plugins: [
+    "./plugins/registro-fallas", // muestra el error si la app se cae por algo nativo de Android
     "expo-router",
     "expo-sqlite",
     [
