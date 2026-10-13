@@ -14,6 +14,10 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "Administrar: disponible cuando termines el recorrido (no se administra manejando).": "Manage: available when you finish the trip (no managing while driving).",
   "🧑‍💼 Administrar (alumnos, rutas, pagos)": "🧑‍💼 Manage (students, routes, payments)",
   "Volver a mostrar los avisos": "Show the tips again",
+  "🧑‍💼 Resumen de administración": "🧑‍💼 Management summary",
+  "🤝 Familias por conectar ({n})": "🤝 Families waiting to connect ({n})",
+  "🤝 Conectar con familias": "🤝 Connect with families",
+  "🪪 Mi licencia · {estado}": "🪪 My license · {estado}",
   // Comunes
   "Volver": "Back",
   "Guardar": "Save",

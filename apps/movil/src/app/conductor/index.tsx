@@ -302,13 +302,21 @@ export default function RutasConductor() {
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }} onPress={() => setMenu(false)}>
           <Pressable onPress={() => {}} style={{ marginTop: 60, marginHorizontal: 12, maxHeight: "85%", backgroundColor: colores.fondo, borderRadius: 16, overflow: "hidden" }}>
             <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+              {/* Abajo están Inicio, Alumnos, Rutas y Mensajes (conductor/_layout.tsx); aquí, lo demás. */}
               {perfil?.puede_administrar ? (
                 enRecorrido ? (
                   <Aviso texto={t("Administrar: disponible cuando termines el recorrido (no se administra manejando).")} />
                 ) : (
-                  <Boton titulo={t("🧑‍💼 Administrar (alumnos, rutas, pagos)")} variante="secundario" onPress={() => irA("/conductor/administrar")} />
+                  <>
+                    <Boton titulo={t("💳 Cobros")} variante="secundario" onPress={() => irA("/conductor/administrar/cobros")} />
+                    <Boton titulo={t("🧑‍💼 Resumen de administración")} variante="secundario" onPress={() => irA("/conductor/administrar")} />
+                  </>
                 )
               ) : null}
+              <Boton titulo={porResponder ? t("🤝 Familias por conectar ({n})", { n: porResponder }) : t("🤝 Conectar con familias")}
+                variante={porResponder ? "exito" : "secundario"} onPress={() => irA("/conductor/conexiones")} />
+              <Boton titulo={licencia ? t("🪪 Mi licencia · {estado}", { estado: textoLicencia(licencia).txt }) : t("🪪 Mi licencia")}
+                variante="secundario" onPress={() => irA("/conductor/licencia")} />
               {consejosCerrados || nuevosVistosHasta ? (
                 <Boton titulo={t("Volver a mostrar los avisos")} variante="texto" onPress={() => {
                   guardar(CONSEJOS_CERRADOS, null); guardar(NUEVOS_VISTOS_HASTA, null);

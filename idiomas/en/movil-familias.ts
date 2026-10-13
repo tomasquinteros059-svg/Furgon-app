@@ -5,9 +5,6 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "Inicio": "Home",
   "Mensajes": "Messages",
   "Mi furgón": "My van",
-  "Cobros": "Billing",
-  "Familias": "Families",
-  "Licencia": "License",
   // Pantalla de error (en vez de cerrar la app)
   "Algo falló en la app": "Something went wrong in the app",
   "Toma una captura de esta pantalla y envíasela a quien te ayuda con la app. Así podemos arreglarlo.": "Take a screenshot of this screen and send it to whoever helps you with the app, so we can fix it.",

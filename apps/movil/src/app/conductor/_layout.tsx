@@ -23,20 +23,17 @@ export default function Layout() {
     }
   }, [ruta, perfil?.puede_administrar]);
 
+  // Abajo solo lo de todos los días; Cobros, Familias, Licencia y la cuenta van en el menú ⋮ del inicio.
   const pestanas: Pestana[] = [
-    { titulo: t("Inicio"), icono: "casa", ruta: "/conductor", exacta: true },
-    ...(perfil?.puede_administrar ? [
-      { titulo: t("Alumnos"), icono: "alumno", ruta: "/conductor/administrar/alumnos" },
-      { titulo: t("Rutas"), icono: "ruta", ruta: "/conductor/administrar/rutas" },
-      { titulo: t("Cobros"), icono: "tarjeta", ruta: "/conductor/administrar/cobros" },
-      { titulo: t("Mensajes"), icono: "mensaje", ruta: "/conductor/administrar/solicitudes", punto: solicitudes > 0 },
-    ] as Pestana[] : []),
-    { titulo: t("Familias"), icono: "conexion", ruta: "/conductor/conexiones", punto: conexiones > 0 },
-    { titulo: t("Licencia"), icono: "licencia", ruta: "/conductor/licencia" },
+    { titulo: t("Inicio"), icono: "casa", ruta: "/conductor", exacta: true, punto: conexiones > 0 },
+    { titulo: t("Alumnos"), icono: "alumno", ruta: "/conductor/administrar/alumnos" },
+    { titulo: t("Rutas"), icono: "ruta", ruta: "/conductor/administrar/rutas" },
+    { titulo: t("Mensajes"), icono: "mensaje", ruta: "/conductor/administrar/solicitudes", punto: solicitudes > 0 },
   ];
 
   // Durante el recorrido no hay barra: la pantalla queda solo para manejar.
-  const conBarra = !ruta.startsWith("/conductor/recorrido");
+  // Alumnos, Rutas y Mensajes son de administración: sin ese permiso no hay barra.
+  const conBarra = !!perfil?.puede_administrar && !ruta.startsWith("/conductor/recorrido");
   return (
     <View style={{ flex: 1, backgroundColor: colores.fondo }}>
       <View style={{ flex: 1 }}>
