@@ -1,0 +1,81 @@
+# Prueba la app en un emulador de Android: compila un APK para el emulador (x86_64), entra con la
+# cuenta de prueba de la familia y la de la tía, y deja en el resumen si la app se cerró y por qué
+# (errores del logcat). Capturas y registros completos quedan en los Artifacts de la corrida.
+#
+# Cómo usarlo: Actions → «Probar APK en emulador» → Run workflow, o un commit con [probar].
+# Usa los mismos secretos que «APK para probar», más CLAVE_CUENTAS_PRUEBA.
+
+name: Probar APK en emulador
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[probar]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      CLAVE_CUENTAS_PRUEBA: ${{ secrets.CLAVE_CUENTAS_PRUEBA }}
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Código del proyecto de Supabase
+        run: node scripts/resolver-proyecto.mjs >> "$GITHUB_ENV"
+      - name: Servidor al que se conecta la app
+        run: node scripts/claves-publicas.mjs >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar el proyecto Android
+        working-directory: apps/movil
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Compilar el APK para el emulador
+        working-directory: apps/movil/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+          cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/emulador.apk"
+
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Probar en el emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            bash scripts/probar-en-emulador.sh emulador.apk familia.prueba@furgonapp.cl familia
+            bash scripts/probar-en-emulador.sh emulador.apk tia.prueba@furgonapp.cl tia
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prueba-emulador
+          path: prueba-emulador/
