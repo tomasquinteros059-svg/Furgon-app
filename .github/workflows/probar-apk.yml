@@ -42,14 +42,25 @@ jobs:
       - name: Servidor al que se conecta la app
         run: node scripts/claves-publicas.mjs >> "$GITHUB_ENV"
 
+      # Si la app no cambió desde la última prueba, se reutiliza el APK (ahorra ~25 minutos).
+      - name: APK ya compilado
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: emulador.apk
+          key: emulador-${{ env.EXPO_PUBLIC_SUPABASE_URL }}-${{ hashFiles('apps/movil/**', 'idiomas/**', 'diseno/**', 'package-lock.json') }}
+
       - name: Instalar dependencias
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Generar el proyecto Android
+        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: apps/movil
         run: npx expo prebuild --platform android --no-install
 
       - name: Compilar el APK para el emulador
+        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: apps/movil/android
         run: |
           chmod +x gradlew
@@ -59,7 +70,7 @@ jobs:
       - name: Liberar espacio para el emulador
         run: |
           # La compilación deja varios GB; el emulador necesita ~8 GB libres.
-          rm -rf apps/movil/android node_modules ~/.gradle/caches ~/.npm
+          rm -rf apps/movil/android node_modules ~/.gradle/caches ~/.npm || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
           df -h / | tail -1
 

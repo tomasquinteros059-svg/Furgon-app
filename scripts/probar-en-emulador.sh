@@ -48,7 +48,9 @@ else:
     textos = valor.split("|")
     nodos = [n for n in nodos if (n.get("text") or n.get("content-desc") or "").strip() in textos]
 if not nodos: sys.exit(1)
-x1, y1, x2, y2 = map(int, re.findall(r"\d+", nodos[0].get("bounds")))
+# Con texto, el último que coincide: el título de la pantalla y el botón suelen decir lo mismo.
+nodo = nodos[0] if modo == "campo" else nodos[-1]
+x1, y1, x2, y2 = map(int, re.findall(r"\d+", nodo.get("bounds")))
 print((x1 + x2) // 2, (y1 + y2) // 2)
 PY
 }
