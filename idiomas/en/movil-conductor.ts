@@ -1,6 +1,21 @@
 // Traducciones al inglés de la app móvil: pantallas de la tía o el tío del furgón (conductor/**)
 // y la pantalla de administración (admin/**).
 export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
+  // Inicio de la tía: menú ⋮, avisos que se cierran, niños a buscar y mejor ruta
+  "Cerrar aviso": "Dismiss",
+  "Más opciones": "More options",
+  "🤝 1 familia quiere conectarse contigo": "🤝 1 family wants to connect with you",
+  "🤝 {n} familias quieren conectarse contigo": "🤝 {n} families want to connect with you",
+  "A buscar hoy ({n})": "To pick up today ({n})",
+  "A dejar hoy ({n})": "To drop off today ({n})",
+  "Esta ruta aún no tiene alumnos.": "This route has no students yet.",
+  "🗺️ Ver la ruta en Google Maps": "🗺️ Open the route in Google Maps",
+  "🧭 Calcular la mejor ruta": "🧭 Find the best route",
+  "Administrar: disponible cuando termines el recorrido (no se administra manejando).": "Manage: available when you finish the trip (no managing while driving).",
+  "🧑‍💼 Administrar (alumnos, rutas, pagos)": "🧑‍💼 Manage (students, routes, payments)",
+  "🪪 Mi licencia · {estado}": "🪪 My license · {estado}",
+  "🤝 Conexiones con familias ({n})": "🤝 Family connections ({n})",
+  "Volver a mostrar los avisos": "Show the tips again",
   // Comunes
   "Volver": "Back",
   "Guardar": "Save",
