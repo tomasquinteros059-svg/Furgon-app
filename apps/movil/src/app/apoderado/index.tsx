@@ -4,7 +4,7 @@ import { Alert, Switch, View } from "react-native";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
-import { mensajeError, supabase } from "../../lib/supabase";
+import { comoLista, mensajeError, supabase } from "../../lib/supabase";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
 import { locale, SelectorIdioma, t } from "../../i18n";
@@ -53,7 +53,9 @@ export default function InicioApoderado() {
       supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", hoy()),
     ]);
     setAlumnos((a as Alumno[]) ?? []);
-    setEstados((e as unknown as EstadoHoy[]) ?? []);
+    // Un único aviso por parada: llega como objeto o null (ver comoLista).
+    setEstados(((e ?? []) as unknown as (Omit<EstadoHoy, "avisos"> & { avisos: unknown })[])
+      .map((x) => ({ ...x, avisos: comoLista(x.avisos as EstadoHoy["avisos"][number] | EstadoHoy["avisos"] | null) })));
     setNoViaja(new Set((i ?? []).map((x) => `${x.alumno_id}:${x.tipo}`)));
     // Invitaciones de tías o tíos esperando respuesta.
     const { data: c } = await supabase.rpc("mis_conexiones");

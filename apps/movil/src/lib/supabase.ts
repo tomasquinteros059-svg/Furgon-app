@@ -45,3 +45,11 @@ export function mensajeError(e: unknown): string {
   // Los mensajes de la base de datos vienen en español: se traducen si están en el diccionario.
   return t(m);
 }
+
+/**
+ * Una relación embebida de Supabase como lista. Si la clave foránea es única (p. ej. avisos de
+ * una parada), PostgREST la entrega como objeto o null en vez de lista.
+ */
+export function comoLista<T>(v: T | T[] | null | undefined): T[] {
+  return Array.isArray(v) ? v : v == null ? [] : [v];
+}

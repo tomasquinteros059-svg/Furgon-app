@@ -5,7 +5,7 @@ import { Text } from "../../../componentes/icono";
 import { navegarConGoogleMaps, navegarConWaze } from "../../../componentes/mapa";
 import { MapaConductor } from "../../../componentes/MapaConductor";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
-import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
+import { comoLista, llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
 import { t } from "../../../lib/idioma";
 import { detenerSeguimiento, enviarCola, gpsActivoPara, iniciarSeguimiento, pendientesEnCola } from "../../../ubicacion/seguimiento";
 
@@ -56,7 +56,10 @@ export default function RecorridoConductor() {
       router.replace("/conductor");
       return false;
     }
-    setParadas((r2.data as unknown as Parada[]) ?? []);
+    // avisos tiene un único aviso por parada (recorrido_alumno_id es unique): Supabase lo entrega
+    // como objeto o null, no como lista. Se normaliza para no caerse con .length sobre null.
+    setParadas(((r2.data ?? []) as unknown as (Omit<Parada, "avisos"> & { avisos: unknown })[])
+      .map((p) => ({ ...p, avisos: comoLista(p.avisos as Parada["avisos"][number] | Parada["avisos"] | null) })));
     return true;
   }, [id]);
 
