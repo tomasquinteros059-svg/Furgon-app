@@ -50,6 +50,15 @@ repositorio (Settings → Secrets and variables → Actions):
 
 El repositorio es público: los registros de Actions también. Nunca imprimir contraseñas ni claves.
 
+**Al dueño, la APK se le manda SIEMPRE como enlace de GitHub** (lo pidió así). Enlace fijo, que cada
+compilación reemplaza: https://github.com/tomasquinteros059-svg/Furgon-app/releases/tag/ultimo-apk
+(el .apk está abajo, en *Assets*). Antes de mandarlo, comprobar que el título trae el commit recién subido.
+
+`Probar APK en emulador` (`.github/workflows/probar-apk.yml`, o un commit con `[probar]`) entra como
+familia y tía en un emulador y deja en el registro lo que se ve en cada pantalla y los errores.
+Si la app se cae, al volver a abrirla muestra el error (JS: `src/lib/fallas.ts`; nativo:
+`plugins/registro-fallas.js`): pedirle al dueño una captura de esa pantalla.
+
 ## Reglas del proyecto
 
 - Todo texto visible va con `t("texto en español")` y su traducción en `idiomas/en/*.ts`;

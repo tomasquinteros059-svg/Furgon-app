@@ -127,6 +127,12 @@ jobs:
             --target "$GITHUB_SHA" --prerelease \
             --title "APK de prueba ${{ steps.nombre.outputs.sufijo }}" \
             --notes "APK para instalar y probar en Android (firmado con clave de depuración, no es para Google Play)."
+          # Enlace fijo que siempre tiene la última: .../releases/tag/ultimo-apk
+          gh release delete ultimo-apk --yes --cleanup-tag 2>/dev/null || true
+          gh release create ultimo-apk entrega/*.apk \
+            --target "$GITHUB_SHA" --latest \
+            --title "Última APK de prueba (${{ steps.nombre.outputs.sufijo }})" \
+            --notes "Siempre la versión más reciente. Toca el archivo .apk de abajo, en Assets, para descargarlo."
 
       - name: Resumen
         env:
