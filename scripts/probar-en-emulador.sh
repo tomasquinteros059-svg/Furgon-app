@@ -59,6 +59,11 @@ escribir() { # adb input text no acepta espacios ni algunos símbolos sin escapa
   adb shell input text "$t"
 }
 viva() { adb shell pidof "$PAQUETE" >/dev/null 2>&1; }
+# Cierra el teclado si está abierto (si no, tapa los botones y el toque cae en una tecla).
+# BACK solo cuando hay teclado: sin teclado, BACK saldría de la app.
+sin_teclado() {
+  if adb shell dumpsys input_method | grep -q "mInputShown=true"; then adb shell input keyevent 4; sleep 1; fi
+}
 
 adb logcat -c
 paso "Instalar"
@@ -75,9 +80,9 @@ if ! viva; then
 else
   paso "Ingresar como $CORREO"
   if xy=$(centro 1-inicio campo 0); then
-    adb shell input tap $xy; sleep 1; escribir "$CORREO"; adb shell input keyevent 111; sleep 1
+    adb shell input tap $xy; sleep 1; escribir "$CORREO"; sleep 1; sin_teclado
     pantalla 2-correo
-    xy=$(centro 2-correo campo 1) && { adb shell input tap $xy; sleep 1; escribir "$CLAVE_CUENTAS_PRUEBA"; adb shell input keyevent 111; sleep 1; }
+    xy=$(centro 2-correo campo 1) && { adb shell input tap $xy; sleep 1; escribir "$CLAVE_CUENTAS_PRUEBA"; sleep 2; sin_teclado; }
     pantalla 3-datos
     if xy=$(centro 3-datos texto "Ingresar|Sign in"); then
       adb shell input tap $xy
@@ -92,7 +97,7 @@ else
   for i in $(seq 1 12); do
     sleep 5
     viva || { resultado="💥 se cerró después de ingresar (a los ~$((i * 5)) s)"; break; }
-    pantalla "espera-$i" >/dev/null
+    pantalla "espera-$i" | cut -c1-300
     if xy=$(centro "espera-$i" texto "Allow|Permitir|While using the app|Mientras la app está en uso|Only this time"); then
       echo "   permiso aceptado: $(textos "espera-$i" | cut -c1-160)"
       adb shell input tap $xy
