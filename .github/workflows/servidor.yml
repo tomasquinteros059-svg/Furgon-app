@@ -6,6 +6,7 @@
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF  (obligatorios)
 #   GOOGLE_MAPS_API_KEY                          (opcional: ruta por calles y hora de llegada)
 #   CLAVE_CUENTAS_PRUEBA                         (opcional: contraseña de las cuentas de prueba)
+#   WHATSAPP_TOKEN, WHATSAPP_PHONE_ID            (opcional: aviso por WhatsApp con Meta)
 #
 # Ojo: el repositorio es público y estos registros también. Nada de lo que se imprime es secreto.
 
@@ -46,6 +47,12 @@ jobs:
       TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
       TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
       TWILIO_NUMERO_ORIGEN: ${{ secrets.TWILIO_NUMERO_ORIGEN }}
+      # Aviso por WhatsApp: Meta (WHATSAPP_TOKEN + WHATSAPP_PHONE_ID) o Twilio (TWILIO_WHATSAPP_ORIGEN).
+      WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+      WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
+      WHATSAPP_PLANTILLA: ${{ secrets.WHATSAPP_PLANTILLA }}
+      TWILIO_WHATSAPP_ORIGEN: ${{ secrets.TWILIO_WHATSAPP_ORIGEN }}
+      TWILIO_WHATSAPP_CONTENT_SID: ${{ secrets.TWILIO_WHATSAPP_CONTENT_SID }}
       # Llamadas: por la app (gratis, con Firebase) y por teléfono si además hay Twilio.
       LLAMADAS_HABILITADAS: ${{ (secrets.TWILIO_ACCOUNT_SID != '' || secrets.FIREBASE_SERVICE_ACCOUNT != '') && 'true' || '' }}
     steps:

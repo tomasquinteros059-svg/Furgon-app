@@ -9,6 +9,7 @@ import { entorno } from "./entorno.ts";
 import { proveedorDesdeEntorno } from "./proveedores-eta.ts";
 import { notificarApoderados } from "./push.ts";
 import { programarSiguienteLlamada } from "./servicio-llamadas.ts";
+import { avisarPorWhatsapp, whatsappConfigurado } from "./whatsapp.ts";
 
 export interface ParadaConNombre extends ParadaPendiente {
   nombre: string;
@@ -72,7 +73,7 @@ export function crearDepsFlujo(
         etaSeg: disparo.etaSeg,
         motivo: disparo.motivo,
       });
-      // Push y llamada en paralelo: un fallo en uno no bloquea al otro.
+      // Push, WhatsApp y llamada en paralelo: un fallo en uno no bloquea a los otros.
       const tareas: Promise<unknown>[] = [
         notificarApoderados(sb, disparo.alumnoId, {
           tipo: "aviso",
@@ -84,6 +85,12 @@ export function crearDepsFlujo(
           data: { avisoId, recorridoId: recorrido.id, alumnoId: disparo.alumnoId },
         }),
       ];
+      if (whatsappConfigurado()) {
+        tareas.push(avisarPorWhatsapp(sb, disparo.alumnoId, avisoId, (idioma) => mensajeAviso({
+          tipo: recorrido.tipo, nombreAlumno: nombres.get(disparo.paradaId) ?? (idioma === "en" ? "your child" : "su hijo/a"),
+          etaSeg: disparo.etaSeg, motivo: disparo.motivo, idioma,
+        }).cuerpo));
+      }
       if (entorno.llamadasHabilitadas()) tareas.push(programarSiguienteLlamada(sb, avisoId));
       const resultados = await Promise.allSettled(tareas);
       const fallos = resultados.filter((r): r is PromiseRejectedResult => r.status === "rejected");

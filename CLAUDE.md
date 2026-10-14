@@ -45,6 +45,10 @@ repositorio (Settings → Secrets and variables → Actions):
 
 - `Publicar servidor` (`.github/workflows/servidor.yml`): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`,
   opcionales `GOOGLE_MAPS_API_KEY` y `CLAVE_CUENTAS_PRUEBA` (contraseña de las cuentas de prueba).
+  Aviso por WhatsApp (opcional, `_shared/whatsapp.ts`): Meta con `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_ID`
+  (plantilla `aviso_furgon`, o la de `WHATSAPP_PLANTILLA`, con una variable `{{1}}`), o Twilio con
+  `TWILIO_WHATSAPP_ORIGEN` (+ `TWILIO_WHATSAPP_CONTENT_SID` fuera del sandbox). Solo a familias que
+  activaron «Avisarme también por WhatsApp» en Mi perfil.
 - `APK para probar` (`.github/workflows/apk.yml`): `expo prebuild` + Gradle, sin EAS ni token de Expo.
   Publica el APK en Releases. Opcional `GOOGLE_MAPS_ANDROID_API_KEY` (restringida a Android).
 

@@ -77,11 +77,13 @@ async function secretos() {
   const llamadas = process.env.LLAMADAS_HABILITADAS?.trim();
   poner("LLAMADAS_HABILITADAS", llamadas || "false", !llamadas);
   poner("FUNCTIONS_PUBLIC_URL", `https://${REF()}.supabase.co/functions/v1`, true);
-  for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN", "FIREBASE_SERVICE_ACCOUNT"]) poner(k, process.env[k]?.trim());
+  for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN", "FIREBASE_SERVICE_ACCOUNT",
+    "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID", "WHATSAPP_PLANTILLA", "TWILIO_WHATSAPP_ORIGEN", "TWILIO_WHATSAPP_CONTENT_SID"]) poner(k, process.env[k]?.trim());
   if (nuevos.length) await api("POST", "/secrets", nuevos);
   console.log(`✓ Secretos: ${nuevos.map((s) => s.name).join(", ") || "sin cambios"} (los valores no se muestran).`);
   if (!google) console.log("  ⚠ Sin GOOGLE_MAPS_API_KEY: el ETA usa la geocerca de respaldo y no hay ruta por calles.");
   const firebase = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  if (!process.env.WHATSAPP_TOKEN?.trim() && !process.env.TWILIO_WHATSAPP_ORIGEN?.trim()) console.log("  ⚠ Sin WhatsApp (WHATSAPP_TOKEN o TWILIO_WHATSAPP_ORIGEN): el aviso llega solo por la app y la llamada.");
   if (!firebase) console.log("  ⚠ Sin FIREBASE_SERVICE_ACCOUNT: los avisos solo suenan con la app abierta.");
   else {
     try {

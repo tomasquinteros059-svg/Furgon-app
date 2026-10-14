@@ -21,13 +21,14 @@ export default function MiPerfil() {
   const [comunas, setComunas] = useState("");
   const [presentacion, setPresentacion] = useState("");
   const [visible, setVisible] = useState(false);
+  const [whatsapp, setWhatsapp] = useState(false);
   const [fotoNueva, setFotoNueva] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
 
   useFocusEffect(useCallback(() => {
     if (!perfil?.id) return;
-    supabase.from("perfiles").select("nombre, telefono, comunas, presentacion, visible_en_busqueda").eq("id", perfil.id).maybeSingle()
+    supabase.from("perfiles").select("nombre, telefono, comunas, presentacion, visible_en_busqueda, aviso_whatsapp").eq("id", perfil.id).maybeSingle()
       .then(({ data }) => {
         if (!data) return;
         setNombre(data.nombre ?? "");
@@ -35,6 +36,7 @@ export default function MiPerfil() {
         setComunas(data.comunas ?? "");
         setPresentacion(data.presentacion ?? "");
         setVisible(!!data.visible_en_busqueda);
+        setWhatsapp(!!data.aviso_whatsapp);
       });
   }, [perfil?.id]));
 
@@ -62,6 +64,7 @@ export default function MiPerfil() {
     if (nombre.trim().length < 2) return setMsg({ ok: false, txt: t("Escribe tu nombre.") });
     const tel = telefono.trim() ? normalizarTelefono(telefono) : null;
     if (telefono.trim() && !tel) return setMsg({ ok: false, txt: t("Revisa el teléfono (ej: 9 1234 5678).") });
+    if (whatsapp && !tel) return setMsg({ ok: false, txt: t("Para recibir el aviso por WhatsApp, escribe tu teléfono.") });
     setGuardando(true);
     try {
       let foto: string | undefined;
@@ -72,6 +75,7 @@ export default function MiPerfil() {
         if (error) throw error;
       }
       const cambios: Record<string, unknown> = { nombre: nombre.trim(), telefono: tel, ...(foto ? { foto } : {}) };
+      if (!esTia) cambios.aviso_whatsapp = whatsapp;
       if (esTia) Object.assign(cambios, { comunas: comunas.trim() || null, presentacion: presentacion.trim() || null, visible_en_busqueda: visible });
       const { error } = await supabase.from("perfiles").update(cambios).eq("id", perfil.id);
       if (error) throw error;
@@ -123,6 +127,18 @@ export default function MiPerfil() {
           </View>
           <Campo etiqueta={t("Comunas donde trabajas")} value={comunas} onChangeText={setComunas} placeholder={t("Ej: Ñuñoa, La Reina, Providencia")} />
           <Campo etiqueta={t("Presentación (opcional)")} value={presentacion} onChangeText={setPresentacion} placeholder={t("Ej: 12 años de experiencia, Colegio X")} maxLength={300} multiline />
+        </Tarjeta>
+      ) : null}
+
+      {!esTia ? (
+        <Tarjeta>
+          <View style={[estilos.fila, { justifyContent: "space-between" }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[estilos.texto, { fontWeight: "700" }]}>{t("Avisarme también por WhatsApp")}</Text>
+              <Text style={estilos.textoSuave}>{t("Cuando el furgón esté a pocos minutos te llega un WhatsApp a tu teléfono, además de la alarma en la app.")}</Text>
+            </View>
+            <Switch value={whatsapp} onValueChange={setWhatsapp} trackColor={{ true: colores.verde }} accessibilityLabel={t("Avisarme también por WhatsApp")} />
+          </View>
         </Tarjeta>
       ) : null}
 

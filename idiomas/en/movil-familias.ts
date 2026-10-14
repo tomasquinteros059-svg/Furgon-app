@@ -380,4 +380,7 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "Tu tía del furgón": "Your van driver",
   "Ver quién más recibe los avisos": "See who else gets the alerts",
   "¡Copiado!": "Copied!",
+  "Para recibir el aviso por WhatsApp, escribe tu teléfono.": "To get the alert on WhatsApp, enter your phone number.",
+  "Avisarme también por WhatsApp": "Also alert me on WhatsApp",
+  "Cuando el furgón esté a pocos minutos te llega un WhatsApp a tu teléfono, además de la alarma en la app.": "When the van is a few minutes away you'll get a WhatsApp on your phone, besides the alarm in the app.",
 };
