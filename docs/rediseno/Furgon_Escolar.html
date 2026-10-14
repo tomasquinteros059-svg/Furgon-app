@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furgón Escolar</title>
+<meta name="theme-color" content="#F5B700">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap">
+<script>
+  // Tema antes de dibujar (evita un destello claro en modo oscuro). Ver aplicarTema() más abajo.
+  document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+</script>
+<style>
+/* =====================================================================================
+   Furgón Escolar — maqueta web (un solo archivo).
+   Rediseño «Trazo y relleno»: la interfaz se dibuja como los íconos propios (trazo de 2 px,
+   relleno amarillo, esquinas redondas). Decisiones y fuentes en docs/rediseno/04*.md.
+   Orden: 1 tokens · 2 base · 3 marco · 4 componentes · 5 pantallas · 6 movimiento.
+   ===================================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+:root {
+  color-scheme: light;
+  /* Color (04a). Marca y acciones */
+  --amarillo: #F5B700; --sobreAmarillo: #1F1A00; --amarilloSuave: #FFF3CC;
+  --amarilloTexto: #7A5800; --amarilloBorde: #7A5800;
+  --marino: #1E3A5F; --sobreMarino: #FFFFFF; --marinoSuave: #E7EEF6;
+  /* Neutros cálidos */
+  --mesa: #ECE9E3; --fondo: #FBFAF7; --superficie: #FFFFFF; --superficie2: #F4F1EB;
+  --borde: #E4DFD6; --bordeFuerte: #857E73; --texto: #1C1A16; --suave: #5B564D;
+  /* Foco y controles */
+  --foco: #1E3A5F; --perilla: #FFFFFF; --capa: rgba(28, 26, 22, .45);
+  /* Estados (siempre con ícono y palabra) */
+  --verde: #0A6C4C; --verdeSuave: #E2F3EC; --rojo: #C0261D; --rojoSuave: #FBE7E5;
+  --alerta: #A14F00; --alertaSuave: #FDEEDD; --sobreEstado: #FFFFFF;
+  /* Mapa: el furgón es lo único amarillo */
+  --manzana: #ECE8E0; --calle: #FFFFFF; --ruta: #1E3A5F; --casa: #1E3A5F; --casaLista: #0A6C4C;
+  --halo: #FFFFFF; --colegio: #1C1A16; --sobreColegio: #FFFFFF;
+  --furgon: #F5B700; --furgonBorde: #1F1A00; --furgonVidrio: #BFE3F5; --furgonRueda: #15202B;
+
+  /* Tipografía (04b): Fredoka para reconocer de un vistazo, Atkinson para leer */
+  --f-titulo: "Fredoka", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --f-texto: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --t-xs: 13px; --t-s: 14px; --t-m: 16px; --t-l: 18px; --t-xl: 22px; --t-2xl: 28px; --t-alarma: 56px;
+
+  /* Formas y profundidad: sombra «de sello» (sólida y corta) */
+  --r-s: 8px; --r-m: 12px; --r-l: 22px; --r-xl: 28px; --r-pildora: 999px;
+  --sombra-1: 0 3px 0 0 var(--borde);
+  --sombra-2: 0 5px 0 0 var(--texto);
+  --sombra-boton: 0 4px 0 0 color-mix(in srgb, var(--amarillo) 55%, var(--texto));
+  --sombra-telefono: 0 24px 60px -24px rgba(28, 26, 22, .45);
+
+  /* Espaciado (escala de 4 px) y toque */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --toque: 48px; --toque-grande: 56px;
+
+  /* Movimiento (04d; curvas de Material 3) */
+  --dur-micro: 100ms; --dur-corta: 150ms; --dur-media: 220ms; --dur-larga: 320ms;
+  --ease-estandar: cubic-bezier(.2, 0, 0, 1); --ease-entrada: cubic-bezier(.05, .7, .1, 1);
+  --ease-salida: cubic-bezier(.3, 0, .8, .15);
+}
+/* Modo oscuro: un solo bloque; aplicarTema() pone data-theme según «Apariencia» y el sistema. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --amarillo: #F0C23C; --sobreAmarillo: #1A1500; --amarilloSuave: #3A3116;
+  --amarilloTexto: #F3CD62; --amarilloBorde: #F0C23C;
+  --marino: #93BCE8; --sobreMarino: #0E1622; --marinoSuave: #1D2A3A;
+  --mesa: #090807; --fondo: #121110; --superficie: #1B1A17; --superficie2: #25231F;
+  --borde: #38342E; --bordeFuerte: #8A8378; --texto: #F1EEE8; --suave: #ADA69B;
+  --foco: #F0C23C; --perilla: #121110; --capa: rgba(0, 0, 0, .6);
+  --verde: #4FC79A; --verdeSuave: #16302A; --rojo: #FF8A7D; --rojoSuave: #3D1F1C;
+  --alerta: #F4A55A; --alertaSuave: #3A2716; --sobreEstado: #121110;
+  --manzana: #211F1B; --calle: #36322C; --ruta: #93BCE8; --casa: #93BCE8; --casaLista: #4FC79A;
+  --halo: #121110; --colegio: #F1EEE8; --sobreColegio: #121110;
+  --furgon: #F0C23C; --furgonBorde: #1A1500; --furgonVidrio: #A9D3EA; --furgonRueda: #0A0908;
+  /* En oscuro la sombra no se ve: la profundidad la dan las superficies y los bordes (H26) */
+  --sombra-1: 0 3px 0 0 rgb(0 0 0 / .5);
+  --sombra-2: none;
+  --sombra-boton: 0 4px 0 0 color-mix(in srgb, var(--amarillo) 55%, #000);
+  --sombra-telefono: 0 24px 60px -24px rgba(0, 0, 0, .8);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-media: 150ms; --dur-larga: 150ms; }
+}
+
+/* ---------- 2. Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--mesa); color: var(--texto); font: 400 var(--t-m)/1.5 var(--f-texto); }
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h1 { font: 600 var(--t-2xl)/1.1 var(--f-titulo); letter-spacing: -.01em; }
+h1:focus { outline: none; }
+h1:focus-visible { outline: 3px solid var(--foco); outline-offset: 4px; border-radius: 6px; }
+h2 { font: 700 var(--t-l)/1.25 var(--f-texto); display: flex; align-items: center; gap: var(--s-2); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.suave { color: var(--suave); }
+.num { font-variant-numeric: tabular-nums; }
+.ico { width: 20px; height: 20px; display: inline-block; flex: none; }
+.ico svg { display: block; width: 100%; height: 100%; }
+.ico.g { width: 24px; height: 24px; }
+.ico.xl { width: 32px; height: 32px; }
+/* Sobre fondo amarillo el acento amarillo del ícono desaparecería: pasa a la superficie (H33) */
+.alarma .ico, .btn.primario .ico, .rol button[aria-pressed="true"] .ico { --amarillo: var(--superficie); }
+
+/* ---------- 3. Marco: selector de demo arriba y el «teléfono» ---------- */
+.mesa { max-width: 440px; margin: 0 auto; padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.rol { display: flex; align-items: center; gap: 6px; background: var(--superficie); border: 2px solid var(--borde); border-radius: var(--r-pildora); padding: 4px 4px 4px 14px; }
+.rol .demo { font: 700 var(--t-xs)/1 var(--f-texto); color: var(--suave); text-transform: uppercase; letter-spacing: .06em; margin-right: auto; }
+.rol button { min-height: var(--toque); border: 2px solid transparent; background: transparent; color: var(--suave); font: 700 var(--t-s) var(--f-texto); padding: 0 14px; border-radius: var(--r-pildora); display: inline-flex; align-items: center; gap: 6px; }
+.rol button[aria-pressed="true"] { background: var(--amarillo); color: var(--sobreAmarillo); border-color: var(--amarilloBorde); }
+.nota { color: var(--suave); font-size: var(--t-xs); text-align: center; }
+.telefono { position: relative; background: var(--fondo); border: 2px solid var(--borde); border-radius: 32px; overflow: hidden;
+  height: min(860px, calc(100vh - 120px)); height: min(860px, calc(100dvh - 120px)); min-height: 560px;
+  display: flex; flex-direction: column; box-shadow: var(--sombra-telefono); }
+.modo-familias .rol { display: none; }
+.modo-familias .telefono { height: min(860px, calc(100vh - 60px)); height: min(860px, calc(100dvh - 60px)); }
+/* Celular (o celular acostado, H23): la app ocupa toda la pantalla */
+@media (max-width: 480px), (max-height: 520px) {
+  .mesa { max-width: none; padding: 0; gap: 0; height: 100vh; height: 100dvh; }
+  .rol { border-radius: 0; border-width: 0 0 2px; padding-top: max(4px, env(safe-area-inset-top)); }
+  .nota { display: none; }
+  .telefono { border: 0; border-radius: 0; box-shadow: none; flex: 1; min-height: 0; height: auto !important; }
+}
+.pantalla { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px 28px;
+  display: flex; flex-direction: column; gap: var(--s-3); scroll-padding-bottom: 96px; }
+.pantalla > * { flex-shrink: 0; }
+.pantalla:focus { outline: none; }
+
+/* ---------- 4. Componentes ---------- */
+/* Encabezado de pantalla */
+.encabezado { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--toque); }
+.encabezado .acciones { display: flex; align-items: center; gap: var(--s-2); }
+.volver { align-self: flex-start; margin: -6px 0 -4px -10px; }
+.saludo { color: var(--suave); font-size: var(--t-s); }
+
+/* Tarjetas: borde de 2 px (el trazo de los íconos) + sombra de sello */
+.tarjeta { background: var(--superficie); border: 2px solid var(--borde); border-radius: var(--r-l); padding: var(--s-4);
+  display: flex; flex-direction: column; gap: var(--s-2); box-shadow: var(--sombra-1); }
+.tarjeta.destacada { border-color: var(--texto); box-shadow: var(--sombra-2); }
+.tarjeta.ok { border-color: var(--verde); }
+.tarjeta.pendiente { border-color: var(--amarilloBorde); background: color-mix(in srgb, var(--amarilloSuave) 55%, var(--superficie)); }
+.tarjeta .fila-titulo { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-2); }
+.meta { color: var(--suave); font-size: var(--t-s); }
+.etiqueta { font-weight: 700; font-size: var(--t-s); margin-top: var(--s-1); }
+
+/* Botones: píldora; el principal se hunde como una tecla */
+.btn { position: relative; isolation: isolate; border: 2px solid transparent; border-radius: var(--r-pildora); min-height: 52px; padding: 0 var(--s-5);
+  font: 600 var(--t-l)/1.15 var(--f-titulo); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  width: 100%; text-align: center; text-decoration: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-micro) var(--ease-estandar), box-shadow var(--dur-micro) var(--ease-estandar); }
+.btn::after { content: ""; position: absolute; inset: -2px; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity var(--dur-micro); }
+.btn:active:not(:disabled)::after, .btn.presionado::after { opacity: .1; transition-duration: 0ms; }
+.btn.primario { background: var(--amarillo); color: var(--sobreAmarillo); border-color: var(--amarilloBorde); box-shadow: var(--sombra-boton); margin-bottom: 4px; }
+.btn.primario:active:not(:disabled), .btn.primario.presionado { transform: translateY(3px); box-shadow: 0 1px 0 0 color-mix(in srgb, var(--amarillo) 55%, var(--texto)); transition-duration: 0ms; }
+.btn.sec { background: var(--superficie); color: var(--texto); border-color: var(--texto); }
+.btn.exito { background: var(--verde); color: var(--sobreEstado); }
+.btn.peligro { background: var(--rojo); color: var(--sobreEstado); }
+.btn.contorno-rojo { background: transparent; color: var(--rojo); border-color: var(--rojo); }
+.btn.texto { background: transparent; color: var(--marino); width: auto; min-height: var(--toque); padding: 0 var(--s-3); font: 700 var(--t-m) var(--f-texto); }
+.btn.grande { min-height: var(--toque-grande); font-size: 19px; }
+.btn.chico { width: auto; min-height: var(--toque); padding: 0 var(--s-4); font-size: var(--t-m); }
+.btn.icono { width: var(--toque); min-width: var(--toque); padding: 0; }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.fila { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.fila > .btn { flex: 1 1 0; min-width: 0; }
+.fila > .btn.chico { flex: 0 1 auto; max-width: 100%; }
+.fila > .btn.icono { flex: none; }
+.btn.chico { max-width: 100%; padding-block: 8px; }
+.par-botones { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+.motivo { font-size: var(--t-s); color: var(--suave); text-align: center; }
+
+/* Botón cerrar (✕) con zona táctil de 48 px aunque el dibujo sea chico */
+.cerrar { width: var(--toque); height: var(--toque); margin: -12px -12px -12px 0; flex: none; border: 0; background: transparent; color: var(--suave);
+  border-radius: 50%; display: grid; place-items: center; }
+
+/* Avatar */
+.avatar { width: var(--toque); height: var(--toque); border-radius: 50%; background: var(--amarillo); color: var(--sobreAmarillo);
+  border: 2px solid var(--texto); display: grid; place-items: center; font: 600 var(--t-m) var(--f-titulo); overflow: hidden; padding: 0; flex: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar.grande { width: 112px; height: 112px; font-size: 40px; border-width: 3px; }
+
+/* Chips: siempre con ícono + palabra (nunca solo color) */
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 700 var(--t-s)/1.25 var(--f-texto); padding: 4px 10px 4px 7px; border-radius: var(--r-pildora);
+  background: var(--superficie2); color: var(--suave); width: fit-content; }
+.chip .ico { width: 16px; height: 16px; }
+.chip.ok { background: var(--verdeSuave); color: var(--verde); }
+.chip.no { background: var(--rojoSuave); color: var(--rojo); }
+.chip.ya { background: var(--amarilloSuave); color: var(--texto); }
+.chip.alerta { background: var(--alertaSuave); color: var(--alerta); }
+.chip.info { background: var(--marinoSuave); color: var(--marino); }
+
+/* Avisos (info / éxito / alerta) con ícono al inicio */
+.aviso { display: flex; gap: var(--s-3); align-items: flex-start; background: var(--marinoSuave); border-radius: var(--r-m); padding: var(--s-3) var(--s-4); line-height: 1.45; }
+.aviso > .ico { margin-top: 2px; color: var(--marino); }
+.aviso.exito { background: var(--verdeSuave); } .aviso.exito > .ico { color: var(--verde); }
+.aviso.alerta { background: var(--alertaSuave); } .aviso.alerta > .ico { color: var(--alerta); }
+.aviso .cuerpo { flex: 1; display: flex; flex-direction: column; gap: var(--s-2); }
+
+/* Listas */
+.lista > li { padding: var(--s-2) 0; border-bottom: 1px solid var(--borde); display: flex; flex-direction: column; gap: 2px; }
+.lista > li:last-child { border-bottom: 0; }
+.lista .n { font-variant-numeric: tabular-nums; color: var(--suave); }
+.tachado { color: var(--suave); text-decoration: line-through; }
+.fila-nav { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-2) var(--s-4); background: var(--superficie);
+  border: 2px solid var(--borde); border-radius: var(--r-l); text-align: left; color: var(--texto); box-shadow: var(--sombra-1); text-decoration: none; }
+.fila-nav .texto { flex: 1; display: flex; flex-direction: column; }
+.fila-nav .texto b { font-weight: 700; }
+.fila-nav .flecha { transform: scaleX(-1); color: var(--suave); }
+.punto-aviso { width: 10px; height: 10px; border-radius: 50%; background: var(--rojo); flex: none; }
+
+/* Campos */
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo label, .campo .rotulo { font-weight: 700; font-size: var(--t-s); }
+.campo input, .campo textarea { background: var(--superficie); color: var(--texto); border: 2px solid var(--bordeFuerte); border-radius: var(--r-m);
+  padding: 12px 14px; font: 400 var(--t-m) var(--f-texto); min-height: var(--toque); width: 100%; }
+.campo textarea { resize: vertical; }
+.campo input[aria-invalid="true"], .campo textarea[aria-invalid="true"] { border-color: var(--rojo); }
+.campo small { color: var(--suave); font-size: var(--t-xs); }
+.campo .error { color: var(--rojo); font-weight: 700; font-size: var(--t-s); display: flex; gap: 6px; align-items: center; }
+.campo .error:empty { display: none; }
+.rapidas { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.rapidas .btn { width: auto; min-height: 44px; font: 700 var(--t-s) var(--f-texto); padding: 0 var(--s-3); }
+
+/* Interruptor: toda la fila es la zona táctil; la perilla se mueve con «left» para poder animarla */
+.fila-switch { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 52px; cursor: pointer; }
+.fila-switch .rotulo { flex: 1; display: flex; flex-direction: column; }
+.fila-switch .estado { font-size: var(--t-s); font-weight: 700; }
+.fila-switch .estado.no { color: var(--rojo); }
+.fila-switch .estado.si { color: var(--verde); }
+.switch { position: relative; flex: none; width: 56px; height: 34px; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.switch .pista { position: absolute; inset: 0; border-radius: var(--r-pildora); background: var(--bordeFuerte); transition: background var(--dur-corta); }
+.switch .perilla { position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%; background: var(--perilla); pointer-events: none; }
+.switch input:checked ~ .pista { background: var(--verde); }
+.switch input:checked ~ .perilla { left: 26px; }
+.switch input:disabled ~ .pista { opacity: .45; }
+.switch input:focus-visible ~ .pista { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* Segmentos (Automático/Claro/Oscuro, Ida/Vuelta, minutos) */
+.segmento { display: flex; gap: 4px; padding: 4px; border-radius: var(--r-pildora); background: var(--superficie2); border: 2px solid var(--borde); }
+.segmento button { flex: 1; min-height: 44px; border: 2px solid transparent; border-radius: var(--r-pildora); background: transparent; color: var(--suave); font: 700 var(--t-s) var(--f-texto); }
+.segmento button[aria-pressed="true"] { background: var(--amarillo); color: var(--sobreAmarillo); border-color: var(--amarilloBorde); }
+.opciones { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-2); }
+.opciones button { min-height: 64px; border-radius: var(--r-l); border: 2px solid var(--borde); background: var(--superficie); color: var(--texto); font: 600 22px/1 var(--f-titulo); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.opciones button small { font: 700 12px var(--f-texto); color: var(--suave); }
+.opciones button[aria-pressed="true"] { background: var(--amarillo); color: var(--sobreAmarillo); border-color: var(--amarilloBorde); }
+.opciones button[aria-pressed="true"] small { color: var(--sobreAmarillo); }
+
+/* Barra inferior: nav con aria-current (no pestañas ARIA) */
+.barra { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 2px solid var(--borde); background: var(--superficie);
+  padding: 4px 4px max(6px, env(safe-area-inset-bottom)); }
+.barra button { border: 0; background: transparent; color: var(--suave); font: 700 var(--t-xs)/1.15 var(--f-texto); min-height: 56px; padding: 4px 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: var(--r-m); overflow-wrap: anywhere; position: relative; }
+.barra .pildora-ico { display: grid; place-items: center; width: 56px; height: 30px; border-radius: var(--r-pildora); }
+.barra button[aria-current="page"] { color: var(--texto); }
+.barra button[aria-current="page"] .pildora-ico { background: var(--amarilloSuave); box-shadow: inset 0 0 0 2px var(--amarilloBorde); }
+.barra button:not([aria-current="page"]) .ico svg [style*="amarillo"] { fill: transparent !important; }
+.barra .punto-aviso { position: absolute; top: 4px; left: calc(50% + 10px); border: 2px solid var(--superficie); width: 13px; height: 13px; }
+
+/* Toast fijo (región viva) dentro del teléfono */
+.toast { position: absolute; left: 12px; right: 12px; bottom: 84px; z-index: 6; display: flex; align-items: center; gap: var(--s-2);
+  background: var(--texto); color: var(--fondo); border-radius: var(--r-l); padding: 6px 6px 6px 16px; min-height: 56px; box-shadow: 0 6px 0 -2px rgb(0 0 0 / .25); --foco: var(--fondo); }
+.toast.sin-barra { bottom: 16px; }
+/* Con un aviso visible la pantalla deja espacio abajo, para que nada quede tapado (WCAG 2.4.11) */
+.telefono.con-toast .pantalla { padding-bottom: 104px; }
+.toast p { flex: 1; font-weight: 700; padding: 8px 0; }
+.toast button { min-height: var(--toque); border: 2px solid currentColor; border-radius: var(--r-pildora); background: transparent; color: inherit; font: 700 var(--t-m) var(--f-texto); padding: 0 16px; text-decoration: underline; }
+
+/* Diálogos y hojas (dialog nativo) */
+dialog.dlg { border: 0; padding: 0; background: transparent; color: var(--texto); width: 100%; max-width: 440px; max-height: 92dvh; margin: auto auto 0; overflow: visible; }
+dialog.dlg::backdrop { background: var(--capa, rgba(28, 26, 22, .45)); }
+.hoja { background: var(--fondo); border: 2px solid var(--texto); border-bottom: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; padding: 10px 18px max(18px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: var(--s-3); max-height: 92dvh; overflow-y: auto; }
+.hoja .agarradera { width: 40px; height: 5px; border-radius: 3px; background: var(--borde); align-self: center; margin-bottom: 4px; }
+.hoja h2 { font: 600 var(--t-xl)/1.2 var(--f-titulo); }
+.hoja .acciones-dlg { display: flex; flex-direction: column-reverse; gap: var(--s-3); margin-top: var(--s-2); }
+@media (min-width: 481px) and (min-height: 521px) {
+  dialog.dlg { margin: auto; width: calc(100% - 32px); max-width: 408px; }
+  .hoja { border-bottom: 2px solid var(--texto); border-radius: var(--r-xl); }
+}
+
+/* ---------- 5. Pantallas ---------- */
+/* Alarma de la familia: lo primero que se ve */
+.alarma { background: var(--amarillo); color: var(--sobreAmarillo); border: 2px solid var(--sobreAmarillo); border-radius: var(--r-xl); padding: var(--s-4);
+  display: flex; flex-direction: column; gap: var(--s-3); box-shadow: var(--sombra-2); --foco: var(--sobreAmarillo); }
+.alarma .arriba { display: flex; align-items: center; gap: var(--s-3); }
+.alarma .campana { width: 56px; height: 56px; border-radius: 50%; background: var(--superficie); color: var(--texto); border: 2px solid var(--sobreAmarillo); display: grid; place-items: center; flex: none; }
+.alarma .campana .ico { width: 30px; height: 30px; transform-origin: 50% 15%; }
+.alarma .minutos { font: 600 var(--t-alarma)/1 var(--f-titulo); min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.alarma .unidad { font: 600 var(--t-xl)/1 var(--f-titulo); }
+.alarma .frase { font-weight: 700; font-size: var(--t-l); }
+.alarma .btn.oscuro { background: var(--sobreAmarillo); color: var(--amarillo); border-color: var(--sobreAmarillo); }
+.alarma .btn.oscuro .ico { --amarillo: var(--amarillo); }
+.alarma .btn.claro { background: transparent; color: var(--sobreAmarillo); border-color: var(--sobreAmarillo); }
+
+/* Número grande de minutos (Furgón en vivo, próxima parada) */
+.grande-min { display: flex; align-items: baseline; gap: 6px; }
+.grande-min .valor { font: 600 var(--t-alarma)/1 var(--f-titulo); min-width: 2ch; text-align: right; }
+.grande-min .unidad { font: 600 var(--t-xl) var(--f-titulo); }
+
+/* Franja de recorrido en curso */
+.franja { display: flex; align-items: center; gap: var(--s-3); background: var(--verdeSuave); border: 2px solid var(--verde); border-radius: var(--r-l); padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4); }
+.franja .texto { flex: 1; font-weight: 700; color: var(--texto); }
+.franja .ico { color: var(--verde); }
+
+/* Mapa SVG «de papel» */
+.mapa { display: block; width: 100%; aspect-ratio: 3 / 2; border-radius: var(--r-l); border: 2px solid var(--texto); background: var(--manzana); }
+.mapa.bajo { aspect-ratio: 3 / 1.6; }
+.mapa .m-calle line { stroke: var(--calle); stroke-width: 8; stroke-linecap: round; }
+.mapa .m-ruta { fill: none; stroke: var(--ruta); stroke-width: 3; stroke-dasharray: 6 5; stroke-linecap: round; }
+.mapa .m-casa circle.base { fill: var(--casa); stroke: var(--halo); stroke-width: 2.5; }
+.mapa .m-casa.lista circle.base { fill: var(--casaLista); }
+.mapa .m-casa text { fill: var(--sobreMarino); font: 700 10px var(--f-texto); }
+.mapa .m-casa .marca { stroke: var(--sobreEstado); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mapa .m-casa .casita { stroke: var(--sobreMarino); stroke-width: 1.6; fill: none; stroke-linejoin: round; }
+.mapa .m-colegio rect { fill: var(--colegio); stroke: var(--halo); stroke-width: 2.5; }
+.mapa .m-colegio text { fill: var(--sobreColegio); font: 700 11px var(--f-texto); }
+.mapa .m-onda { fill: none; stroke: var(--casaLista); stroke-width: 2; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+
+/* Próxima parada */
+.parada .direccion { font: 600 var(--t-xl)/1.2 var(--f-titulo); }
+.parada .quienes { font-weight: 700; }
+.parada .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.parada .hermano { display: flex; align-items: center; gap: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--borde); }
+.parada .hermano b { flex: 1; }
+.despues { color: var(--suave); font-size: var(--t-s); }
+.atendido { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.atendido .quien { flex: 1 1 140px; display: flex; flex-direction: column; }
+
+/* Rutas: filas con ↑ ↓ y quitar al final, separado */
+.fila-ruta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fila-ruta .nombre { flex: 1 1 120px; display: flex; flex-direction: column; }
+.fila-ruta .separador { width: 10px; }
+
+/* Mensajes tipo conversación (familia) */
+.burbuja { max-width: 85%; padding: var(--s-3) var(--s-4); border-radius: var(--r-l); border: 2px solid var(--borde); background: var(--superficie); }
+.burbuja.mia { align-self: flex-end; background: var(--amarilloSuave); border-color: var(--amarilloBorde); border-bottom-right-radius: 6px; }
+.burbuja.tia { align-self: flex-start; border-bottom-left-radius: 6px; }
+.burbuja .quien { font-size: var(--t-xs); font-weight: 700; color: var(--suave); }
+.conversacion { display: flex; flex-direction: column; gap: var(--s-2); }
+
+/* Estados vacíos */
+.vacio { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-2); padding: var(--s-6) var(--s-4); }
+.vacio .ilustracion { width: 88px; height: 88px; border-radius: 50%; background: var(--amarilloSuave); border: 2px solid var(--texto); display: grid; place-items: center; }
+.vacio .ilustracion .ico { width: 48px; height: 48px; }
+
+.codigo { font: 700 30px/1 var(--f-texto); letter-spacing: .14em; text-align: center; padding: var(--s-4); border: 2px dashed var(--texto); border-radius: var(--r-l); background: var(--amarilloSuave); }
+.perfil-cabecera { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); text-align: center; }
+
+/* ---------- 6. Movimiento ---------- */
+@keyframes campana { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(-14deg); } 35% { transform: rotate(12deg); } 55% { transform: rotate(-8deg); } 75% { transform: rotate(6deg); } }
+/* 3 ciclos de 1,3 s = 3,9 s y luego quieta (WCAG 2.2.2 pide poder detener lo que dura más de 5 s) */
+.alarma.nueva .campana .ico { animation: campana 700ms var(--ease-estandar) 3; animation-delay: 300ms; }
+.alarma.nueva { animation: entrar-alarma var(--dur-larga) var(--ease-entrada); }
+@keyframes entrar-alarma { from { opacity: 0; transform: translateY(-12px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .alarma.nueva .campana .ico { animation: none; }
+  .alarma.nueva { animation: aparecer 150ms linear; }
+  .btn.primario:active:not(:disabled), .btn.primario.presionado { transform: none; }
+}
+@keyframes aparecer { from { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="mesa" id="mesa">
+  <div class="rol" role="group" aria-label="Demo: ver la app como">
+    <span class="demo" aria-hidden="true">Demo</span>
+    <button id="ver-tia" type="button" aria-pressed="true">Tía</button>
+    <button id="ver-familia" type="button" aria-pressed="false">Familia</button>
+  </div>
+  <p class="nota" id="nota"></p>
+  <div class="telefono" id="telefono">
+    <main class="pantalla" id="pantalla" tabindex="-1"></main>
+    <nav class="barra" id="barra" aria-label="Secciones"></nav>
+    <!-- Avisos breves: región viva que existe desde el inicio (fuera de #pantalla) -->
+    <div class="toast" id="toast" hidden>
+      <p id="toast-texto" role="status" aria-live="polite"></p>
+      <button type="button" id="toast-deshacer" hidden>Deshacer</button>
+    </div>
+    <dialog class="dlg" id="dlg" aria-labelledby="dlg-titulo"></dialog>
+  </div>
+  <!-- Anunciadores solo para lector de pantalla: la alarma se anuncia una vez (H2) -->
+  <div id="anuncio" class="solo-lector" role="alert"></div>
+  <div id="anuncio-suave" class="solo-lector" role="status" aria-live="polite"></div>
+</div>
+<noscript><p style="padding:16px">Esta maqueta necesita JavaScript activado.</p></noscript>
+
+<script>
+"use strict";
+/* =====================================================================================
+   Datos, motor del recorrido, pantallas y acciones.
+   La regla de siempre: el estado S es la única verdad y pintar() dibuja la pantalla desde S.
+   ===================================================================================== */
+const ICONOS = {"casa":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5 10.2V20h14v-9.8L12 5z\"/><path d=\"M3 11.5L12 4l9 7.5M5 10v10h14V10\"/><path d=\"M10 20v-5h4v5\"/>","alumno":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"9.5\" r=\"4\"/><circle cx=\"12\" cy=\"9.5\" r=\"4\"/><circle cx=\"6.8\" cy=\"7.8\" r=\"1.6\"/><circle cx=\"17.2\" cy=\"7.8\" r=\"1.6\"/><path d=\"M6 21a6 6 0 0 1 12 0\"/>","ruta":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"6\" r=\"2.5\"/><path d=\"M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5\"/>","mensaje":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9.5L4.5 21v-3.5H4.5A1.5 1.5 0 0 1 3 16V6a1.5 1.5 0 0 1 1.5-1.5z\"/><path d=\"M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9.5L4.5 21v-3.5A1.5 1.5 0 0 1 3 16V6a1.5 1.5 0 0 1 1.5-1.5zM7.5 9.5h9M7.5 13h5.5\"/>","furgon":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3 7h12.4a3 3 0 0 1 2.6 1.5l2.4 4a3 3 0 0 1 .6 1.7V16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z\"/><path d=\"M3 7h12.4a3 3 0 0 1 2.6 1.5l2.4 4a3 3 0 0 1 .6 1.7V16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z\"/><path d=\"M7 7V4.5h6V7\"/><path d=\"M5 10h3v2.5H5zM10.5 10h3v2.5h-3zM16 10h1.4l1.5 2.5H16z\" stroke-width=\"1.5\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"6.5\" cy=\"17.5\" r=\"2\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"16.5\" cy=\"17.5\" r=\"2\"/>","mapa":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M9 4l6 2v14l-6-2z\"/><path d=\"M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z\"/><path d=\"M9 4v14M15 6v14\"/>","ida":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5.5 17a6.5 6.5 0 0 1 13 0z\"/><path d=\"M5.5 17a6.5 6.5 0 0 1 13 0M2 17h20M5 20.5h14M12 3.5v2.5M4.7 9.7l1.8 1.3M19.3 9.7l-1.8 1.3\"/>","persona":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"8\" r=\"3.5\"/><circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20.5a7 7 0 0 1 14 0\"/>","licencia":"<rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.2\"/><rect style=\"fill:var(--amarillo)\" stroke=\"none\" x=\"5\" y=\"8.5\" width=\"5.5\" height=\"7\" rx=\"1\"/><rect x=\"5\" y=\"8.5\" width=\"5.5\" height=\"7\" rx=\"1\" stroke-width=\"1.5\"/><path d=\"M13.5 9.5h5M13.5 12.5h5M13.5 15.5h3\"/>","tarjeta":"<rect x=\"2.5\" y=\"5.5\" width=\"19\" height=\"13\" rx=\"2.2\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M2.5 9h19v3.2h-19z\"/><path d=\"M2.5 9h19M2.5 12.2h19M6 15.5h4\"/>","conexion":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"4.5\"/><path d=\"M10 14.2a3.6 3.6 0 0 1 0-5.1l2.1-2.1a3.6 3.6 0 0 1 5.1 5.1L16 13.3\"/><path d=\"M14 9.8a3.6 3.6 0 0 1 0 5.1l-2.1 2.1a3.6 3.6 0 0 1-5.1-5.1L8 10.7\"/>","familia":"<circle cx=\"6.5\" cy=\"7\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"7\" r=\"2.5\"/><path d=\"M2 20v-1.5a4.5 4.5 0 0 1 6.6-4M22 20v-1.5a4.5 4.5 0 0 0-6.6-4\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M8.5 21v-1a3.5 3.5 0 0 1 7 0v1z\"/><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"2.3\"/><circle cx=\"12\" cy=\"12\" r=\"2.3\"/><path d=\"M8.5 21v-1a3.5 3.5 0 0 1 7 0v1\"/>","campana":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2z\"/><path d=\"M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.8a2.2 2.2 0 0 0 4 0M12 3V2\"/>","check":"<path d=\"M5 12.5l4.5 4.5L19 7.5\"/>","camara":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3 8.2h4l2-3h6l2 3h4V19H3z\"/><path d=\"M3 8.2h4l2-3h6l2 3h4V19H3z\"/><circle cx=\"12\" cy=\"13.2\" r=\"3.5\"/>","galeria":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2.2\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.8 19.2l5.2-6 3.8 4 3-3 4.4 5z\"/><path d=\"M3.5 18l5.5-5.3 3.8 4 3-3 4.7 4.8\"/><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"15.5\" cy=\"8.5\" r=\"1.8\"/>","menu":"<path d=\"M4 7h16M4 12h16M4 17h16\"/>","brujula":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M15.5 8.5l-2 5-5 2 2-5z\"/><path d=\"M15.5 8.5l-2 5-5 2 2-5z\"/>","pin":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M12 22s7-6.4 7-12a7 7 0 0 0-14 0c0 5.6 7 12 7 12z\"/><path d=\"M12 22s7-6.4 7-12a7 7 0 0 0-14 0c0 5.6 7 12 7 12z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>","gps":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"3.5\"/><circle cx=\"12\" cy=\"12\" r=\"3.5\"/><circle cx=\"12\" cy=\"12\" r=\"7.5\"/><path d=\"M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3\"/>","telefono":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5.2 3.5h3l2 5-2.6 1.6a11 11 0 0 0 6.3 6.3l1.6-2.6 5 2v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3.2 5.5a2 2 0 0 1 2-2z\"/><path d=\"M5.2 3.5h3l2 5-2.6 1.6a11 11 0 0 0 6.3 6.3l1.6-2.6 5 2v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3.2 5.5a2 2 0 0 1 2-2z\"/>","subio":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"9\" cy=\"7.5\" r=\"2.8\"/><circle cx=\"9\" cy=\"7.5\" r=\"2.8\"/><path d=\"M4.5 21v-4.5a4.5 4.5 0 0 1 9 0V21\"/><path d=\"M12.6 13.2l3.4-3.7V4.2\"/><path d=\"M14.2 5.6L16 3.6l1.8 2\"/>","cerrar":"<path d=\"M6 6l12 12M18 6L6 18\"/>","alerta":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M10.3 4.2a2 2 0 0 1 3.4 0l8 13.5A2 2 0 0 1 20 20.7H4a2 2 0 0 1-1.7-3z\"/><path d=\"M10.3 4.2a2 2 0 0 1 3.4 0l8 13.5A2 2 0 0 1 20 20.7H4a2 2 0 0 1-1.7-3z\"/><path d=\"M12 9.5v4.5\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"12\" cy=\"17.2\" r=\"1.1\"/>","chispa":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z\"/><path d=\"M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM18.5 15l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z\"/>","confirmado":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 12.3l2.8 2.8 5.4-5.6\"/>","prohibido":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M5.6 5.6l12.8 12.8\"/>","pulgar":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M7.5 11l3.8-6.8a2 2 0 0 1 3.4 2L13.6 10H18a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 16.9 20H7.5z\"/><path d=\"M7.5 11l3.8-6.8a2 2 0 0 1 3.4 2L13.6 10H18a2 2 0 0 1 2 2.3l-1.1 6A2 2 0 0 1 16.9 20H7.5zM3.5 11h4v9h-4z\"/>","colegio":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.5 21V10.5L12 6l8.5 4.5V21z\"/><path d=\"M3.5 21V10.5L12 6l8.5 4.5V21M2 21h20\"/><path d=\"M12 6V2.5h3.5l-1 1.2 1 1.3H12M10 21v-4h4v4\"/><circle cx=\"12\" cy=\"11.5\" r=\"1.5\"/>","estacionado":"<rect style=\"fill:var(--amarillo)\" stroke=\"none\" x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"3\"/><rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"3\"/><path d=\"M10 17V7h3.2a3 3 0 0 1 0 6H10\"/>","celebrar":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.5 20.5l4.3-11.2 6.9 6.9z\"/><path d=\"M3.5 20.5l4.3-11.2 6.9 6.9zM14 3.5v2.2M18.3 9.7h2.2M16.8 4.5l-1.2 1.8M20 6.8l-1.8 1\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"12.5\" cy=\"8.5\" r=\"1\"/>","play":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M8 5.5v13l10.5-6.5z\"/><path d=\"M8 5.5v13l10.5-6.5z\"/>","reloj":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3.2 2\"/>","error":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9 9l6 6M15 9l-6 6\"/>","lapiz":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M4 20l1-4.2L15.8 5l3.2 3.2L8.2 19z\"/><path d=\"M4 20l1-4.2L15.8 5l3.2 3.2L8.2 19zM13.8 7l3.2 3.2\"/>","calendario":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.5 7.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2V10h-17z\"/><rect x=\"3.5\" y=\"5.5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M8 3v4M16 3v4M3.5 10h17M9.5 14.5l5 4M14.5 14.5l-5 4\"/>","historial":"<path d=\"M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5M3.5 4v4.5H8\"/><path d=\"M12 7.5V12l3 2\"/>","candado":"<rect style=\"fill:var(--amarillo)\" stroke=\"none\" x=\"4.5\" y=\"10.5\" width=\"15\" height=\"10.5\" rx=\"2.2\"/><rect x=\"4.5\" y=\"10.5\" width=\"15\" height=\"10.5\" rx=\"2.2\"/><path d=\"M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5v2.5\"/>","celular":"<rect style=\"fill:var(--amarillo)\" stroke=\"none\" x=\"6\" y=\"2.5\" width=\"12\" height=\"19\" rx=\"2.5\"/><rect x=\"6\" y=\"2.5\" width=\"12\" height=\"19\" rx=\"2.5\"/><path d=\"M10.5 18.5h3\"/>","vuelta":"<path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3 11.2V20h11v-8.8L8.5 6.6z\"/><path d=\"M1.5 12.4L8.5 6.5l7 5.9M3 11v9h11v-9M7 20v-4h3v4\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M16.5 15.5a3.2 3.2 0 0 1 6 0z\"/><path d=\"M16.5 15.5a3.2 3.2 0 0 1 6 0M15.5 18.5h7M19.5 9v1.6M22.6 11.2l-1 1\"/>","sumar":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"9\" cy=\"8\" r=\"3.5\"/><circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20.5a6.5 6.5 0 0 1 13 0M19 7.5v7M15.5 11h7\"/>","en_vivo":"<circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"7.5\"/><circle cx=\"12\" cy=\"12\" r=\"7.5\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"3\"/>","flecha":"<path d=\"M15 5l-7 7 7 7\"/>"};
+const $ = (s) => document.querySelector(s);
+// Los íconos vienen de diseno/iconos.ts (solo el interior); aquí se les pone el marco SVG común.
+const SVG0 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">';
+const ico = (n, cls = "") => `<span class="ico ${cls}" aria-hidden="true">${ICONOS[n] ? SVG0 + ICONOS[n] + "</svg>" : ""}</span>`;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const RM = matchMedia("(prefers-reduced-motion: reduce)");
+const E = { estandar: "cubic-bezier(.2,0,0,1)", entrada: "cubic-bezier(.05,.7,.1,1)", salida: "cubic-bezier(.3,0,.8,.15)" };
+// Modo Familias: el mismo archivo abierto con #familias (o ?modo=familias)
+const esModoFamilias = () => location.hash === "#familias" || new URLSearchParams(location.search).get("modo") === "familias";
+
+// ---------- Datos de ejemplo (los mismos de las cuentas de prueba) ----------
+const S = {
+  rol: "tia",
+  vista: { tia: "inicio", familia: "inicio" },
+  rutaSel: null,            // ruta abierta en «Rutas»
+  dlg: null,                // diálogo abierto: { tipo, ... }
+  consejosCerrados: false, nuevosCerrados: false,
+  recomendacion: null,
+  alumnos: [
+    { id: "sofia", nombre: "Sofía Demo", curso: "3° básico", colegio: "Colegio Demo", dir: "Los Aromos 1234, Ñuñoa", familia: "familia", x: 60, y: 52 },
+    { id: "tomas", nombre: "Tomás Demo", curso: "5° básico", colegio: "Colegio Demo", dir: "Los Aromos 1234, Ñuñoa", familia: "familia", x: 60, y: 52 },
+    { id: "isidora", nombre: "Isidora Rojas", curso: "1° básico", colegio: "Colegio Demo", dir: "Pedro de Valdivia 2040, Ñuñoa", familia: "otra", x: 150, y: 40 },
+    { id: "benjamin", nombre: "Benjamín Muñoz", curso: "4° básico", colegio: "Colegio Demo", dir: "Irarrázaval 3100, Ñuñoa", familia: "otra", x: 120, y: 130 },
+  ],
+  colegio: { x: 250, y: 150, nombre: "Colegio Demo" },
+  rutas: [
+    { id: "manana", nombre: "Mañana", tipo: "ida", hora: "07:00", orden: ["sofia", "tomas", "benjamin", "isidora"] },
+    { id: "tarde", nombre: "Tarde", tipo: "vuelta", hora: "16:30", orden: ["isidora", "benjamin", "sofia", "tomas"] },
+  ],
+  noVa: {},                 // "alumno:tipo" -> true
+  noVaPor: {},              // "alumno:tipo" -> "familia" | "tia"
+  minutosAviso: { sofia: 5, tomas: 5 },
+  recorrido: null,          // ver iniciar()
+  mensajes: [
+    { id: 1, de: "Familia Rojas", sobre: "Isidora", texto: "¿Mañana pueden pasar 10 minutos más tarde por Isidora?", respuesta: null },
+  ],
+  pagos: [
+    { mes: "Octubre", monto: 65000, pagado: false, avisado: false },
+    { mes: "Septiembre", monto: 65000, pagado: true, avisado: false },
+    { mes: "Agosto", monto: 65000, pagado: true, avisado: false },
+  ],
+  cobrosOtros: [
+    { familia: "Familia Rojas", hijos: "Isidora", monto: 65000, estado: "pagado" },
+    { familia: "Familia Muñoz", hijos: "Benjamín", monto: 65000, estado: "vencido" },
+  ],
+  conexion: "pendiente",    // Familia Pérez: pendiente | aceptada | rechazada
+  perfil: {
+    tia: { nombre: "Tía Demo", tel: "+56 9 1234 5678", correo: "tia.prueba@furgonapp.cl", foto: null, comunas: "Ñuñoa, Providencia", presentacion: "12 años llevando niños al Colegio Demo.", visible: true },
+    familia: { nombre: "Familia Demo", tel: "+56 9 8765 4321", correo: "familia.prueba@furgonapp.cl", foto: null },
+  },
+  tema: "sistema",
+  origen: { tia: "mas", familia: "mas" },   // a dónde vuelve «Volver» en Mi perfil / Mi furgón
+};
+const alumno = (id) => S.alumnos.find((a) => a.id === id);
+const ruta = (id) => S.rutas.find((r) => r.id === id);
+const noVa = (id, tipo) => !!S.noVa[`${id}:${tipo}`];
+const hijos = () => S.alumnos.filter((a) => a.familia === "familia");
+const pila = (n) => n.split(" ")[0];
+const unirNombres = (ns) => ns.length <= 1 ? (ns[0] || "") : ns.slice(0, -1).join(", ") + " y " + ns[ns.length - 1];
+const pesos = (n) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+const iniciales = (n) => n.trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+
+// ---------- Tema ----------
+const OSCURO = matchMedia("(prefers-color-scheme: dark)");
+function aplicarTema() {
+  const oscuro = S.tema === "oscuro" || (S.tema === "sistema" && OSCURO.matches);
+  document.documentElement.dataset.theme = oscuro ? "dark" : "light";
+}
+OSCURO.addEventListener("change", aplicarTema);
+
+// ---------- Vibración (solo Android; iPhone no la soporta). Nunca es el único aviso ----------
+const VIB = { toque: 10, subio: 15, ausente: [12, 60, 12], inicio: 20, alarma: [200, 120, 200] };
+function vibrar(patron) { try { if (navigator.userActivation?.hasBeenActive !== false) navigator.vibrate?.(patron); } catch {} }
+
+// ---------- Avisos breves (toast) y anunciadores ----------
+// 4 s; 8 s si trae «Deshacer». Se pausa mientras tiene el dedo, el puntero o el foco encima.
+const toast = { t: 0, fin: 0, restante: 0, deshacer: null };
+function avisar(texto, deshacer) {
+  const caja = $("#toast"), p = $("#toast-texto"), b = $("#toast-deshacer");
+  const yaVisible = !caja.hidden;
+  p.textContent = "";
+  requestAnimationFrame(() => { p.textContent = texto; });   // re-anuncia aunque el texto se repita
+  toast.deshacer = deshacer || null; b.hidden = !deshacer;
+  caja.hidden = false; caja.classList.toggle("sin-barra", $("#barra").hidden); $("#telefono").classList.add("con-toast");
+  if (!yaVisible) caja.animate([{ opacity: 0, transform: `translateY(${RM.matches ? 0 : 16}px)` }, { opacity: 1, transform: "none" }], { duration: 200, easing: E.entrada });
+  toast.restante = deshacer ? 8000 : 4000; programarToast();
+}
+function programarToast() { clearTimeout(toast.t); toast.fin = Date.now() + toast.restante; toast.t = setTimeout(ocultarToast, toast.restante); }
+function pausarToast() { if ($("#toast").hidden) return; clearTimeout(toast.t); toast.restante = Math.max(1500, toast.fin - Date.now()); }
+function ocultarToast() {
+  const caja = $("#toast"); if (caja.hidden) return;
+  const a = caja.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: E.salida });
+  a.onfinish = () => { caja.hidden = true; toast.deshacer = null; $("#telefono").classList.remove("con-toast"); };
+}
+function anunciar(texto, suave) {
+  const el = suave ? $("#anuncio-suave") : $("#anuncio");
+  el.textContent = ""; setTimeout(() => { el.textContent = texto; }, 60);
+}
+
+// =====================================================================================
+// Motor del recorrido (F-01 a F-05). puntosRuta, largo, puntoEn y etaMin no cambian.
+// =====================================================================================
+function puntosRuta(r) {
+  const casas = []; const vistas = new Set();
+  for (const id of r.orden) {
+    const a = alumno(id); const k = `${a.x},${a.y}`;
+    if (noVa(id, r.tipo) || vistas.has(k)) continue; vistas.add(k); casas.push({ x: a.x, y: a.y, ids: r.orden.filter((o) => { const b = alumno(o); return b.x === a.x && b.y === a.y; }) });
+  }
+  const col = { x: S.colegio.x, y: S.colegio.y, ids: [] };
+  return r.tipo === "ida" ? [{ x: 20, y: 180, ids: [] }, ...casas, col] : [col, ...casas];
+}
+function largo(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return L; }
+function puntoEn(pts, f) {
+  let d = largo(pts) * f;
+  for (let i = 1; i < pts.length; i++) {
+    const s = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (d <= s) return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * (d / s), y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * (d / s) };
+    d -= s;
+  }
+  return pts[pts.length - 1];
+}
+// Minutos que faltan para llegar a una casa (la ruta completa dura ~25 min en esta demo).
+function etaMin(idAlumno) {
+  const r = S.recorrido && ruta(S.recorrido.rutaId); if (!r) return null;
+  const pts = puntosRuta(r); const L = largo(pts); let acum = 0;
+  for (let i = 1; i < pts.length; i++) {
+    acum += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (pts[i].ids.includes(idAlumno)) return Math.max(0, Math.round((acum / L - S.recorrido.progreso) * 25));
+  }
+  return null;
+}
+function iniciar(rutaId) {
+  const r = ruta(rutaId);
+  if (!r.orden.length) { avisar("Esta ruta aún no tiene alumnos."); return false; }
+  const estados = {}; for (const id of r.orden) estados[id] = noVa(id, r.tipo) ? "no_viaja" : "pendiente";
+  // manual: lo marcó la tía (el motor no lo vuelve a marcar solo, H1). recordado: aviso de 2 min.
+  S.recorrido = { rutaId, progreso: 0, estados, avisado: {}, confirmado: {}, manual: {}, recordado: {}, anunciado: {} };
+  S.vista.tia = "recorrido"; S.dlg = null;
+  furgon.reiniciar();
+  clearInterval(iniciar.t);
+  iniciar.t = setInterval(tick, 250);
+  vibrar(VIB.inicio);
+  return true;
+}
+// Cada 250 ms: avanza 0,4 %, avisa a quien le faltan sus minutos y marca llegada a los 0 min.
+function tick() {
+  const rec = S.recorrido; if (!rec) return clearInterval(iniciar.t);
+  rec.progreso = Math.min(1, rec.progreso + 0.004);
+  const rr = ruta(rec.rutaId);
+  for (const id of rr.orden) {
+    const m = etaMin(id);
+    if (m !== null && m <= (S.minutosAviso[id] ?? 5) && rec.estados[id] === "pendiente") rec.avisado[id] = true;
+    if (m !== null && m <= 2 && rec.avisado[id] && rec.estados[id] === "pendiente") rec.recordado[id] = true;
+    if (m === 0 && rec.estados[id] === "pendiente" && !rec.manual[id]) rec.estados[id] = "entregado";
+  }
+  anunciarAlarmas();
+  if (!VIVAS[S.rol].includes(S.vista[S.rol])) return;   // pantalla sin mapa ni minutos: nada que dibujar
+  // «Firma + parche»: solo se redibuja todo si cambió algo importante; si no, minutos y furgón.
+  // Con un dedo apoyado se espera a que lo levante: redibujar a mitad del toque lo perdería.
+  if (firma() !== pintar.firma && !dedo.abajo) conMovimiento(() => pintar(true));
+  else { if (firma() !== pintar.firma) dedo.pendiente = true; parcheVivo(); }
+}
+function terminar() {
+  clearInterval(iniciar.t); S.recorrido = null; S.vista.tia = "inicio"; S.dlg = null;
+  avisar("Recorrido cerrado. ¡Gracias por cuidarlos, tía!");
+}
+// Lo que, si cambia, obliga a redibujar la pantalla completa.
+function firma() {
+  const r = S.recorrido;
+  return JSON.stringify([S.rol, S.vista[S.rol], r && [r.estados, r.avisado, r.confirmado, r.manual, r.recordado], S.noVa]);
+}
+function parcheVivo() {
+  for (const el of document.querySelectorAll("#pantalla [data-eta]")) {
+    const m = etaMin(el.dataset.eta);
+    const v = m === null ? "?" : String(el.dataset.min1 ? Math.max(1, m) : m);
+    if (el.textContent !== v) el.textContent = v;
+  }
+  furgon.objetivo(S.recorrido.progreso);
+}
+
+// Grupo de la alarma: hermanos de la misma casa que esperan aviso
+function alarmaFamilia() {
+  const rec = S.recorrido; if (!rec) return null;
+  const a = hijos().find((h) => rec.avisado[h.id] && rec.estados[h.id] === "pendiente" && !rec.confirmado[h.id]);
+  if (!a) return null;
+  const grupo = hijos().filter((h) => h.x === a.x && h.y === a.y && rec.estados[h.id] === "pendiente" && rec.avisado[h.id] && !rec.confirmado[h.id]);
+  return { id: a.id, ids: grupo.map((h) => h.id), nombres: unirNombres(grupo.map((h) => pila(h.nombre))), recordado: grupo.some((h) => rec.recordado[h.id]) };
+}
+// Se anuncia una sola vez por alarma y una vez en el recordatorio de 2 min.
+function anunciarAlarmas() {
+  if (S.rol !== "familia") return;
+  const al = alarmaFamilia(); if (!al) return;
+  const rec = S.recorrido; const tipo = ruta(rec.rutaId).tipo;
+  const clave = al.id + (al.recordado ? ":2" : ":1");
+  if (rec.anunciado[clave]) return;
+  rec.anunciado[clave] = true;
+  const m = Math.max(1, etaMin(al.id) ?? 1);
+  anunciar(al.recordado ? `Faltan ${m} minutos: la tía ya casi llega ${tipo === "ida" ? "por" : "con"} ${al.nombres}.` : `Alarma: el furgón llega en unos ${m} minutos ${tipo === "ida" ? "por" : "con"} ${al.nombres}.`);
+  vibrar(al.recordado ? [200] : VIB.alarma);
+}
+
+// Marcar «Hoy no va» (familia o tía). Si el recorrido de ese tramo está en curso, se refleja al tiro (defecto 6).
+function cambiarNoVa(id, tipo, valor, por) {
+  const k = `${id}:${tipo}`;
+  S.noVa[k] = valor; if (valor) S.noVaPor[k] = por; else delete S.noVaPor[k];
+  const rec = S.recorrido;
+  if (rec && ruta(rec.rutaId).tipo === tipo && id in rec.estados) {
+    if (valor && rec.estados[id] === "pendiente") rec.estados[id] = "no_viaja";
+    else if (!valor && rec.estados[id] === "no_viaja") rec.estados[id] = "pendiente";
+  }
+}
+
+// =====================================================================================
+// Furgón en el mapa: interpolación con requestAnimationFrame entre ticks (se desliza, no salta)
+// f_mostrado = f_desde + (f_objetivo − f_desde) · min(1, (ahora − t_tick) / 250 ms)
+// =====================================================================================
+const furgon = {
+  desde: 0, hasta: 0, t: 0, mostrado: 0, id: 0, ultimo: null, izq: false,
+  reiniciar() { this.desde = this.hasta = this.mostrado = 0; this.ultimo = null; this.izq = false; },
+  objetivo(f) { this.desde = this.mostrado; this.hasta = f; this.t = performance.now(); this.arrancar(); },
+  arrancar() { if (!this.id) this.id = requestAnimationFrame((n) => this.cuadro(n)); },
+  sincronizar() { if (S.recorrido) { if (this.hasta !== S.recorrido.progreso) this.objetivo(S.recorrido.progreso); else this.dibujar(); } },
+  cuadro(ahora) {
+    this.id = 0; if (!S.recorrido) return;
+    const u = Math.min(1, (ahora - this.t) / 250);
+    this.mostrado = this.desde + (this.hasta - this.desde) * u;
+    this.dibujar();
+    if (u < 1) this.arrancar();
+  },
+  dibujar() {
+    const g = document.querySelector("[data-furgon]"); const rec = S.recorrido;
+    if (!g || !rec) return;
+    const pts = puntosRuta(ruta(rec.rutaId));
+    let p = puntoEn(pts, this.mostrado);
+    // «Teletransporte»: si cambió la ruta (alguien no va), no cruzar manzanas: aparecer en el lugar nuevo
+    if (this.ultimo && Math.hypot(p.x - this.ultimo.x, p.y - this.ultimo.y) > 20) {
+      this.desde = this.mostrado = this.hasta; p = puntoEn(pts, this.mostrado);
+      g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
+    }
+    if (this.ultimo) { const dx = p.x - this.ultimo.x; if (dx < -0.2) this.izq = true; else if (dx > 0.2) this.izq = false; }
+    this.ultimo = p;
+    g.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
+    g.firstElementChild.setAttribute("transform", this.izq ? "scale(-1,1)" : "");
+    // Privacidad real (vista familia): cerca de la casa de otro niño, el furgón no se muestra
+    if (g.dataset.fam) {
+      const oculto = S.alumnos.some((a) => a.familia !== "familia" && Math.hypot(a.x - p.x, a.y - p.y) < 18);
+      g.style.opacity = oculto ? "0" : "1";
+      const nota = document.getElementById("nota-privada"); if (nota) nota.hidden = !oculto;
+    }
+  },
+};
+
+// Dibujo del mapa. La familia solo ve su casa, el colegio y el furgón (privacidad, F-07).
+function mapaSVG(r, fam, bajo) {
+  const pts = puntosRuta(r);
+  const calles = [30, 80, 130, 180].map((y) => `<line x1="0" y1="${y}" x2="300" y2="${y}"/>`).join("")
+    + [40, 100, 160, 220, 280].map((x) => `<line x1="${x}" y1="0" x2="${x}" y2="200"/>`).join("");
+  const linea = fam ? "" : `<polyline class="m-ruta" points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}"/>`;
+  let n = 0;
+  const casas = pts.filter((p) => p.ids.length).map((p) => {
+    n++; const mia = p.ids.some((id) => alumno(id).familia === "familia");
+    if (fam && !mia) return "";
+    const listo = !!S.recorrido && p.ids.every((id) => S.recorrido.estados[id] !== "pendiente");
+    const dentro = fam
+      ? `<path class="casita" d="M${p.x - 4.5} ${p.y + 4}v-4.5l4.5-4 4.5 4v4.5z"/>`
+      : listo ? `<path class="marca" d="M${p.x - 4} ${p.y}l2.8 2.8 5.2-5.4"/>`
+      : `<text x="${p.x}" y="${p.y + 3.5}" text-anchor="middle">${n}</text>`;
+    return `<g class="m-casa${listo ? " lista" : ""}" data-k="casa:${p.x},${p.y}" data-v="${listo ? 1 : 0}"><circle class="base" cx="${p.x}" cy="${p.y}" r="10"/>${dentro}</g>`;
+  }).join("");
+  const c = S.colegio;
+  const col = `<g class="m-colegio"><rect x="${c.x - 11}" y="${c.y - 11}" width="22" height="22" rx="4"/><text x="${c.x}" y="${c.y + 4}" text-anchor="middle">C</text></g>`;
+  const p0 = S.recorrido ? puntoEn(pts, furgon.mostrado) : pts[0];
+  const van = `<g data-furgon${fam ? ' data-fam="1"' : ""} transform="translate(${p0.x},${p0.y})"><g>
+      <rect x="-13" y="-9" width="26" height="16" rx="4" style="fill:var(--furgon);stroke:var(--furgonBorde)" stroke-width="1.6"/>
+      <rect x="-10" y="-6" width="6" height="5" rx="1" style="fill:var(--furgonVidrio)"/><rect x="-2" y="-6" width="6" height="5" rx="1" style="fill:var(--furgonVidrio)"/>
+      <circle cx="-7" cy="7" r="3" style="fill:var(--furgonRueda)"/><circle cx="7" cy="7" r="3" style="fill:var(--furgonRueda)"/></g></g>`;
+  const etiqueta = fam ? "Mapa con tu casa, el colegio y el furgón" : `Mapa del recorrido ${r.nombre}: casas numeradas en orden, colegio y furgón`;
+  return `<svg class="mapa${bajo ? " bajo" : ""}" viewBox="0 0 300 200" role="img" aria-label="${esc(etiqueta)}"><g class="m-calle">${calles}</g>${linea}${casas}${col}${van}</svg>`;
+}
+
+// =====================================================================================
+// Piezas comunes
+// =====================================================================================
+function avatar(quien, grande) {
+  const p = S.perfil[quien];
+  return `<button type="button" class="avatar${grande ? " grande" : ""}" data-ir="perfil" aria-label="Mi perfil">${p.foto ? `<img src="${p.foto}" alt="">` : esc(iniciales(p.nombre))}</button>`;
+}
+function encabezado(titulo, derecha, volverA, saludo) {
+  return (volverA ? `<button type="button" class="btn texto volver" data-ir="${volverA}">${ico("flecha")}Volver</button>` : "")
+    + `<header class="encabezado"><div>${saludo ? `<p class="saludo">${esc(saludo)}</p>` : ""}<h1 tabindex="-1">${esc(titulo)}</h1></div><div class="acciones">${derecha || ""}</div></header>`;
+}
+const chip = (tipo, icono, texto, extra = "") => `<span class="chip ${tipo}"${extra}>${icono ? ico(icono) : ""}<span>${texto}</span></span>`;
+function vacio(icono, titulo, texto, accion) {
+  return `<div class="vacio"><div class="ilustracion">${ico(icono)}</div><h2>${esc(titulo)}</h2>${texto ? `<p class="suave">${esc(texto)}</p>` : ""}${accion || ""}</div>`;
+}
+const iconoRuta = (r) => r.tipo === "ida" ? "ida" : "vuelta";
+const textoTramo = (r) => r.tipo === "ida" ? "Casa → colegio" : "Colegio → casa";
+function temaHTML() {
+  return `<div class="segmento" role="group" aria-label="Apariencia">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button type="button" data-tema="${v}" aria-pressed="${S.tema === v}">${n}</button>`).join("")}</div>`;
+}
+// Enlace honesto a Google Maps: las paradas reales de la ruta en orden (defecto 4)
+function enlaceMaps(r) {
+  const dirs = [...new Set(r.orden.filter((id) => !noVa(id, r.tipo)).map((id) => alumno(id).dir))];
+  if (!dirs.length) return "";
+  const q = new URLSearchParams({ api: "1", travelmode: "driving", destination: dirs[dirs.length - 1] });
+  if (dirs.length > 1) q.set("waypoints", dirs.slice(0, -1).join("|"));
+  return `<a class="btn sec" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?${esc(q.toString())}">${ico("mapa")}Ver las paradas en Google Maps<span class="solo-lector"> (se abre en otra pestaña)</span></a>`;
+}
+
+// =====================================================================================
+// Pantallas de la tía
+// =====================================================================================
+// La próxima ruta del día: la que está en curso, o la primera cuya hora aún no pasó (con 1 h de margen).
+function proximaRuta() {
+  if (S.recorrido) return ruta(S.recorrido.rutaId);
+  const ahora = new Date(); const min = ahora.getHours() * 60 + ahora.getMinutes();
+  const conHora = [...S.rutas].sort((a, b) => (a.hora || "99").localeCompare(b.hora || "99"));
+  return conHora.find((r) => { if (!r.hora) return false; const [h, m] = r.hora.split(":").map(Number); return h * 60 + m + 60 >= min; }) || conHora[0] || null;
+}
+function botonIniciar(r) {
+  const rec = S.recorrido;
+  if (rec && rec.rutaId === r.id) return `<button class="btn exito grande" data-ir="recorrido">${ico("en_vivo")}Continuar el recorrido en curso</button>`;
+  const motivo = !r.orden.length ? "Esta ruta aún no tiene alumnos." : rec ? `Termina «${ruta(rec.rutaId).nombre}» para iniciar esta.` : "";
+  return `<button class="btn primario grande" data-iniciar="${r.id}" ${motivo ? `disabled aria-describedby="motivo-${r.id}"` : ""}>${ico("furgon")}Iniciar ${esc(r.nombre)}${r.hora ? ` · ${r.hora}` : ""}</button>`
+    + (motivo ? `<p class="motivo" id="motivo-${r.id}">${esc(motivo)}</p>` : "");
+}
+function listaAlumnosRuta(r) {
+  if (!r.orden.length) return `<p class="suave">Esta ruta aún no tiene alumnos.</p>`;
+  return `<ol class="lista">${r.orden.map((id, i) => { const a = alumno(id); const nv = noVa(id, r.tipo);
+    return `<li><b class="${nv ? "tachado" : ""}"><span class="n">${i + 1}.</span> ${esc(a.nombre)}</b><span class="meta">${nv ? `Hoy no va${S.noVaPor[`${id}:${r.tipo}`] === "familia" ? " (avisó la familia)" : ""}` : esc(a.dir)}</span></li>`; }).join("")}</ol>`;
+}
+function tiaInicio() {
+  const rec = S.recorrido; const prox = proximaRuta();
+  let h = encabezado(`Hola, ${pila(S.perfil.tia.nombre)}`, avatar("tia"), null, "Hoy");
+  if (rec) { const r = ruta(rec.rutaId);
+    h += `<div class="franja" data-k="franja">${ico("en_vivo", "g")}<span class="texto">Recorrido en curso · ${esc(r.nombre)}</span><button class="btn exito chico" data-ir="recorrido">Volver al recorrido</button></div>`; }
+  if (S.recomendacion && S.recomendacion.ok) h += `<div class="aviso exito" data-k="rec-ok">${ico("confirmado")}<div class="cuerpo"><p>${esc(S.recomendacion.ok)}</p>
+      <button class="btn texto" style="align-self:flex-start;padding:0" data-accion="orden-anterior">${ico("historial")}Volver al orden anterior</button></div></div>`;
+  if (!S.rutas.length) return h + vacio("ruta", "Todavía no tienes rutas", "Crea la primera y agrégale tus alumnos.", `<button class="btn primario chico" data-accion="nueva-ruta">Crear ruta</button>`);
+  // 1) Lo primero: la próxima ruta con su botón grande
+  if (prox) {
+    const van = prox.orden.filter((id) => !noVa(id, prox.tipo));
+    h += `<section class="tarjeta destacada" data-k="prox:${prox.id}" aria-labelledby="t-prox">
+      <div class="fila-titulo"><h2 id="t-prox">${ico(iconoRuta(prox), "g")}${esc(prox.nombre)}</h2>${chip("info", "reloj", prox.hora || "Sin hora")}</div>
+      <p class="meta">${textoTramo(prox)} · ${esc(S.colegio.nombre)}</p>
+      <p class="etiqueta">${prox.tipo === "ida" ? "A buscar hoy" : "A dejar hoy"} (${van.length})</p>
+      ${listaAlumnosRuta(prox)}
+      ${botonIniciar(prox)}
+      ${van.length ? enlaceMaps(prox) : ""}
+      ${!(rec && rec.rutaId === prox.id) && prox.orden.length >= 2 ? recomendacionHTML(prox).replace("btn sec chico", "btn sec") : ""}
+    </section>`;
+  }
+  // 2) Novedades
+  if (!S.consejosCerrados) h += `<div class="aviso" data-k="consejos">${ico("gps")}<div class="cuerpo"><p>Toca «Iniciar» antes de partir. Los avisos a las familias salen solos: tú solo maneja.</p>
+      <p>Tu celular es el GPS del furgón: con batería, ubicación activada y en su soporte.</p></div><button class="cerrar" data-accion="cerrar-consejos" aria-label="Cerrar el consejo">${ico("cerrar")}</button></div>`;
+  if (!S.nuevosCerrados) h += `<section class="tarjeta ok" data-k="nuevos" aria-labelledby="t-nuevos"><div class="fila-titulo"><h2 id="t-nuevos">${ico("sumar", "g")}Se sumaron a tus rutas</h2>
+      <button class="cerrar" data-accion="cerrar-nuevos" aria-label="Cerrar el aviso de alumnos nuevos">${ico("cerrar")}</button></div>
+      <p>${ico("ida")} <b>Isidora Rojas</b> · Mañana, parada 4</p><p>${ico("vuelta")} <b>Isidora Rojas</b> · Tarde, parada 1</p>
+      <p class="meta">Quedaron donde menos alargan el recorrido. Su familia ya recibe los avisos.</p></section>`;
+  // 3) Las demás rutas del día, en corto
+  const otras = S.rutas.filter((r) => r !== prox);
+  if (otras.length) h += `<h2 style="margin-top:4px">Otras rutas de hoy</h2>` + otras.map((r) => {
+    const van = r.orden.filter((id) => !noVa(id, r.tipo));
+    return `<section class="tarjeta" data-k="otra:${r.id}" aria-label="Ruta ${esc(r.nombre)}"><div class="fila-titulo"><h2>${ico(iconoRuta(r), "g")}${esc(r.nombre)}</h2>${chip("", "reloj", r.hora || "Sin hora")}</div>
+      <p class="meta">${textoTramo(r)} · ${r.tipo === "ida" ? "A buscar hoy" : "A dejar hoy"} (${van.length})</p>
+      ${botonIniciar(r)}
+      <button class="btn texto" style="align-self:flex-start" data-abrir-ruta="${r.id}">Ver la ruta y ordenar</button></section>`; }).join("");
+  return h;
+}
+function recomendacionHTML(r) {
+  const rec = S.recomendacion && S.recomendacion.rutaId === r.id && !S.recomendacion.ok ? S.recomendacion : null;
+  if (!rec) return `<button class="btn sec chico" data-recomendar="${r.id}">${ico("brujula")}Calcular la mejor ruta</button>`;
+  if (!rec.cambia) return `<div class="aviso exito" data-k="rec:${r.id}">${ico("pulgar")}<div class="cuerpo"><p>El orden actual ya es el más corto (unos ${rec.km} km).</p><button class="btn texto" style="align-self:flex-start;padding:0" data-accion="descartar">Cerrar</button></div></div>`;
+  return `<div class="tarjeta pendiente" data-k="rec:${r.id}"><h2>${ico("chispa")}Ruta recomendada: ${rec.km} km</h2><p class="meta">Antes: ${rec.antes} km. Ahorras ${(rec.antes - rec.km).toFixed(1)} km por recorrido. Calculada por calles con Google Maps.</p>
+    <ol class="lista">${rec.orden.map((id, i) => `<li><b><span class="n">${i + 1}.</span> ${esc(alumno(id).nombre)}</b></li>`).join("")}</ol>
+    <div class="fila"><button class="btn exito" data-aplicar="${r.id}">${ico("check")}Aplicar</button><button class="btn sec" data-accion="descartar">Descartar</button></div></div>`;
+}
+function recomendar(id) {
+  const r = ruta(id);
+  // Orden de vecino más cercano, partiendo del extremo opuesto al colegio (como hace el servidor).
+  const pend = [...r.orden]; const orden = []; let pos = r.tipo === "ida" ? { x: 20, y: 180 } : S.colegio;
+  while (pend.length) { pend.sort((a, b) => Math.hypot(alumno(a).x - pos.x, alumno(a).y - pos.y) - Math.hypot(alumno(b).x - pos.x, alumno(b).y - pos.y)); const s = pend.shift(); orden.push(s); pos = alumno(s); }
+  const km = (o) => +(largo([r.tipo === "ida" ? { x: 20, y: 180 } : S.colegio, ...o.map(alumno), ...(r.tipo === "ida" ? [S.colegio] : [])]) / 40).toFixed(1);
+  S.recomendacion = { rutaId: id, orden, km: km(orden), antes: km(r.orden), cambia: orden.join() !== r.orden.join() };
+}
+
+// Recorrido en curso: una parada a la vez, botones grandes abajo, deshacer y lista corregible
+function tiaRecorrido() {
+  const rec = S.recorrido; const r = ruta(rec.rutaId); const ida = r.tipo === "ida";
+  const txtSi = ida ? "Subió" : "En su hogar";
+  const estadoTxt = (id) => { const e = rec.estados[id];
+    if (e === "entregado") return rec.manual[id] ? (ida ? "Subió" : "En su hogar") : "Pasó el furgón · sin confirmar";
+    if (e === "ausente") return "Ausente";
+    return `Hoy no viaja${S.noVaPor[`${id}:${r.tipo}`] === "familia" ? " (avisó la familia)" : ""}`; };
+  const casas = puntosRuta(r).filter((p) => p.ids.length);
+  const idxProx = casas.findIndex((p) => p.ids.some((id) => rec.estados[id] === "pendiente"));
+  let h = encabezado(r.nombre, chip("ok", "en_vivo", "En curso"), null, textoTramo(r));
+  h += mapaSVG(r, false, true);
+  if (idxProx >= 0) {
+    const p = casas[idxProx]; const pend = p.ids.filter((id) => rec.estados[id] === "pendiente");
+    const a0 = alumno(pend[0]);
+    const avisada = pend.every((id) => rec.avisado[id]);
+    const minAviso = S.minutosAviso[pend[0]] ?? 5;
+    h += `<section class="tarjeta destacada parada" data-k="parada:${p.x},${p.y}" aria-labelledby="t-parada">
+      <p class="meta">Próxima parada · ${idxProx + 1} de ${casas.length}</p>
+      <h2 class="direccion" id="t-parada">${esc(a0.dir)}</h2>
+      <p class="quienes">${esc(unirNombres(pend.map((id) => alumno(id).nombre)))}</p>
+      <div class="chips">${avisada ? chip("ya", "campana", "Familia avisada") : chip("", "reloj", `Se avisa ${minAviso} min antes`)}
+        ${chip("info", "furgon", `<span class="num" data-eta="${pend[0]}">${etaMin(pend[0]) ?? "?"}</span>&nbsp;min`)}</div>
+      ${pend.length > 1
+        ? `<button class="btn exito grande" data-marcar="${pend.join(",")}:entregado">${ico("subio")}${ida ? `Subieron los ${pend.length}` : `En su hogar los ${pend.length}`}</button>`
+          + pend.map((id) => `<div class="hermano"><b>${esc(alumno(id).nombre)}</b><button class="btn exito chico" data-marcar="${id}:entregado" aria-label="${txtSi}: ${esc(alumno(id).nombre)}">${txtSi}</button><button class="btn sec chico" data-marcar="${id}:ausente" aria-label="No estaba: ${esc(alumno(id).nombre)}">No estaba</button></div>`).join("")
+        : `<div class="par-botones"><button class="btn exito grande" data-marcar="${pend[0]}:entregado">${ico(ida ? "subio" : "casa")}${txtSi}</button><button class="btn sec grande" data-marcar="${pend[0]}:ausente">${ico("prohibido")}No estaba</button></div>`}
+    </section>`;
+    const despues = casas.slice(idxProx + 1).filter((q) => q.ids.some((id) => rec.estados[id] === "pendiente"));
+    if (despues.length) h += `<p class="despues"><b>Después:</b> ${despues.map((q) => esc(unirNombres(q.ids.filter((id) => rec.estados[id] === "pendiente").map((id) => pila(alumno(id).nombre))))).join(" · ")}</p>`;
+  } else {
+    h += `<div class="aviso exito" data-k="todos">${ico("celebrar")}<div class="cuerpo"><p><b>No quedan alumnos pendientes.</b> Todos listos.</p></div></div>
+      <button class="btn exito grande" data-accion="terminar">${ico("confirmado")}Terminar recorrido</button>`;
+  }
+  const at = r.orden.filter((id) => rec.estados[id] !== "pendiente");
+  if (at.length) h += `<section class="tarjeta" aria-labelledby="t-at"><h2 id="t-at">${ico("confirmado")}Atendidos (${at.length})</h2><ul class="lista">${at.map((id) => { const e = rec.estados[id]; const nombre = esc(alumno(id).nombre);
+      const sinConf = e === "entregado" && !rec.manual[id];
+      return `<li data-k="at:${id}" data-v="${e}${rec.manual[id] ? "m" : ""}"><div class="atendido"><span class="quien"><b>${nombre}</b><span class="meta">${estadoTxt(id)}</span></span>
+        ${e === "no_viaja" ? "" : `<div class="segmento" role="group" aria-label="Corregir: ${nombre}"><button type="button" data-marcar="${id}:entregado" aria-pressed="${e === "entregado" && !sinConf}">${txtSi}</button><button type="button" data-marcar="${id}:ausente" aria-pressed="${e === "ausente"}">No estaba</button></div>`}</div></li>`; }).join("")}</ul></section>`;
+  if (idxProx >= 0) h += `<button class="btn contorno-rojo" style="margin-top:12px" data-accion="terminar">Terminar recorrido</button>`;
+  h += `<button class="btn texto" style="align-self:center" data-ir="inicio">Volver al inicio (el recorrido sigue)</button>`;
+  return h;
+}
+
+function tiaAlumnos() {
+  const sinApp = S.alumnos.filter((a) => a.familia !== "familia").length;
+  return encabezado("Alumnos", "") + `<p class="meta">${S.alumnos.length} activos · ${sinApp} familias sin la app</p>`
+    + S.alumnos.map((a) => { const nv = noVa(a.id, "ida") || noVa(a.id, "vuelta");
+      return `<section class="tarjeta" aria-label="${esc(a.nombre)}"><h2>${ico("alumno", "g")}${esc(a.nombre)}</h2><p class="meta">${esc(a.curso)} · ${esc(a.colegio)}</p><p class="fila" style="gap:6px">${ico("pin")}${esc(a.dir)}</p>
+      <div class="fila">${a.familia === "familia" ? chip("ok", "check", "Familia con la app") : chip("", "telefono", "Familia sin la app")}${nv ? chip("no", "prohibido", "Hoy no viaja") : ""}</div></section>`; }).join("")
+    + `<button class="btn sec" data-accion="toast-nuevo">${ico("sumar")}Registrar alumno</button>`;
+}
+function tiaRutas() {
+  let h = encabezado("Rutas", "") + `<p class="meta">El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo.</p>
+    <button class="btn primario" data-accion="nueva-ruta">${ico("ruta")}Nueva ruta</button>`;
+  if (!S.rutas.length) return h + vacio("ruta", "Todavía no tienes rutas", "Crea la primera y agrégale tus alumnos.");
+  for (const r of S.rutas) {
+    const van = r.orden.filter((id) => !noVa(id, r.tipo));
+    h += `<button class="fila-nav" data-abrir-ruta="${r.id}" data-k="lr:${r.id}">${ico(iconoRuta(r), "xl")}<span class="texto"><b>${esc(r.nombre)}${r.hora ? ` · ${r.hora}` : ""}</b><span class="meta">${textoTramo(r)} · ${van.length} de ${r.orden.length} van hoy</span></span>${S.recorrido && S.recorrido.rutaId === r.id ? chip("ok", "en_vivo", "En curso") : ""}${ico("flecha", "flecha")}</button>`;
+  }
+  return h;
+}
+// Detalle de una ruta: ordenar, «hoy no va», quitar (con deshacer), agregar, calcular y eliminar
+function tiaRuta() {
+  const r = ruta(S.rutaSel);
+  let h = encabezado(r.nombre, chip("info", "reloj", r.hora || "Sin hora"), "rutas", textoTramo(r));
+  h += botonIniciar(r);
+  if (r.orden.length >= 2) h += recomendacionHTML(r);
+  h += `<section class="tarjeta" aria-labelledby="t-orden"><h2 id="t-orden">${ico("ruta")}Orden de la ruta</h2>`;
+  if (!r.orden.length) h += vacio("ruta", "Esta ruta está vacía", "Agrega a los niños aquí abajo.");
+  else h += `<ol class="lista">${r.orden.map((id, i) => { const a = alumno(id); const nv = noVa(id, r.tipo); const n = esc(a.nombre);
+      return `<li data-k="fila:${r.id}:${id}"><div class="fila-ruta"><span class="nombre"><b class="${nv ? "tachado" : ""}"><span class="n">${i + 1}.</span> ${n}</b><span class="meta">${nv ? `Hoy no va (${S.noVaPor[`${id}:${r.tipo}`] === "familia" ? "avisó la familia" : "marcado por ti"})` : esc(a.dir)}</span></span>
+        <button class="btn sec icono" data-mover="${r.id}:${id}:-1" ${i === 0 ? "disabled" : ""} aria-label="Subir a ${n}">↑</button><button class="btn sec icono" data-mover="${r.id}:${id}:1" ${i === r.orden.length - 1 ? "disabled" : ""} aria-label="Bajar a ${n}">↓</button>
+        <span class="separador"></span><button class="btn contorno-rojo icono" data-quitar="${r.id}:${id}" aria-label="Quitar a ${n} de la ruta">${ico("cerrar")}</button></div>
+        <button class="btn ${nv ? "peligro" : "sec"} chico" style="width:100%;margin-top:6px" data-novahoy="${id}:${r.tipo}" aria-pressed="${nv}">${ico(nv ? "prohibido" : "calendario")}${nv ? "Hoy no va · tocar si sí va" : "Hoy no va"}</button></li>`; }).join("")}</ol>`;
+  h += `</section>`;
+  const fuera = S.alumnos.filter((a) => !r.orden.includes(a.id));
+  if (fuera.length) h += `<section class="tarjeta" aria-labelledby="t-agregar"><h2 id="t-agregar">${ico("sumar")}Agregar a la ruta</h2>${fuera.map((a) => `<button class="btn sec chico" data-agregar="${r.id}:${a.id}">+ ${esc(a.nombre)}</button>`).join("")}</section>`;
+  if (r.orden.length) h += enlaceMaps(r);
+  h += `<button class="btn contorno-rojo" style="margin-top:20px" data-eliminar-ruta="${r.id}">Eliminar ruta</button>`;
+  return h;
+}
+function tiaMensajes() {
+  const lista = [...S.mensajes].sort((a, b) => (!!a.respuesta - !!b.respuesta));
+  let h = encabezado("Mensajes", "");
+  if (!lista.length) return h + vacio("mensaje", "No tienes mensajes", "Aquí te escriben las familias.");
+  return h + lista.map((m) => `<section class="tarjeta ${m.respuesta ? "" : "pendiente"}" data-k="msg:${m.id}" aria-labelledby="t-m${m.id}"><h2 id="t-m${m.id}">${ico("mensaje")}${esc(m.de)}${m.sobre ? ` · ${esc(m.sobre)}` : ""}</h2><p>${esc(m.texto)}</p>
+    ${m.respuesta ? `<p class="meta">Tu respuesta: ${esc(m.respuesta)}</p>` : `<div class="rapidas" role="group" aria-label="Respuestas rápidas">${["Recibido, gracias", "Sí, sin problema", "Te llamo"].map((t) => `<button type="button" class="btn sec" data-rapida="${m.id}" data-texto="${t}">${t}</button>`).join("")}</div>
+      <div class="campo"><label for="resp-${m.id}">Tu respuesta</label><textarea id="resp-${m.id}" rows="2" placeholder="Escribe o toca una respuesta rápida" aria-describedby="resp-${m.id}-error"></textarea><p class="error" id="resp-${m.id}-error"></p></div>
+      <button class="btn primario" data-responder="${m.id}">Enviar respuesta</button>`}</section>`).join("");
+}
+function tiaMas() {
+  const p = S.perfil.tia; const avisoPago = S.pagos.some((x) => x.avisado && !x.pagado);
+  return encabezado("Más", "")
+    + `<button class="fila-nav" data-ir="perfil"><span class="avatar" aria-hidden="true">${p.foto ? `<img src="${p.foto}" alt="">` : esc(iniciales(p.nombre))}</span><span class="texto"><b>${esc(p.nombre)}</b><span class="meta">Mi perfil y foto</span></span>${ico("flecha", "flecha")}</button>`
+    + `<button class="fila-nav" data-ir="cobros">${ico("tarjeta", "g")}<span class="texto"><b>Cobros</b><span class="meta">${avisoPago ? "Una familia avisó que pagó" : "Lo que te deben este mes"}</span></span>${avisoPago ? `<span class="punto-aviso" aria-hidden="true"></span>` : ""}${ico("flecha", "flecha")}</button>`
+    + `<button class="fila-nav" data-ir="conexiones">${ico("conexion", "g")}<span class="texto"><b>Familias por conectar${S.conexion === "pendiente" ? " (1)" : ""}</b><span class="meta">${S.conexion === "pendiente" ? "Familia Pérez quiere conectarse" : "Sin solicitudes nuevas"}</span></span>${S.conexion === "pendiente" ? `<span class="punto-aviso" aria-hidden="true"></span>` : ""}${ico("flecha", "flecha")}</button>`
+    + `<button class="fila-nav" data-ir="licencia">${ico("licencia", "g")}<span class="texto"><b>Mi licencia</b><span class="meta">Vigente hasta el 12-10-2028</span></span>${ico("flecha", "flecha")}</button>`
+    + (S.consejosCerrados || S.nuevosCerrados ? `<button class="btn texto" data-accion="mostrar-avisos">Volver a mostrar los avisos</button>` : "")
+    + `<h2 style="margin-top:8px">Apariencia</h2>${temaHTML()}`
+    + `<button class="btn contorno-rojo" style="margin-top:12px" data-accion="salir">Salir</button>`;
+}
+function tiaCobros() {
+  const demoPend = S.pagos.filter((p) => !p.pagado);
+  const demo = { familia: "Familia Demo", hijos: "Sofía y Tomás", monto: demoPend.reduce((s, p) => s + p.monto, 0) || S.pagos[0].monto,
+    estado: !demoPend.length ? "pagado" : demoPend.some((p) => p.avisado) ? "avisado" : "pendiente" };
+  const filas = [demo, ...S.cobrosOtros];
+  const porCobrar = filas.filter((f) => f.estado !== "pagado").reduce((s, f) => s + f.monto, 0);
+  const vencidos = filas.filter((f) => f.estado === "vencido").length;
+  const est = { pagado: chip("ok", "check", "Pagado"), pendiente: chip("ya", "reloj", "Por pagar"), avisado: chip("info", "mensaje", "Avisó que pagó"), vencido: chip("no", "alerta", "Vencido") };
+  return encabezado("Cobros", "", "mas") + `<p class="meta">${pesos(porCobrar)} por cobrar este mes · ${vencidos} vencido${vencidos === 1 ? "" : "s"}</p>`
+    + filas.map((f, i) => `<section class="tarjeta${f.estado === "avisado" ? " pendiente" : ""}" data-k="cobro:${i}" aria-label="${esc(f.familia)}"><h2>${ico("tarjeta")}${esc(f.familia)} · ${esc(f.hijos)}</h2>
+      <div class="fila" style="justify-content:space-between"><span class="num"><b>${pesos(f.monto)}</b></span>${est[f.estado]}</div>
+      ${f.estado === "avisado" ? `<button class="btn exito" data-accion="confirmar-pago">${ico("check")}Confirmar pago</button>` : ""}</section>`).join("");
+}
+function tiaLicencia() {
+  return encabezado("Mi licencia", "", "mas") + `<section class="tarjeta" aria-label="Licencia"><h2>${ico("licencia", "g")}Clase A3</h2>${chip("ok", "check", "Vigente hasta el 12-10-2028")}<p class="meta">Verificada por la empresa.</p></section>
+    <button class="btn sec" data-accion="toast-licencia">${ico("camara")}Subir foto nueva</button>`;
+}
+function tiaConexiones() {
+  let h = encabezado("Familias por conectar", "", "mas");
+  if (S.conexion === "pendiente") return h + `<section class="tarjeta ok" data-k="conexion" aria-label="Familia Pérez"><h2>${ico("conexion", "g")}Familia Pérez quiere conectarse</h2><p class="meta">Ñuñoa · 1 hijo</p>
+    <div class="fila"><button class="btn exito" data-accion="aceptar">${ico("check")}Aceptar</button><button class="btn sec" data-accion="rechazar">Rechazar</button></div></section>`;
+  return h + vacio("conexion", S.conexion === "aceptada" ? "Familia Pérez quedó conectada" : "No tienes solicitudes", S.conexion === "aceptada" ? "Ya recibe los avisos del furgón." : "Cuando una familia te busque, aparece aquí.");
+}
+
+// =====================================================================================
+// Pantallas de la familia
+// =====================================================================================
+function estadoHijo(a) {
+  const rec = S.recorrido; if (!rec || !(a.id in rec.estados)) return null;
+  const ida = ruta(rec.rutaId).tipo === "ida"; const e = rec.estados[a.id];
+  if (e === "entregado") return rec.manual[a.id] ? chip("ok", "confirmado", ida ? "Subió al furgón" : "En su hogar") : chip("info", "furgon", "El furgón llegó a tu casa");
+  if (e === "no_viaja") return chip("", "prohibido", "Hoy no viaja");
+  if (e === "ausente") return chip("no", "alerta", "La tía lo marcó ausente");
+  if (rec.avisado[a.id]) return chip("ya", "campana", `Llega en <span class="num" data-eta="${a.id}" data-min1="1">${Math.max(1, etaMin(a.id) ?? 1)}</span>&nbsp;min`);
+  return chip("", "reloj", `Te avisamos cuando falten ${S.minutosAviso[a.id]} min`);
+}
+function famInicio() {
+  const rec = S.recorrido; const r = rec && ruta(rec.rutaId);
+  let h = encabezado(`Hola, ${pila(S.perfil.familia.nombre)}`, avatar("familia"), null, "Hoy");
+  const al = alarmaFamilia();
+  if (al) {
+    const claveAl = al.id + (al.recordado ? ":2" : ":1"); const nueva = !pintar.alarmas.has(claveAl); pintar.alarmas.add(claveAl);
+    h += `<section class="alarma${nueva ? " nueva" : ""}" aria-labelledby="t-alarma">
+      <div class="arriba"><span class="campana">${ico("campana")}</span><span class="minutos" data-eta="${al.id}" data-min1="1">${Math.max(1, etaMin(al.id) ?? 1)}</span><span class="unidad">min</span></div>
+      <h2 class="frase" id="t-alarma">La tía llega ${r.tipo === "ida" ? "por" : "con"} ${esc(al.nombres)}</h2>
+      <button class="btn grande oscuro" data-seguir="${al.ids.join(",")}">${ico("mapa")}Ver dónde viene</button>
+      <button class="btn claro" data-confirmar="${al.ids.join(",")}">${ico("check")}Recibido, te espero</button></section>`;
+  }
+  if (!rec) {
+    const rs = [...S.rutas].sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+    h += `<section class="tarjeta" aria-labelledby="t-dia"><div class="fila-titulo"><h2 id="t-dia">${ico("estacionado", "g")}La tía todavía no sale</h2></div>
+      <p>${rs.map((x) => `${esc(x.nombre)} a las ${x.hora || "—"}`).join(" · ")}.</p>
+      <p class="meta">Te avisamos ${S.minutosAviso.sofia} min antes de que llegue el furgón.</p>
+      ${esModoFamilias() ? `<button class="btn primario" data-iniciar-demo="manana">${ico("play")}Simular que la tía inicia la ruta de la mañana</button><p class="motivo">Solo en esta demo: en la app real la inicia la tía.</p>` : ""}</section>`;
+  }
+  for (const a of hijos()) {
+    const est = estadoHijo(a);
+    h += `<section class="tarjeta" data-k="hijo:${a.id}" aria-labelledby="t-${a.id}"><div class="fila-titulo"><h2 id="t-${a.id}">${ico("alumno", "g")}${esc(a.nombre)}</h2></div><p class="meta">${esc(a.curso)} · ${esc(a.colegio)}</p>`;
+    if (est) h += `<div>${est}</div>${rec.estados[a.id] === "pendiente" ? `<button class="btn sec chico" data-ir="seguir">${ico("mapa")}Ver el furgón en vivo</button>` : ""}`;
+    for (const tp of ["ida", "vuelta"]) {
+      const va = !noVa(a.id, tp); const tramo = tp === "ida" ? "en la mañana" : "en la tarde";
+      const enCurso = rec && r.tipo === tp && ["entregado", "ausente"].includes(rec.estados[a.id]);
+      h += `<label class="fila-switch"><span class="rotulo"><span>Va ${tramo}</span><span class="estado ${enCurso ? "" : va ? "si" : "no"}" aria-hidden="true">${enCurso ? (tp === "ida" ? "Ya subió" : "Ya llegó") : va ? "Sí va" : "No va"}</span></span>
+        <span class="switch"><input type="checkbox" role="switch" data-va="${a.id}:${tp}" ${va ? "checked" : ""} ${enCurso ? "disabled" : ""} aria-label="${esc(pila(a.nombre))} va ${tramo}"><span class="pista"></span><span class="perilla" data-k="perilla:${a.id}:${tp}"></span></span></label>`;
+    }
+    h += `<button class="fila-nav" style="box-shadow:none" data-minutos="${a.id}">${ico("campana", "g")}<span class="texto"><b>Aviso: ${S.minutosAviso[a.id]} min antes</b><span class="meta">Cambiar cuándo te avisamos</span></span>${ico("flecha", "flecha")}</button></section>`;
+  }
+  h += `<button class="fila-nav" data-ir="furgon">${ico("furgon", "g")}<span class="texto"><b>Tu furgón: ${esc(S.perfil.tia.nombre)}</b><span class="meta">${esc(S.perfil.tia.comunas)}</span></span>${ico("flecha", "flecha")}</button>`;
+  return h;
+}
+function famSeguir() {
+  const rec = S.recorrido; const r = ruta(rec.rutaId); const ida = r.tipo === "ida";
+  const pend = hijos().filter((a) => rec.estados[a.id] === "pendiente");
+  let h = encabezado("Furgón en vivo", "", "inicio");
+  if (pend.length) h += `<div class="grande-min"><span class="valor" data-eta="${pend[0].id}" data-min1="1">${Math.max(1, etaMin(pend[0].id) ?? 1)}</span><span class="unidad">min</span></div><p class="frase"><b>La tía llega ${ida ? "por" : "con"} ${esc(unirNombres(pend.map((a) => pila(a.nombre))))}</b></p>`;
+  h += mapaSVG(r, true);
+  h += `<p class="aviso" id="nota-privada" hidden>${ico("candado")}El furgón pasa cerca de la casa de otro niño: por privacidad no lo mostramos un momento.</p>`;
+  if (pend.length) h += `<p class="meta">Por privacidad no ves las casas de otros niños, solo la tuya.</p>`;
+  else {
+    const conf = hijos().filter((a) => rec.estados[a.id] === "entregado" && rec.manual[a.id]);
+    const ns = unirNombres(hijos().filter((a) => rec.estados[a.id] === "entregado").map((a) => pila(a.nombre)));
+    h += `<div class="aviso exito">${ico("confirmado")}<div class="cuerpo"><p>${conf.length ? (ida ? `${esc(ns)} ya van en el furgón.` : `${esc(ns)} ya están en su hogar.`) : ns ? "El furgón llegó a tu casa. La tía aún no confirma." : "Hoy no hay niños tuyos en este recorrido."}</p></div></div>`;
+  }
+  return h;
+}
+function famPagos() {
+  const pend = S.pagos.filter((p) => !p.pagado);
+  return encabezado("Pagos", "") + `<p class="meta">${pend.length ? `${pesos(pend.reduce((s, p) => s + p.monto, 0))} pendiente` : "No tienes pagos pendientes."}</p>`
+    + S.pagos.map((p, i) => `<section class="tarjeta${!p.pagado && !p.avisado ? " destacada" : ""}" data-k="pago:${i}" aria-labelledby="t-p${i}"><div class="fila-titulo"><h2 id="t-p${i}">${ico("tarjeta")}${p.mes}</h2>${p.pagado ? chip("ok", "check", "Pagado") : p.avisado ? chip("info", "mensaje", "Avisaste el pago") : chip("ya", "reloj", "Por pagar")}</div>
+      <p class="num"><b>${pesos(p.monto)}</b></p>
+      ${p.pagado ? "" : p.avisado ? `<p class="meta">La tía lo confirma cuando vea el pago.</p><button class="btn texto" style="align-self:flex-start;padding:0" data-me-equivoque="${i}">Me equivoqué, aún no pago</button>` : `<button class="btn primario" data-pagar="${i}">${ico("check")}Avisar que pagué</button>`}</section>`).join("");
+}
+function famMensajes() {
+  const mios = S.mensajes.filter((m) => m.de === "Familia Demo").slice().reverse();
+  let h = encabezado("Mensajes", "");
+  if (!mios.length) h += vacio("mensaje", "¿Algo que contarle a la tía?", "Escríbele cuando necesites avisarle algo.");
+  else h += `<div class="conversacion">${mios.map((m) => `<div class="burbuja mia" data-k="mm:${m.id}"><p class="quien">Tú</p><p>${esc(m.texto)}</p></div>`
+      + (m.respuesta ? `<div class="burbuja tia" data-k="mr:${m.id}"><p class="quien">${esc(S.perfil.tia.nombre)}${m.simulada ? " (respuesta simulada)" : ""}</p><p>${esc(m.respuesta)}</p></div>` : `<p class="meta" style="align-self:flex-end">La tía responde cuando no está manejando.</p>`)).join("")}</div>`;
+  return h + `<section class="tarjeta" aria-label="Nuevo mensaje"><div class="campo"><label for="msg-nuevo">Escríbele a la tía</label><textarea id="msg-nuevo" rows="3" placeholder="Ej.: Mañana Tomás sale más temprano" aria-describedby="msg-nuevo-error"></textarea><p class="error" id="msg-nuevo-error"></p></div>
+    <button class="btn primario" data-accion="enviar-msg">${ico("mensaje")}Enviar</button></section>`;
+}
+function famMas() {
+  const p = S.perfil.familia;
+  return encabezado("Más", "")
+    + `<button class="fila-nav" data-ir="perfil"><span class="avatar" aria-hidden="true">${p.foto ? `<img src="${p.foto}" alt="">` : esc(iniciales(p.nombre))}</span><span class="texto"><b>${esc(p.nombre)}</b><span class="meta">Mi perfil y foto</span></span>${ico("flecha", "flecha")}</button>`
+    + `<button class="fila-nav" data-ir="furgon">${ico("furgon", "g")}<span class="texto"><b>Mi furgón</b><span class="meta">${esc(S.perfil.tia.nombre)}</span></span>${ico("flecha", "flecha")}</button>`
+    + `<button class="fila-nav" data-ir="codigo">${ico("familia", "g")}<span class="texto"><b>Compartir con papá o mamá</b><span class="meta">Para que la otra persona también reciba los avisos</span></span>${ico("flecha", "flecha")}</button>`
+    + `<h2 style="margin-top:8px">Apariencia</h2>${temaHTML()}`
+    + `<button class="btn contorno-rojo" style="margin-top:12px" data-accion="salir">Salir</button>`;
+}
+function famCodigo() {
+  return encabezado("Compartir con papá o mamá", "", "mas") + `<section class="tarjeta" aria-label="Código familiar"><p>Dale este código a la otra persona para que también reciba los avisos.</p><p class="codigo">FAM-7K2Q</p></section>`;
+}
+function famFurgon() {
+  const t = S.perfil.tia;
+  return encabezado("Mi furgón", "", S.origen.familia || "mas") + `<section class="tarjeta perfil-cabecera" aria-label="${esc(t.nombre)}"><span class="avatar grande" aria-hidden="true">${t.foto ? `<img src="${t.foto}" alt="">` : esc(iniciales(t.nombre))}</span><h2>${esc(t.nombre)}</h2><p class="meta">${esc(t.comunas)}</p><p>${esc(t.presentacion)}</p>${chip("ok", "conexion", "Conectada")}</section>`;
+}
+
+// ---------- Mi perfil (las dos) ----------
+function perfil(quien) {
+  const p = S.perfil[quien]; const tia = quien === "tia";
+  return encabezado("Mi perfil", "", S.origen[quien] || "mas") + `<div class="perfil-cabecera">${p.foto ? `<span class="avatar grande"><img src="${p.foto}" alt="Tu foto de perfil"></span>` : `<span class="avatar grande" aria-hidden="true">${esc(iniciales(p.nombre))}</span>`}
+      <p class="meta">${tia ? "Las familias de tu furgón ven tu foto." : "Tu tía o tío del furgón ve tu foto."}</p>
+      <div class="fila" style="justify-content:center"><label class="btn sec chico">${ico("camara")}Tomar foto<input type="file" accept="image/*" capture="user" class="solo-lector" data-foto="${quien}"></label><label class="btn sec chico">${ico("galeria")}Galería<input type="file" accept="image/*" class="solo-lector" data-foto="${quien}"></label></div>
+      ${p.foto ? `<button class="btn texto" data-quitar-foto="${quien}">Quitar foto</button>` : ""}</div>
+    <section class="tarjeta" aria-label="Tus datos"><div class="campo"><label for="pf-nombre">Nombre</label><input id="pf-nombre" value="${esc(p.nombre)}" autocomplete="name" aria-describedby="pf-nombre-error"><p class="error" id="pf-nombre-error"></p></div>
+      <div class="campo"><label for="pf-tel">Teléfono</label><input id="pf-tel" value="${esc(p.tel)}" inputmode="tel" autocomplete="tel" aria-describedby="pf-tel-ayuda"><small id="pf-tel-ayuda">${tia ? "Para que la empresa te ubique. Las familias no lo ven en la búsqueda." : "Para la llamada de aviso cuando el furgón está cerca."}</small></div>
+      <div class="campo"><span class="rotulo">Correo</span><p>${esc(p.correo)}</p></div></section>
+    ${tia ? `<section class="tarjeta" aria-label="Búsqueda"><label class="fila-switch"><span class="rotulo"><b>Que las familias me encuentren</b><span class="meta">Apareces en la búsqueda con tu nombre, tu furgón y tus comunas. Nunca se muestran tu teléfono ni tus rutas.</span></span>
+        <span class="switch"><input type="checkbox" role="switch" id="pf-visible" ${p.visible ? "checked" : ""}><span class="pista"></span><span class="perilla"></span></span></label>
+      <div class="campo"><label for="pf-comunas">Comunas donde trabajas</label><input id="pf-comunas" value="${esc(p.comunas)}"></div>
+      <div class="campo"><label for="pf-pres">Presentación (opcional)</label><textarea id="pf-pres" rows="3" maxlength="300" aria-describedby="pf-pres-ayuda">${esc(p.presentacion)}</textarea><small id="pf-pres-ayuda">Hasta 300 letras.</small></div></section>` : ""}
+    <button class="btn primario grande" data-guardar-perfil="${quien}">Guardar</button>`;
+}
+
+// =====================================================================================
+// Diálogos (dialog nativo: Esc, foco dentro y fondo inerte)
+// =====================================================================================
+const DIALOGOS = {
+  comenzar({ rutaId }) {
+    const r = ruta(rutaId); const van = r.orden.filter((id) => !noVa(id, r.tipo)); const no = r.orden.filter((id) => noVa(id, r.tipo));
+    return `<div class="hoja"><span class="agarradera" aria-hidden="true"></span><h2 id="dlg-titulo">¿Lista para la ${esc(r.nombre)}?</h2>
+      <p>Hoy ${van.length === 1 ? "va 1 niño" : `van ${van.length} niños`}${no.length ? ` (${esc(unirNombres(no.map((id) => pila(alumno(id).nombre))))} no va${no.length > 1 ? "n" : ""})` : ""}.</p>
+      <ul class="lista"><li class="fila" style="flex-direction:row;gap:10px">${ico("gps")}Ubicación activada</li><li class="fila" style="flex-direction:row;gap:10px">${ico("celular")}Celular con batería y en su soporte</li><li class="fila" style="flex-direction:row;gap:10px">${ico("campana")}Los avisos a las familias salen solos</li></ul>
+      <div class="acciones-dlg"><button class="btn sec" data-accion="cerrar-dlg">Ahora no</button><button class="btn primario grande" data-comenzar="${r.id}" autofocus>${ico("furgon")}Comenzar recorrido</button></div></div>`;
+  },
+  eliminar({ rutaId }) {
+    const r = ruta(rutaId);
+    return `<div class="hoja" role="document"><span class="agarradera" aria-hidden="true"></span><h2 id="dlg-titulo">¿Eliminar la ruta «${esc(r.nombre)}»?</h2><p>Los niños no se borran: siguen en tu lista de Alumnos.</p>
+      <div class="acciones-dlg"><button class="btn sec" data-accion="cerrar-dlg" autofocus>Cancelar</button><button class="btn peligro" data-accion="si-eliminar">Eliminar ruta</button></div></div>`;
+  },
+  terminar() {
+    const rec = S.recorrido; const pend = ruta(rec.rutaId).orden.filter((id) => rec.estados[id] === "pendiente");
+    return `<div class="hoja"><span class="agarradera" aria-hidden="true"></span><h2 id="dlg-titulo">${pend.length === 1 ? "Queda 1" : `Quedan ${pend.length}`} sin marcar</h2><p>${esc(unirNombres(pend.map((id) => alumno(id).nombre)))}. ¿Terminar igual?</p>
+      <div class="acciones-dlg"><button class="btn peligro" data-accion="terminar-igual">Terminar igual</button><button class="btn primario grande" data-accion="cerrar-dlg" autofocus>Seguir el recorrido</button></div></div>`;
+  },
+  minutos({ id }) {
+    const a = alumno(id); const hs = hijos(); const igual = hs.every((h) => S.minutosAviso[h.id] === S.minutosAviso[id]);
+    return `<div class="hoja"><span class="agarradera" aria-hidden="true"></span><h2 id="dlg-titulo">¿Cuándo te avisamos?</h2><p class="meta">Minutos antes de que el furgón llegue por ${esc(pila(a.nombre))}.</p>
+      <div class="opciones" role="group" aria-label="Minutos de aviso">${[3, 5, 7, 10, 15].map((m) => `<button type="button" data-opcion-min="${id}:${m}" aria-pressed="${S.minutosAviso[id] === m}" ${S.minutosAviso[id] === m ? "autofocus" : ""}>${m}<small>min</small></button>`).join("")}</div>
+      ${hs.length > 1 ? `<label class="fila-switch"><span class="rotulo">Usar lo mismo para mis ${hs.length} hijos</span><span class="switch"><input type="checkbox" role="switch" id="min-todos" ${igual ? "checked" : ""}><span class="pista"></span><span class="perilla"></span></span></label>` : ""}
+      <div class="acciones-dlg"><button class="btn sec" data-accion="cerrar-dlg">Cerrar</button></div></div>`;
+  },
+  "nueva-ruta"() {
+    return `<div class="hoja"><span class="agarradera" aria-hidden="true"></span><h2 id="dlg-titulo">Nueva ruta</h2>
+      <div class="campo"><label for="nr-nombre">Nombre</label><input id="nr-nombre" placeholder="Ej.: Mañana Colegio San José" aria-describedby="nr-nombre-error" autofocus><p class="error" id="nr-nombre-error"></p></div>
+      <div class="campo"><span class="rotulo" id="nr-tipo">Tipo</span><div class="segmento" role="group" aria-labelledby="nr-tipo"><button type="button" id="nr-ida" aria-pressed="true">Ida · casa → colegio</button><button type="button" id="nr-vuelta" aria-pressed="false">Vuelta · colegio → casa</button></div></div>
+      <div class="campo"><label for="nr-hora">Hora de salida (opcional)</label><input id="nr-hora" placeholder="07:30" inputmode="numeric" aria-describedby="nr-hora-error"><p class="error" id="nr-hora-error"></p></div>
+      <div class="acciones-dlg"><button class="btn sec" data-accion="cerrar-dlg">Cancelar</button><button class="btn primario" data-accion="crear-ruta">Crear ruta</button></div></div>`;
+  },
+};
+let origenDialogo = null, pantallaDialogo = null, cerrandoDialogo = false;
+function pintarDialogo() {
+  const d = $("#dlg"); const k = S.dlg ? JSON.stringify(S.dlg) : null;
+  if (!k) { if (d.open && !cerrandoDialogo) cerrarDialogo(); pintarDialogo.k = null; return; }
+  if (k !== pintarDialogo.k) { d.innerHTML = DIALOGOS[S.dlg.tipo](S.dlg); pintarDialogo.k = k; }
+  if (!d.open) {
+    origenDialogo = claveDe(document.activeElement); pantallaDialogo = pintar.ultima;
+    d.showModal();
+    const hoja = d.querySelector(".hoja"); const escritorio = matchMedia("(min-width: 481px) and (min-height: 521px)").matches;
+    hoja.animate(RM.matches ? [{ opacity: 0 }, { opacity: 1 }] : escritorio ? [{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }] : [{ transform: "translateY(100%)" }, { transform: "none" }],
+      { duration: RM.matches ? 150 : 320, easing: E.entrada });
+    (d.querySelector("[autofocus]") || d.querySelector("button, input"))?.focus();
+  }
+}
+function cerrarDialogo() {
+  const d = $("#dlg"); if (!d.open || cerrandoDialogo) return;
+  cerrandoDialogo = true;
+  const hoja = d.querySelector(".hoja");
+  const a = hoja.animate(RM.matches ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: "none", opacity: 1 }, { transform: "translateY(40px)", opacity: 0 }], { duration: RM.matches ? 150 : 200, easing: E.salida, fill: "forwards" });
+  a.onfinish = () => { d.close(); a.cancel(); cerrandoDialogo = false; };
+}
+// Esc, «Cancelar» o tocar fuera: S se limpia aquí para que pintar() no lo vuelva a abrir (H11)
+$("#dlg").addEventListener("close", () => {
+  const porAccion = S.dlg === null; S.dlg = null; pintarDialogo.k = null;
+  if (!porAccion) pintar();
+  if (pintar.ultima === pantallaDialogo) restaurarFoco(origenDialogo);
+  else $("#pantalla h1")?.focus({ preventScroll: true });   // la acción llevó a otra pantalla
+});
+$("#dlg").addEventListener("cancel", (e) => { e.preventDefault(); S.dlg = null; cerrarDialogo(); });
+$("#dlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) { S.dlg = null; cerrarDialogo(); } });
+
+// =====================================================================================
+// Dibujar
+// =====================================================================================
+const PESTANAS = {
+  tia: [["inicio", "Hoy", "casa"], ["rutas", "Rutas", "ruta"], ["alumnos", "Alumnos", "alumno"], ["mensajes", "Mensajes", "mensaje"], ["mas", "Más", "menu"]],
+  familia: [["inicio", "Hoy", "casa"], ["mensajes", "Mensajes", "mensaje"], ["pagos", "Pagos", "tarjeta"], ["mas", "Más", "menu"]],
+};
+const PANTALLAS = {
+  tia: { inicio: tiaInicio, recorrido: tiaRecorrido, alumnos: tiaAlumnos, rutas: tiaRutas, ruta: tiaRuta, mensajes: tiaMensajes, mas: tiaMas,
+    perfil: () => perfil("tia"), cobros: tiaCobros, licencia: tiaLicencia, conexiones: tiaConexiones },
+  familia: { inicio: famInicio, seguir: famSeguir, pagos: famPagos, mensajes: famMensajes, mas: famMas, codigo: famCodigo, furgon: famFurgon, perfil: () => perfil("familia") },
+};
+const VIVAS = { tia: ["inicio", "recorrido"], familia: ["inicio", "seguir"] };
+const HIJAS = new Set(["recorrido", "seguir", "perfil", "cobros", "licencia", "conexiones", "ruta", "furgon", "codigo"]);
+const PESTANA_DE = { recorrido: "inicio", seguir: "inicio", perfil: "mas", cobros: "mas", licencia: "mas", conexiones: "mas", codigo: "mas", furgon: "mas", ruta: "rutas" };
+
+// Si una pantalla ya no tiene sentido (terminó el recorrido, se borró la ruta), vuelve a la de origen.
+function normalizarVista() {
+  const v = S.vista;
+  if (v.tia === "recorrido" && !S.recorrido) v.tia = "inicio";
+  if (v.familia === "seguir" && !S.recorrido) v.familia = "inicio";
+  if (v.tia === "ruta" && !ruta(S.rutaSel)) v.tia = "rutas";
+  if (!PANTALLAS[S.rol][v[S.rol]]) v[S.rol] = "inicio";
+}
+// Clave estable de un elemento, para devolverle el foco después de redibujar (H3)
+function claveDe(el) {
+  if (!el || el === document.body || !el.closest) return null;
+  if (el.id) return "#" + el.id;
+  const ds = Object.entries(el.dataset).filter(([k]) => k !== "v");
+  return ds.length ? JSON.stringify(ds) : null;
+}
+function restaurarFoco(k) {
+  if (!k) return;
+  const raiz = $("#telefono");
+  let el = k.startsWith("#") ? document.getElementById(k.slice(1)) : [...raiz.querySelectorAll("button, input, a, textarea")].find((x) => claveDe(x) === k);
+  if (el && (el.disabled || el.closest("dialog:not([open])"))) el = el.closest("li, section, .tarjeta")?.querySelector("button:not(:disabled), input:not(:disabled)") || null;
+  (el || raiz.querySelector("#pantalla h1"))?.focus({ preventScroll: true });
+}
+function pintar(soloVivo) {
+  normalizarVista();
+  const v = S.vista[S.rol];
+  // Mientras el furgón avanza solo se redibujan las pantallas que lo muestran, y nunca si se está escribiendo (F-06).
+  if (soloVivo && !VIVAS[S.rol].includes(v)) return;
+  if (soloVivo && document.activeElement && document.activeElement.matches("input:not([type=checkbox]), textarea")) return;
+  const el = $("#pantalla");
+  const clave = S.rol + ":" + v + ":" + (v === "ruta" ? S.rutaSel : "");
+  const anterior = pintar.ultima; const misma = clave === anterior;
+  const y = misma ? el.scrollTop : 0;
+  const foco = $("#telefono").contains(document.activeElement) && !document.activeElement.closest("dialog") ? claveDe(document.activeElement) : null;
+  // Lo que se estaba escribiendo en la misma pantalla no se pierde al redibujar
+  const valores = misma ? [...el.querySelectorAll("input[id]:not([type=checkbox]):not([type=file]), textarea[id]")].map((x) => [x.id, x.value]) : [];
+  pintar.ultima = clave;
+  el.innerHTML = PANTALLAS[S.rol][v]();
+  for (const [id, val] of valores) { const x = document.getElementById(id); if (x) x.value = val; }
+  el.scrollTop = y;
+  // Barra inferior (nav con aria-current)
+  const sinBarra = v === "recorrido" || v === "seguir";
+  const barra = $("#barra"); barra.hidden = sinBarra;
+  const actual = PESTANA_DE[v] || v;
+  const pendMsg = S.mensajes.filter((m) => !m.respuesta).length;
+  const pendMas = S.rol === "tia" && (S.conexion === "pendiente" || S.pagos.some((p) => p.avisado && !p.pagado));
+  barra.innerHTML = PESTANAS[S.rol].map(([id, nombre, icono]) => {
+    const punto = (id === "mensajes" && S.rol === "tia" && pendMsg) ? `${pendMsg} sin responder` : (id === "mas" && pendMas) ? "hay algo pendiente" : "";
+    return `<button type="button" data-ir="${id}" ${actual === id ? 'aria-current="page"' : ""}><span class="pildora-ico">${ico(icono, "g")}</span>${nombre}${punto ? `<span class="punto-aviso" aria-hidden="true"></span><span class="solo-lector">, ${punto}</span>` : ""}</button>`;
+  }).join("");
+  $("#toast").classList.toggle("sin-barra", sinBarra);
+  $("#ver-tia").setAttribute("aria-pressed", S.rol === "tia");
+  $("#ver-familia").setAttribute("aria-pressed", S.rol === "familia");
+  pintar.firma = firma();
+  furgon.sincronizar();
+  if (!misma && anterior) {
+    const vAnt = anterior.split(":")[1];
+    entrarPantalla(HIJAS.has(v) && !HIJAS.has(vAnt) ? "hija" : !HIJAS.has(v) && HIJAS.has(vAnt) ? "volver" : "hermana");
+    if (!$("#dlg").open) el.querySelector("h1")?.focus({ preventScroll: true });
+  } else restaurarFoco(foco);
+  pintarDialogo();
+}
+pintar.alarmas = new Set();   // alarmas ya mostradas (para animar solo la primera vez)
+
+// =====================================================================================
+// Movimiento: entrada de pantallas y «antes/después con clave» (FLIP) para lo que toca la persona
+// FLIP: se mide dónde estaba cada elemento con data-k, se redibuja y se anima la diferencia
+// (Δx, Δy) → 0 solo con transform y opacidad, que el navegador mueve sin recalcular la página.
+// =====================================================================================
+function entrarPantalla(dir) {
+  const el = $("#pantalla");
+  const dx = RM.matches ? 0 : dir === "hija" ? 24 : dir === "volver" ? -24 : 0;
+  const dy = RM.matches || dir !== "hermana" ? 0 : 8;
+  el.animate([{ opacity: 0, transform: `translate(${dx}px,${dy}px)` }, { opacity: 1, transform: "none" }], { duration: dir === "hermana" ? 150 : 220, easing: E.entrada });
+}
+function conMovimiento(fn) {
+  const raiz = $("#pantalla"); const pantallaAntes = pintar.ultima;
+  const antes = new Map();
+  for (const el of raiz.querySelectorAll("[data-k]")) antes.set(el.dataset.k, { r: el.getBoundingClientRect(), v: el.dataset.v });
+  fn();
+  if (pintar.ultima !== pantallaAntes || !antes.size) return;
+  for (const el of raiz.querySelectorAll("[data-k]")) {
+    const a = antes.get(el.dataset.k);
+    if (!a) { el.animate([{ opacity: 0, transform: `translateY(${RM.matches ? 0 : 8}px)` }, { opacity: 1, transform: "none" }], { duration: RM.matches ? 150 : 220, easing: E.entrada }); continue; }
+    const r = el.getBoundingClientRect(); const dx = a.r.left - r.left, dy = a.r.top - r.top;
+    if (Math.hypot(dx, dy) > 1) el.animate(RM.matches ? [{ opacity: .4 }, { opacity: 1 }] : [{ transform: `translate(${dx}px,${dy}px)` }, { transform: "none" }], { duration: RM.matches ? 150 : 220, easing: E.estandar });
+    if (a.v !== undefined && a.v !== el.dataset.v) cambio(el);
+  }
+}
+// Algo cambió de estado: la casa del mapa suelta una onda; lo demás, un fundido corto.
+function cambio(el) {
+  if (el.classList.contains("m-casa") && el.dataset.v === "1" && !RM.matches) {
+    const c = el.querySelector("circle.base"); const o = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    o.setAttribute("cx", c.getAttribute("cx")); o.setAttribute("cy", c.getAttribute("cy")); o.setAttribute("r", "10"); o.setAttribute("class", "m-onda");
+    el.appendChild(o);
+    o.animate([{ transform: "scale(1)", opacity: .7 }, { transform: "scale(1.9)", opacity: 0 }], { duration: 600, easing: E.entrada }).onfinish = () => o.remove();
+  } else el.animate([{ opacity: .35 }, { opacity: 1 }], { duration: 150 });
+}
+
+// =====================================================================================
+// Acciones: un solo manejador de clics (delegación) para la pantalla, la barra y los diálogos
+// =====================================================================================
+const SELECTOR = "[data-ir],[data-accion],[data-iniciar],[data-comenzar],[data-iniciar-demo],[data-recomendar],[data-aplicar],[data-marcar],[data-mover],[data-quitar],[data-agregar],[data-eliminar-ruta],[data-responder],[data-rapida],[data-tema],[data-confirmar],[data-seguir],[data-minutos],[data-opcion-min],[data-pagar],[data-me-equivoque],[data-quitar-foto],[data-guardar-perfil],[data-novahoy],[data-abrir-ruta],#nr-ida,#nr-vuelta";
+let ultimaMarca = 0;
+function errorCampo(id, texto) {
+  const c = document.getElementById(id); const e = document.getElementById(id + "-error");
+  if (e) e.innerHTML = texto ? `${ico("alerta")}${esc(texto)}` : "";
+  if (c) { if (texto) { c.setAttribute("aria-invalid", "true"); c.focus(); } else c.removeAttribute("aria-invalid"); }
+  return false;
+}
+function marcar(ids, est) {
+  const rec = S.recorrido; const ida = ruta(rec.rutaId).tipo === "ida";
+  const antes = ids.map((id) => [id, rec.estados[id], !!rec.manual[id]]);
+  for (const id of ids) { rec.estados[id] = est; rec.manual[id] = true; }
+  vibrar(est === "ausente" ? VIB.ausente : VIB.subio);
+  const nombres = unirNombres(ids.map((id) => pila(alumno(id).nombre)));
+  const txt = est === "ausente" ? "no estaba" : ida ? (ids.length > 1 ? "subieron" : "subió") : "en su hogar";
+  avisar(`${nombres}: ${txt}.`, () => conMovimiento(() => { if (S.recorrido === rec) for (const [id, e, m] of antes) { rec.estados[id] = e; rec.manual[id] = m; } pintar(); avisar("Listo, lo dejamos como estaba."); }));
+}
+function accion(d, b) {
+  if (d.ir) {
+    const actual = S.vista[S.rol];
+    if (HIJAS.has(d.ir) && !HIJAS.has(actual)) S.origen[S.rol] = actual;   // para «Volver»
+    S.vista[S.rol] = d.ir; S.recomendacion = null;
+    return;
+  }
+  if (b.id === "nr-ida" || b.id === "nr-vuelta") {
+    $("#nr-ida").setAttribute("aria-pressed", b.id === "nr-ida"); $("#nr-vuelta").setAttribute("aria-pressed", b.id === "nr-vuelta"); return false;
+  }
+  if (d.abrirRuta) { S.rutaSel = d.abrirRuta; S.vista.tia = "ruta"; S.recomendacion = null; return; }
+  if (d.iniciar) { S.dlg = { tipo: "comenzar", rutaId: d.iniciar }; return; }
+  if (d.comenzar) { iniciar(d.comenzar); return; }
+  if (d.iniciarDemo) { if (iniciar(d.iniciarDemo)) avisar("La tía inició el recorrido (simulado)."); return; }
+  if (d.recomendar) { recomendar(d.recomendar); return; }
+  if (d.aplicar) { const r = ruta(d.aplicar); const anterior = [...r.orden]; r.orden = S.recomendacion.orden; S.recomendacion = { ok: `Listo: ${r.nombre} quedó con el orden recomendado.`, rutaId: r.id, anterior }; return; }
+  if (d.marcar) {
+    // Evita el toque doble: la tarjeta siguiente sube justo debajo del dedo
+    if (performance.now() - ultimaMarca < 450) return false;
+    ultimaMarca = performance.now();
+    const i = d.marcar.lastIndexOf(":"); marcar(d.marcar.slice(0, i).split(","), d.marcar.slice(i + 1)); return;
+  }
+  if (d.mover) {
+    const [rid, id, dl] = d.mover.split(":"); const o = ruta(rid).orden; const i = o.indexOf(id); const j = i + Number(dl);
+    if (j < 0 || j >= o.length) return false;
+    [o[i], o[j]] = [o[j], o[i]];
+    anunciar(`${alumno(id).nombre}, parada ${j + 1} de ${o.length}.`, true); return;
+  }
+  if (d.quitar) {
+    const [rid, id] = d.quitar.split(":"); const r = ruta(rid); const pos = r.orden.indexOf(id);
+    r.orden = r.orden.filter((x) => x !== id);
+    avisar(`${pila(alumno(id).nombre)} salió de la ruta ${r.nombre}.`, () => conMovimiento(() => { if (!r.orden.includes(id)) r.orden.splice(pos, 0, id); pintar(); })); return;
+  }
+  if (d.agregar) { const [rid, id] = d.agregar.split(":"); ruta(rid).orden.push(id); avisar(`${alumno(id).nombre} quedó en la ruta.`); return; }
+  if (d.eliminarRuta) { S.dlg = { tipo: "eliminar", rutaId: d.eliminarRuta }; return; }
+  if (d.rapida) { const t = document.getElementById(`resp-${d.rapida}`); t.value = d.texto; t.focus(); errorCampo(`resp-${d.rapida}`, ""); return false; }
+  if (d.responder) {
+    const m = S.mensajes.find((x) => x.id == d.responder); const v = document.getElementById(`resp-${m.id}`).value.trim();
+    if (!v) return errorCampo(`resp-${m.id}`, "Escribe tu respuesta.");
+    m.respuesta = v; avisar("Respuesta enviada a la familia."); return;
+  }
+  if (d.tema) { S.tema = d.tema; aplicarTema(); return; }
+  if (d.confirmar || d.seguir) {
+    // «Ver dónde viene» también cuenta como «Recibido» (decisión del dueño)
+    for (const id of (d.confirmar || d.seguir).split(",")) S.recorrido.confirmado[id] = true;
+    if (d.seguir) S.vista.familia = "seguir"; else avisar("Listo: la tía sabe que la esperas.");
+    return;
+  }
+  if (d.novahoy) { const [id, tp] = d.novahoy.split(":"); const val = !noVa(id, tp); cambiarNoVa(id, tp, val, "tia"); avisar(val ? `${pila(alumno(id).nombre)} no va hoy.` : `${pila(alumno(id).nombre)} sí va hoy.`); return; }
+  if (d.minutos) { S.dlg = { tipo: "minutos", id: d.minutos }; return; }
+  if (d.opcionMin) {
+    const [id, m] = d.opcionMin.split(":"); const todos = document.getElementById("min-todos")?.checked;
+    for (const h of todos ? hijos() : [alumno(id)]) S.minutosAviso[h.id] = Number(m);
+    S.dlg = null; avisar(`Te avisamos ${m} min antes${todos ? " para tus hijos" : ""}.`); return;
+  }
+  if (d.pagar) { const p = S.pagos[d.pagar]; p.avisado = true; avisar("Le avisamos a la tía que pagaste.", () => { p.avisado = false; pintar(); }); return; }
+  if (d.meEquivoque) { S.pagos[d.meEquivoque].avisado = false; avisar("Listo: quitamos el aviso de pago."); return; }
+  if (d.quitarFoto) { const p = S.perfil[d.quitarFoto]; const antes = p.foto; p.foto = null; avisar("Foto quitada.", () => { p.foto = antes; pintar(); }); return; }
+  if (d.guardarPerfil) {
+    const p = S.perfil[d.guardarPerfil]; const n = $("#pf-nombre").value.trim();
+    if (n.length < 2) return errorCampo("pf-nombre", "Escribe tu nombre (al menos 2 letras).");
+    errorCampo("pf-nombre", "");
+    p.nombre = n; p.tel = $("#pf-tel").value.trim();
+    if (d.guardarPerfil === "tia") { p.comunas = $("#pf-comunas").value.trim(); p.presentacion = $("#pf-pres").value.trim(); p.visible = $("#pf-visible").checked; }
+    avisar("Datos guardados."); return;
+  }
+  switch (d.accion) {
+    case "cerrar-dlg": S.dlg = null; return;
+    case "cerrar-consejos": S.consejosCerrados = true; return;
+    case "cerrar-nuevos": S.nuevosCerrados = true; return;
+    case "mostrar-avisos": S.consejosCerrados = false; S.nuevosCerrados = false; S.vista.tia = "inicio"; return;
+    case "descartar": S.recomendacion = null; return;
+    case "orden-anterior": { const rec = S.recomendacion; ruta(rec.rutaId).orden = rec.anterior; S.recomendacion = null; avisar("Volvimos al orden anterior."); return; }
+    case "terminar": {
+      const rec = S.recorrido; const quedan = ruta(rec.rutaId).orden.some((id) => rec.estados[id] === "pendiente");
+      if (quedan) S.dlg = { tipo: "terminar" }; else terminar();
+      return;
+    }
+    case "terminar-igual": terminar(); return;
+    case "nueva-ruta": S.dlg = { tipo: "nueva-ruta" }; return;
+    case "crear-ruta": {
+      const n = $("#nr-nombre").value.trim(); const hora = $("#nr-hora").value.trim();
+      errorCampo("nr-nombre", ""); errorCampo("nr-hora", "");
+      if (!n) return errorCampo("nr-nombre", "Ponle un nombre a la ruta.");
+      if (hora && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(hora)) return errorCampo("nr-hora", "Escribe la hora así: 07:30");
+      const nueva = { id: "r" + Date.now(), nombre: n, tipo: $("#nr-vuelta").getAttribute("aria-pressed") === "true" ? "vuelta" : "ida", hora, orden: [] };
+      S.rutas.push(nueva); S.dlg = null; S.rutaSel = nueva.id; S.vista.tia = "ruta";
+      avisar(`Ruta «${n}» creada. Agrégale alumnos.`); return;
+    }
+    case "si-eliminar": { const id = S.dlg.rutaId; S.rutas = S.rutas.filter((r) => r.id !== id); if (S.rutaSel === id) S.vista.tia = "rutas"; S.dlg = null; avisar("Ruta eliminada."); return; }
+    case "enviar-msg": {
+      const v = $("#msg-nuevo").value.trim();
+      if (!v) return errorCampo("msg-nuevo", "Escribe tu mensaje.");
+      const m = { id: Date.now(), de: "Familia Demo", sobre: "Sofía y Tomás", texto: v, respuesta: null };
+      S.mensajes.unshift(m); $("#msg-nuevo").value = "";
+      if (esModoFamilias()) {
+        avisar("Mensaje enviado a la tía.");
+        // Respuesta simulada a los 4 s; no borra lo que se esté escribiendo (H30)
+        setTimeout(() => { m.respuesta = "¡Recibido! Gracias por avisar 😊"; m.simulada = true; pintarSinPisar(); }, 4000);
+      } else avisar("Mensaje enviado. La tía lo ve en Mensajes.");
+      return;
+    }
+    case "salir": avisar("En la app real, aquí se cierra la sesión."); return false;
+    case "aceptar": S.conexion = "aceptada"; avisar("Familia conectada."); return;
+    case "rechazar": S.conexion = "rechazada"; avisar("Solicitud rechazada.", () => { S.conexion = "pendiente"; pintar(); }); return;
+    case "confirmar-pago": for (const p of S.pagos) if (p.avisado) { p.pagado = true; p.avisado = false; } avisar("Pago confirmado. La familia lo ve como pagado."); return;
+    case "toast-nuevo": avisar("En la app real lo registras con nombre y dirección exacta."); return false;
+    case "toast-licencia": avisar("En la app real se toma la foto del frente y del reverso."); return false;
+  }
+  return false;
+}
+function pintarSinPisar() {
+  const a = document.activeElement;
+  if (a && a.matches("input:not([type=checkbox]), textarea")) a.addEventListener("blur", () => setTimeout(pintar, 0), { once: true });
+  else pintar();
+}
+$("#telefono").addEventListener("click", (e) => {
+  const b = e.target.closest(SELECTOR);
+  if (!b || b.disabled || b.matches("input")) return;
+  conMovimiento(() => { if (accion(b.dataset, b) !== false) pintar(); });
+});
+// Interruptores (se cambian con el dedo o con la barra espaciadora)
+$("#telefono").addEventListener("change", (e) => {
+  const sw = e.target.closest("[data-va]");
+  if (sw) {
+    const [id, tp] = sw.dataset.va.split(":"); const va = sw.checked;
+    vibrar(VIB.toque);
+    conMovimiento(() => { cambiarNoVa(id, tp, !va, "familia"); pintar(); });
+    avisar(va ? `Listo: ${pila(alumno(id).nombre)} sí va ${tp === "ida" ? "en la mañana" : "en la tarde"}.` : `Listo: la tía sabe que ${pila(alumno(id).nombre)} no va ${tp === "ida" ? "en la mañana" : "en la tarde"}.`,
+      () => conMovimiento(() => { cambiarNoVa(id, tp, va, "familia"); pintar(); }));
+    return;
+  }
+  const f = e.target.closest("[data-foto]"); if (!f || !f.files[0]) return;
+  // La foto se reduce a 256 px antes de guardarla (una foto de cámara pesa varios MB, H39)
+  const quien = f.dataset.foto; const img = new Image(); const url = URL.createObjectURL(f.files[0]);
+  img.onload = () => {
+    const lado = 256, c = document.createElement("canvas"); c.width = c.height = lado;
+    const s = Math.min(img.width, img.height); c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, lado, lado);
+    URL.revokeObjectURL(url);
+    const p = S.perfil[quien]; const antes = p.foto; p.foto = c.toDataURL("image/jpeg", .85);
+    pintar(); avisar("Foto cambiada.", () => { p.foto = antes; pintar(); });
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); avisar("No pudimos leer esa imagen. Prueba con otra."); };
+  img.src = url;
+});
+$("#telefono").addEventListener("input", (e) => { if (e.target.getAttribute("aria-invalid") === "true") errorCampo(e.target.id, ""); });
+// Presionar: respuesta en el mismo cuadro del toque (iPhone no siempre aplica :active)
+const dedo = { abajo: false, pendiente: false };
+document.addEventListener("pointerdown", (e) => { dedo.abajo = true; e.target.closest?.(".btn")?.classList.add("presionado"); });
+const soltar = () => {
+  dedo.abajo = false;
+  document.querySelectorAll(".presionado").forEach((x) => x.classList.remove("presionado"));
+  // El redibujo que esperaba va después del clic (setTimeout 0 corre cuando el clic ya se procesó)
+  if (dedo.pendiente) { dedo.pendiente = false; setTimeout(() => { if (S.recorrido && firma() !== pintar.firma) conMovimiento(() => pintar(true)); }, 0); }
+};
+document.addEventListener("pointerup", soltar); document.addEventListener("pointercancel", soltar);
+// Toast: Deshacer y pausa
+$("#toast-deshacer").addEventListener("click", () => { const f = toast.deshacer; toast.deshacer = null; ocultarToast(); if (f) f(); });
+for (const ev of ["pointerenter", "focusin"]) $("#toast").addEventListener(ev, pausarToast);
+for (const ev of ["pointerleave", "focusout"]) $("#toast").addEventListener(ev, () => { if (!$("#toast").hidden) programarToast(); });
+// Cambiar de rol (demo)
+function cambiarRol(rol) { if (S.rol === rol) return; S.rol = rol; pintar(); }
+$("#ver-tia").onclick = () => cambiarRol("tia");
+$("#ver-familia").onclick = () => cambiarRol("familia");
+
+// ---------- Modo del archivo: App (con selector de rol) o Familias (#familias) ----------
+function aplicarModo() {
+  const fam = esModoFamilias();
+  document.body.classList.toggle("modo-familias", fam);
+  document.title = fam ? "Furgón Escolar Familias" : "Furgón Escolar App";
+  $("#nota").textContent = fam ? "App para mamás y papás · versión de prueba con datos de ejemplo." : "Versión web de prueba con datos de ejemplo. Lo que haces como tía (iniciar la ruta, responder) lo ve la familia.";
+  if (fam) S.rol = "familia";
+}
+addEventListener("hashchange", () => { aplicarModo(); pintar(); });
+aplicarModo(); aplicarTema(); pintar();
+</script>
+</body>
+</html>

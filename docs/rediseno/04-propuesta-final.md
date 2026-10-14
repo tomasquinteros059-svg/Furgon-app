@@ -71,3 +71,12 @@ contradicción).
   de la alarma.
 - **Alcance:** fuera de la primera versión el gesto de arrastrar hojas, los «fantasmas» completos y
   las pantallas de carga/error (se dejan diseñadas, no implementadas).
+
+## 6. Decisiones del dueño (14-10-2026)
+
+- Dirección visual: **A «Trazo y relleno»**.
+- Si la tía no confirmó, la familia ve **«El furgón llegó a tu casa»** (no «Subió»).
+- **«Ver dónde viene» cuenta como «Recibido».**
+- Extras incluidos: **pagos conectados** (el aviso de pago de la familia aparece en Cobros con
+  «Confirmar pago»), **privacidad real** (en la vista familia el furgón se oculta cerca de la casa
+  de otro niño) y **vibración en Android**.
