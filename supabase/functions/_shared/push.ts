@@ -1,8 +1,10 @@
-// Envío de notificaciones push mediante el servicio de Expo (FCM en Android, APNs en iOS).
+// Envío de notificaciones push: directo por Firebase (tokens «fcm:…», ver fcm.ts) o mediante el
+// servicio de Expo (FCM en Android, APNs en iOS) para los tokens de Expo.
 
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { type Idioma, idiomaValido } from "./core/mensajes.ts";
 import { entorno } from "./entorno.ts";
+import { enviarFcm, leerCuentaServicio, PREFIJO_FCM, type ResultadoFcm } from "./fcm.ts";
 
 /** Debe coincidir con los canales creados en la app (apps/movil/src/notificaciones.ts). */
 export const CANAL_ALARMA = "aviso-furgon";
@@ -106,7 +108,37 @@ export async function notificarPerfil(sb: SupabaseClient, perfilId: string, n: N
   return enviarPorIdioma(sb, dispositivos, n);
 }
 
-async function enviar(sb: SupabaseClient, dispositivos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {
+async function enviar(sb: SupabaseClient, todos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {
+  // Teléfonos con token directo de Firebase («fcm:…»): van por FCM v1 (_shared/fcm.ts).
+  const porFcm = todos.filter((d) => d.expo_push_token.startsWith(PREFIJO_FCM));
+  const dispositivos = todos.filter((d) => !d.expo_push_token.startsWith(PREFIJO_FCM));
+  const enviadosFcm = porFcm.length ? await enviarPorFcm(sb, porFcm, n) : 0;
+  if (!dispositivos.length) return enviadosFcm;
+  return enviadosFcm + await enviarPorExpo(sb, dispositivos, n);
+}
+
+/** Igual que el envío por Expo, pero directo a Firebase: mismo canal, sonido y botones. */
+async function enviarPorFcm(sb: SupabaseClient, dispositivos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {
+  const esAlarma = n.tipo === "aviso" || n.tipo === "llamada";
+  const cuenta = leerCuentaServicio(entorno.firebaseServiceAccount());
+  const resultados: ResultadoFcm[] = cuenta
+    ? await enviarFcm(cuenta, dispositivos.map((d) => ({
+      token: d.expo_push_token, titulo: n.titulo, cuerpo: n.cuerpo, data: { ...n.data, tipo: n.tipo },
+      canal: esAlarma ? CANAL_ALARMA : CANAL_GENERAL, sonido: esAlarma ? SONIDO_ALARMA : "default",
+      categoria: n.tipo === "llamada" ? CATEGORIA_LLAMADA : undefined,
+      ttl: n.tipo === "llamada" ? 30 : esAlarma ? 300 : 3600,
+    })))
+    : dispositivos.map(() => ({ estado: "error" as const, error: "Falta FIREBASE_SERVICE_ACCOUNT" }));
+  await sb.from("envios_push").insert(dispositivos.map((d, i) => ({
+    aviso_id: n.avisoId ?? null, recorrido_alumno_id: n.recorridoAlumnoId ?? null, dispositivo_id: d.id, tipo: n.tipo,
+    ticket_id: resultados[i].id ?? null, estado: resultados[i].estado, error: resultados[i].error ?? null,
+  })));
+  const invalidos = dispositivos.filter((_, i) => resultados[i].tokenInvalido);
+  if (invalidos.length) await sb.from("dispositivos").delete().in("id", invalidos.map((d) => d.id));
+  return resultados.filter((r) => r.estado === "ok").length;
+}
+
+async function enviarPorExpo(sb: SupabaseClient, dispositivos: { id: string; expo_push_token: string }[], n: Notificacion): Promise<number> {
   const esAlarma = n.tipo === "aviso" || n.tipo === "llamada";
   const mensajes: MensajeExpo[] = dispositivos.map((d) => ({
     to: d.expo_push_token,

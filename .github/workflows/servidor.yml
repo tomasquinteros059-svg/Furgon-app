@@ -41,6 +41,13 @@ jobs:
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       CLAVE_CUENTAS_PRUEBA: ${{ secrets.CLAVE_CUENTAS_PRUEBA }}
+      # Avisos con la app cerrada (Firebase) y llamadas telefónicas (Twilio, opcional).
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_NUMERO_ORIGEN: ${{ secrets.TWILIO_NUMERO_ORIGEN }}
+      # Llamadas: por la app (gratis, con Firebase) y por teléfono si además hay Twilio.
+      LLAMADAS_HABILITADAS: ${{ (secrets.TWILIO_ACCOUNT_SID != '' || secrets.FIREBASE_SERVICE_ACCOUNT != '') && 'true' || '' }}
     steps:
       - name: Revisar los secretos
         run: |

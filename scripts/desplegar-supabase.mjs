@@ -77,10 +77,19 @@ async function secretos() {
   const llamadas = process.env.LLAMADAS_HABILITADAS?.trim();
   poner("LLAMADAS_HABILITADAS", llamadas || "false", !llamadas);
   poner("FUNCTIONS_PUBLIC_URL", `https://${REF()}.supabase.co/functions/v1`, true);
-  for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN"]) poner(k, process.env[k]?.trim());
+  for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN", "FIREBASE_SERVICE_ACCOUNT"]) poner(k, process.env[k]?.trim());
   if (nuevos.length) await api("POST", "/secrets", nuevos);
   console.log(`✓ Secretos: ${nuevos.map((s) => s.name).join(", ") || "sin cambios"} (los valores no se muestran).`);
   if (!google) console.log("  ⚠ Sin GOOGLE_MAPS_API_KEY: el ETA usa la geocerca de respaldo y no hay ruta por calles.");
+  const firebase = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  if (!firebase) console.log("  ⚠ Sin FIREBASE_SERVICE_ACCOUNT: los avisos solo suenan con la app abierta.");
+  else {
+    try {
+      const c = JSON.parse(firebase);
+      if (!c.project_id || !c.client_email || !c.private_key) throw new Error("incompleta");
+      console.log(`✓ Firebase: avisos con la app cerrada (proyecto ${c.project_id}).`);
+    } catch { console.log("  ⚠ FIREBASE_SERVICE_ACCOUNT no es el JSON completo de la cuenta de servicio: pégalo entero."); }
+  }
 }
 
 function funciones() {

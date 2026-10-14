@@ -48,11 +48,28 @@ jobs:
         uses: actions/cache@v4
         with:
           path: emulador.apk
-          key: emulador-${{ env.EXPO_PUBLIC_SUPABASE_URL }}-${{ hashFiles('apps/movil/**', 'idiomas/**', 'diseno/**', 'package-lock.json') }}
+          key: emulador-${{ env.EXPO_PUBLIC_SUPABASE_URL }}-fcm${{ secrets.FIREBASE_GOOGLE_SERVICES != '' }}-${{ hashFiles('apps/movil/**', 'idiomas/**', 'diseno/**', 'package-lock.json') }}
 
       - name: Instalar dependencias
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Firebase (avisos con la app cerrada)
+        env:
+          CONTENIDO: ${{ secrets.FIREBASE_GOOGLE_SERVICES }}
+        run: |
+          # google-services.json de Firebase (secreto FIREBASE_GOOGLE_SERVICES: el archivo completo pegado).
+          if [ -z "$CONTENIDO" ]; then
+            echo "::warning::Sin FIREBASE_GOOGLE_SERVICES: el APK no recibe avisos con la app cerrada (la alarma suena solo con la app abierta)."
+            exit 0
+          fi
+          printf '%s' "$CONTENIDO" > apps/movil/google-services.json
+          if ! node -e 'const j=require("./apps/movil/google-services.json"); const ok=(j.client||[]).some(c=>c.client_info?.android_client_info?.package_name==="cl.furgonapp.movil"); process.exit(ok?0:1)'; then
+            echo "::error::FIREBASE_GOOGLE_SERVICES no es un google-services.json válido para la app cl.furgonapp.movil. Revisa que en Firebase la app Android tenga ese nombre de paquete."
+            exit 1
+          fi
+          echo "GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE/apps/movil/google-services.json" >> "$GITHUB_ENV"
+          echo "Con Firebase."
 
       - name: Generar el proyecto Android
         if: steps.cache.outputs.cache-hit != 'true'

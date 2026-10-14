@@ -15,6 +15,8 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "Para que la empresa te ubique. Las familias no lo ven en la búsqueda.": "So the company can reach you. Families don't see it in the search.",
   // Barra de pestañas de abajo (tía y familia)
   "Hoy": "Today",
+  "🚐 El furgón llega en ~{min} min": "🚐 The van arrives in ~{min} min",
+  "Prepara a {nombre}: el furgón está cerca.": "Get {nombre} ready: the van is close.",
   "Más": "More",
   "Mi perfil y foto": "My profile and photo",
   "Va en la mañana": "Rides in the morning",

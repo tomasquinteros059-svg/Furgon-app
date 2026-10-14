@@ -21,6 +21,8 @@ export const entorno = {
   mapboxToken: () => leer("MAPBOX_ACCESS_TOKEN"),
 
   expoAccessToken: () => leer("EXPO_ACCESS_TOKEN"),
+  /** JSON de la cuenta de servicio de Firebase, para enviar directo por FCM (_shared/fcm.ts). */
+  firebaseServiceAccount: () => leer("FIREBASE_SERVICE_ACCOUNT"),
 
   llamadasHabilitadas: () => leer("LLAMADAS_HABILITADAS") === "true",
   twilioAccountSid: () => requerida("TWILIO_ACCOUNT_SID"),

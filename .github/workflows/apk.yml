@@ -86,6 +86,23 @@ jobs:
           echo "etiqueta=apk-$version-$codigo" >> "$GITHUB_OUTPUT"
           echo "Versión $version · compilación $codigo"
 
+      - name: Firebase (avisos con la app cerrada)
+        env:
+          CONTENIDO: ${{ secrets.FIREBASE_GOOGLE_SERVICES }}
+        run: |
+          # google-services.json de Firebase (secreto FIREBASE_GOOGLE_SERVICES: el archivo completo pegado).
+          if [ -z "$CONTENIDO" ]; then
+            echo "::warning::Sin FIREBASE_GOOGLE_SERVICES: el APK no recibe avisos con la app cerrada (la alarma suena solo con la app abierta)."
+            exit 0
+          fi
+          printf '%s' "$CONTENIDO" > apps/movil/google-services.json
+          if ! node -e 'const j=require("./apps/movil/google-services.json"); const ok=(j.client||[]).some(c=>c.client_info?.android_client_info?.package_name==="cl.furgonapp.movil"); process.exit(ok?0:1)'; then
+            echo "::error::FIREBASE_GOOGLE_SERVICES no es un google-services.json válido para la app cl.furgonapp.movil. Revisa que en Firebase la app Android tenga ese nombre de paquete."
+            exit 1
+          fi
+          echo "GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE/apps/movil/google-services.json" >> "$GITHUB_ENV"
+          echo "Con Firebase."
+
       - name: Generar el proyecto Android
         working-directory: apps/movil
         run: npx expo prebuild --platform android --no-install

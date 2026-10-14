@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Switch, View } from "react-native";
 import { Avatar } from "../../componentes/avatar";
 import { Icono, Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, FilaMenu, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
+import { alarmaLocal, tienePush } from "../../notificaciones";
 import { comoLista, mensajeError, supabase } from "../../lib/supabase";
 import { locale, t } from "../../i18n";
 
@@ -37,6 +38,8 @@ export default function InicioApoderado() {
   // Entró con código de familia (sesión anónima): su cuenta solo vive en este teléfono.
   const sinProteger = !!sesion?.user.is_anonymous;
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
+  const alumnosRef = useRef<Alumno[]>([]);
+  alumnosRef.current = alumnos;
   const [estados, setEstados] = useState<EstadoHoy[]>([]);
   const [noViaja, setNoViaja] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +76,17 @@ export default function InicioApoderado() {
     const canal = supabase
       .channel("estado-hijos")
       .on("postgres_changes", { event: "*", schema: "public", table: "recorrido_alumnos" }, () => cargar())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "avisos" }, () => cargar())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "avisos" }, (cambio) => {
+        cargar();
+        // Sin push (p. ej. aún sin Firebase), la alarma suena igual mientras la app está abierta.
+        const aviso = cambio.new as { id?: string; alumno_id?: string; eta_seg?: number | null };
+        const hijo = alumnosRef.current.find((a) => a.id === aviso.alumno_id);
+        if (!tienePush() && hijo && aviso.id) {
+          const min = Math.max(1, Math.round((aviso.eta_seg ?? 300) / 60));
+          alarmaLocal(t("🚐 El furgón llega en ~{min} min", { min }), t("Prepara a {nombre}: el furgón está cerca.", { nombre: hijo.nombre.split(" ")[0] }),
+            { tipo: "aviso", avisoId: aviso.id, alumnoId: hijo.id }).catch(() => {});
+        }
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(canal);

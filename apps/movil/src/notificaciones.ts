@@ -47,6 +47,17 @@ export async function configurarCanales(): Promise<void> {
 
 /** Pide permiso, obtiene el token de Expo y lo asocia al usuario en el backend. */
 let tokenRegistrado: string | null = null;
+/** Si este teléfono recibe avisos del servidor (push). Si no, la app hace sonar la alarma sola. */
+export const tienePush = () => tokenRegistrado !== null;
+
+/** Alarma local del aviso de llegada (respaldo cuando el teléfono no tiene push). */
+export async function alarmaLocal(titulo: string, cuerpo: string, data: Record<string, unknown>): Promise<void> { // i18n-ignorar: tipos
+  await configurarCanales();
+  await Notifications.scheduleNotificationAsync({
+    content: { title: titulo, body: cuerpo, data, sound: "alarma.wav", priority: Notifications.AndroidNotificationPriority.MAX },
+    trigger: Platform.OS === "android" ? { channelId: CANAL_ALARMA } : null,
+  });
+}
 
 /** Al cerrar sesión: este teléfono deja de recibir alarmas y llamadas de esa cuenta. */
 export async function olvidarDispositivo(): Promise<void> {
@@ -69,9 +80,18 @@ export async function registrarParaPush(): Promise<string | null> {
   }
   if (status !== "granted") return null;
 
+  // Con proyecto de Expo: token de Expo. Sin él, en Android: token directo de Firebase («fcm:…»),
+  // que el servidor envía por FCM v1 (supabase/functions/_shared/fcm.ts). Necesita que el APK
+  // traiga google-services.json (secreto GOOGLE_SERVICES_JSON en GitHub).
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-  if (!projectId) throw new Error("Falta EAS_PROJECT_ID para obtener el token de push");
-  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+  let token: string;
+  if (projectId) {
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  } else if (Platform.OS === "android") {
+    token = `fcm:${(await Notifications.getDevicePushTokenAsync()).data}`;
+  } else {
+    throw new Error("Falta EAS_PROJECT_ID para obtener el token de push");
+  }
   await supabase.rpc("registrar_dispositivo", { p_token: token, p_plataforma: Platform.OS });
   tokenRegistrado = token;
   return token;
