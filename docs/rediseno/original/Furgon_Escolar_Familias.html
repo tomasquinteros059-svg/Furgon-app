@@ -1,0 +1,495 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Furgón Escolar Familias</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: una barra fina para elegir rol arriba y, debajo, el teléfono con la app (pantalla completa en celulares) */
+:root {
+  --fondo: #FFFFFF; --superficie: #FFFFFF; --superficie2: #F3F4F6; --borde: #E3E5E8;
+  --texto: #14181F; --suave: #5F6672; --amarillo: #F5B700; --sobreAmarillo: #1F1A00; --amarilloSuave: #FFF7DB;
+  --marino: #1E3A5F; --verde: #1E8E3E; --rojo: #D93025; --mesa: #E9EAEE; --calle: #DADDE3; --manzana: #F4F5F7;
+  --ui: "Inter", "Roboto", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --fondo: #0E1116; --superficie: #161A21; --superficie2: #1E232B; --borde: #2A313B;
+  --texto: #F3F4F6; --suave: #9AA3AE; --amarillo: #F7C21A; --sobreAmarillo: #1A1500; --amarilloSuave: #2E2810;
+  --marino: #8DB8E6; --verde: #4DC47F; --rojo: #FF6B5E; --mesa: #07090C; --calle: #2A313B; --manzana: #1A1F27; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --fondo: #0E1116; --superficie: #161A21; --superficie2: #1E232B; --borde: #2A313B;
+  --texto: #F3F4F6; --suave: #9AA3AE; --amarillo: #F7C21A; --sobreAmarillo: #1A1500; --amarilloSuave: #2E2810;
+  --marino: #8DB8E6; --verde: #4DC47F; --rojo: #FF6B5E; --mesa: #07090C; --calle: #2A313B; --manzana: #1A1F27; color-scheme: dark }
+body { background: var(--mesa); color: var(--texto); font-family: var(--ui); font-size: 15px; margin: 0; padding: 0 16px; }
+.mesa { max-width: 440px; margin: 0 auto; padding-block: 14px 24px; display: grid; gap: 12px; }
+.rol { display: flex; gap: 6px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 4px; }
+.rol button { flex: 1; border: 0; background: transparent; color: var(--suave); font: 700 14px var(--ui); padding: 10px; border-radius: 9px; cursor: pointer; }
+.rol button[aria-pressed="true"] { background: var(--amarillo); color: var(--sobreAmarillo); }
+.nota { color: var(--suave); font-size: 12.5px; text-align: center; margin: 0; }
+.telefono { background: var(--fondo); border: 1px solid var(--borde); border-radius: 28px; overflow: hidden; height: min(820px, calc(100vh - 120px)); min-height: 560px; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 50px -20px rgba(0,0,0,.35); }
+@media (max-width: 480px) { body { padding: 0; } .mesa { padding: 0; gap: 0; } .nota { display: none; } .telefono { border-radius: 0; border: 0; height: 100vh; box-shadow: none; } }
+.pantalla { flex: 1; overflow-y: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.pantalla > * { flex-shrink: 0; }
+.encabezado { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
+p { margin: 0; }
+.suave { color: var(--suave); font-size: 14px; }
+.etiqueta { font-weight: 600; font-size: 14px; margin-top: 4px; }
+.tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.tarjeta.verde { border: 2px solid var(--verde); } .tarjeta.amarilla { border: 2px solid var(--amarillo); } .tarjeta.roja { border: 2px solid var(--rojo); }
+.aviso { background: var(--superficie2); border-left: 4px solid var(--marino); border-radius: 10px; padding: 12px 36px 12px 14px; position: relative; font-size: 14.5px; line-height: 1.45; }
+.aviso.exito { border-color: var(--verde); } .aviso.error { border-color: var(--rojo); }
+.cerrar-aviso { position: absolute; top: 6px; right: 6px; border: 0; background: transparent; color: var(--suave); font-size: 18px; cursor: pointer; width: 28px; height: 28px; }
+.btn { border: 1px solid transparent; border-radius: 12px; min-height: 46px; padding: 0 14px; font: 700 15px var(--ui); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--amarillo); color: var(--sobreAmarillo); width: 100%; }
+.btn.sec { background: var(--superficie); color: var(--texto); border-color: var(--borde); }
+.btn.exito { background: var(--verde); color: #fff; } .btn.peligro { background: var(--rojo); color: #fff; }
+.btn.texto { background: transparent; color: var(--marino); min-height: 36px; }
+.btn.grande { min-height: 56px; font-size: 17px; }
+.btn.chico { width: auto; min-height: 38px; padding: 0 12px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
+.fila { display: flex; gap: 8px; align-items: center; }
+.fila > .btn { flex: 1; }
+.fila > .btn.chico { flex: none; min-width: 44px; }
+.lista-item { padding: 8px 0; border-bottom: 1px solid var(--borde); display: flex; flex-direction: column; gap: 6px; }
+.lista-item:last-child { border-bottom: 0; }
+.tachado { color: var(--suave); text-decoration: line-through; }
+.ico { width: 20px; height: 20px; display: inline-block; flex: none; vertical-align: middle; }
+.ico svg { display: block; }
+.barra { display: flex; border-top: 1px solid var(--borde); background: var(--superficie); padding: 6px 0 8px; }
+.barra button { flex: 1; border: 0; background: transparent; color: var(--suave); font: 500 11px var(--ui); display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; position: relative; }
+.barra button .ico { width: 24px; height: 24px; }
+.barra button[aria-selected="true"] { color: var(--texto); font-weight: 700; }
+.barra button:not([aria-selected="true"]) .ico svg [style*="amarillo"] { fill: transparent !important; }
+.punto { position: absolute; top: 2px; left: calc(50% + 6px); width: 9px; height: 9px; border-radius: 50%; background: var(--rojo); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--amarillo); color: var(--sobreAmarillo); display: grid; place-items: center; font-weight: 800; font-size: 14px; border: 0; cursor: pointer; overflow: hidden; padding: 0; flex: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar.grande { width: 120px; height: 120px; font-size: 44px; cursor: default; }
+.puntos { border: 0; background: transparent; color: var(--texto); font: 900 26px var(--ui); cursor: pointer; padding: 0 8px; position: relative; line-height: 1; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo label { font-weight: 600; font-size: 14px; }
+.campo input, .campo textarea, .campo select { background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-radius: 10px; padding: 12px; font: 400 15px var(--ui); }
+.campo small { color: var(--suave); font-size: 12.5px; }
+.interruptor { appearance: none; width: 46px; height: 28px; border-radius: 14px; background: var(--borde); position: relative; cursor: pointer; flex: none; transition: background .2s; }
+.interruptor::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.interruptor:checked { background: var(--rojo); } .interruptor.verde:checked { background: var(--verde); }
+.interruptor:checked::after { transform: translateX(18px); }
+.capa { position: absolute; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-start; justify-content: center; padding: 60px 12px 12px; z-index: 5; }
+.hoja { background: var(--fondo); border-radius: 16px; width: 100%; max-height: 100%; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.segmento { display: flex; border: 1px solid var(--borde); border-radius: 12px; padding: 3px; gap: 3px; background: var(--superficie2); }
+.segmento button { flex: 1; min-height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--suave); font: 700 14px var(--ui); cursor: pointer; }
+.segmento button[aria-pressed="true"] { background: var(--amarillo); color: var(--sobreAmarillo); }
+.toast { position: absolute; left: 12px; right: 12px; bottom: 80px; background: var(--texto); color: var(--fondo); border-radius: 12px; padding: 12px 14px; font-weight: 600; z-index: 9; font-size: 14px; }
+.mapa { flex: none; width: 100%; border-radius: 14px; border: 1px solid var(--borde); background: var(--manzana); display: block; aspect-ratio: 3 / 2; }
+.alarma { background: var(--amarillo); color: var(--sobreAmarillo); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-weight: 700; animation: latido 1s ease-in-out infinite alternate; }
+@keyframes latido { from { transform: scale(1); } to { transform: scale(1.015); } }
+@media (prefers-reduced-motion: reduce) { .alarma { animation: none; } }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--superficie2); color: var(--suave); }
+.chip.ok { background: color-mix(in srgb, var(--verde) 18%, transparent); color: var(--verde); }
+.chip.no { background: color-mix(in srgb, var(--rojo) 16%, transparent); color: var(--rojo); }
+.chip.ya { background: var(--amarilloSuave); color: var(--texto); }
+.num { font-variant-numeric: tabular-nums; }
+.oculto { display: none !important; }
+</style>
+
+<div class="mesa">
+  <div class="rol oculto" role="group" aria-label="Ver la app como">
+    <button id="ver-tia" type="button" aria-pressed="false">Ver como tía</button>
+    <button id="ver-familia" type="button" aria-pressed="true">Ver como familia</button>
+  </div>
+  <p class="nota">App para mamás y papás · versión de prueba con datos de ejemplo.</p>
+  <div class="telefono" id="telefono">
+    <main class="pantalla" id="pantalla"></main>
+    <nav class="barra" id="barra" role="tablist"></nav>
+  </div>
+</div>
+
+<script>
+const ICONOS = {"casa":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5 10.2V20h14v-9.8L12 5z\"/><path d=\"M3 11.5L12 4l9 7.5M5 10v10h14V10\"/><path d=\"M10 20v-5h4v5\"/></svg>","alumno":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"9.5\" r=\"4\"/><circle cx=\"12\" cy=\"9.5\" r=\"4\"/><circle cx=\"6.8\" cy=\"7.8\" r=\"1.6\"/><circle cx=\"17.2\" cy=\"7.8\" r=\"1.6\"/><path d=\"M6 21a6 6 0 0 1 12 0\"/></svg>","ruta":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"6\" r=\"2.5\"/><path d=\"M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5\"/></svg>","mensaje":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9.5L4.5 21v-3.5H4.5A1.5 1.5 0 0 1 3 16V6a1.5 1.5 0 0 1 1.5-1.5z\"/><path d=\"M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9.5L4.5 21v-3.5A1.5 1.5 0 0 1 3 16V6a1.5 1.5 0 0 1 1.5-1.5zM7.5 9.5h9M7.5 13h5.5\"/></svg>","furgon":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3 7h12.4a3 3 0 0 1 2.6 1.5l2.4 4a3 3 0 0 1 .6 1.7V16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z\"/><path d=\"M3 7h12.4a3 3 0 0 1 2.6 1.5l2.4 4a3 3 0 0 1 .6 1.7V16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z\"/><path d=\"M7 7V4.5h6V7\"/><path d=\"M5 10h3v2.5H5zM10.5 10h3v2.5h-3zM16 10h1.4l1.5 2.5H16z\" stroke-width=\"1.5\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"6.5\" cy=\"17.5\" r=\"2\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"16.5\" cy=\"17.5\" r=\"2\"/></svg>","mapa":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M9 4l6 2v14l-6-2z\"/><path d=\"M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z\"/><path d=\"M9 4v14M15 6v14\"/></svg>","ida":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5.5 17a6.5 6.5 0 0 1 13 0z\"/><path d=\"M5.5 17a6.5 6.5 0 0 1 13 0M2 17h20M5 20.5h14M12 3.5v2.5M4.7 9.7l1.8 1.3M19.3 9.7l-1.8 1.3\"/></svg>","persona":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"8\" r=\"3.5\"/><circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20.5a7 7 0 0 1 14 0\"/></svg>","licencia":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.2\"/><rect style=\"fill:var(--amarillo)\" stroke=\"none\" x=\"5\" y=\"8.5\" width=\"5.5\" height=\"7\" rx=\"1\"/><rect x=\"5\" y=\"8.5\" width=\"5.5\" height=\"7\" rx=\"1\" stroke-width=\"1.5\"/><path d=\"M13.5 9.5h5M13.5 12.5h5M13.5 15.5h3\"/></svg>","tarjeta":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"2.5\" y=\"5.5\" width=\"19\" height=\"13\" rx=\"2.2\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M2.5 9h19v3.2h-19z\"/><path d=\"M2.5 9h19M2.5 12.2h19M6 15.5h4\"/></svg>","conexion":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"4.5\"/><path d=\"M10 14.2a3.6 3.6 0 0 1 0-5.1l2.1-2.1a3.6 3.6 0 0 1 5.1 5.1L16 13.3\"/><path d=\"M14 9.8a3.6 3.6 0 0 1 0 5.1l-2.1 2.1a3.6 3.6 0 0 1-5.1-5.1L8 10.7\"/></svg>","familia":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"6.5\" cy=\"7\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"7\" r=\"2.5\"/><path d=\"M2 20v-1.5a4.5 4.5 0 0 1 6.6-4M22 20v-1.5a4.5 4.5 0 0 0-6.6-4\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M8.5 21v-1a3.5 3.5 0 0 1 7 0v1z\"/><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"2.3\"/><circle cx=\"12\" cy=\"12\" r=\"2.3\"/><path d=\"M8.5 21v-1a3.5 3.5 0 0 1 7 0v1\"/></svg>","campana":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2z\"/><path d=\"M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.8a2.2 2.2 0 0 0 4 0M12 3V2\"/></svg>","check":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>","camara":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3 8.2h4l2-3h6l2 3h4V19H3z\"/><path d=\"M3 8.2h4l2-3h6l2 3h4V19H3z\"/><circle cx=\"12\" cy=\"13.2\" r=\"3.5\"/></svg>","galeria":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2.2\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.8 19.2l5.2-6 3.8 4 3-3 4.4 5z\"/><path d=\"M3.5 18l5.5-5.3 3.8 4 3-3 4.7 4.8\"/><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"15.5\" cy=\"8.5\" r=\"1.8\"/></svg>","menu":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M4 12h16M4 17h16\"/></svg>","brujula":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M15.5 8.5l-2 5-5 2 2-5z\"/><path d=\"M15.5 8.5l-2 5-5 2 2-5z\"/></svg>","pin":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M12 22s7-6.4 7-12a7 7 0 0 0-14 0c0 5.6 7 12 7 12z\"/><path d=\"M12 22s7-6.4 7-12a7 7 0 0 0-14 0c0 5.6 7 12 7 12z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/></svg>","gps":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"12\" cy=\"12\" r=\"3.5\"/><circle cx=\"12\" cy=\"12\" r=\"3.5\"/><circle cx=\"12\" cy=\"12\" r=\"7.5\"/><path d=\"M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3\"/></svg>","telefono":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M5.2 3.5h3l2 5-2.6 1.6a11 11 0 0 0 6.3 6.3l1.6-2.6 5 2v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3.2 5.5a2 2 0 0 1 2-2z\"/><path d=\"M5.2 3.5h3l2 5-2.6 1.6a11 11 0 0 0 6.3 6.3l1.6-2.6 5 2v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3.2 5.5a2 2 0 0 1 2-2z\"/></svg>","subio":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle style=\"fill:var(--amarillo)\" stroke=\"none\" cx=\"9\" cy=\"7.5\" r=\"2.8\"/><circle cx=\"9\" cy=\"7.5\" r=\"2.8\"/><path d=\"M4.5 21v-4.5a4.5 4.5 0 0 1 9 0V21\"/><path d=\"M12.6 13.2l3.4-3.7V4.2\"/><path d=\"M14.2 5.6L16 3.6l1.8 2\"/></svg>","cerrar":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg>","calendario":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M3.5 7.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2V10h-17z\"/><rect x=\"3.5\" y=\"5.5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M8 3v4M16 3v4M3.5 10h17M9.5 14.5l5 4M14.5 14.5l-5 4\"/></svg>","alerta":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M10.3 4.2a2 2 0 0 1 3.4 0l8 13.5A2 2 0 0 1 20 20.7H4a2 2 0 0 1-1.7-3z\"/><path d=\"M10.3 4.2a2 2 0 0 1 3.4 0l8 13.5A2 2 0 0 1 20 20.7H4a2 2 0 0 1-1.7-3z\"/><path d=\"M12 9.5v4.5\"/><circle fill=\"currentColor\" stroke=\"none\" cx=\"12\" cy=\"17.2\" r=\"1.1\"/></svg>","chispa":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path style=\"fill:var(--amarillo)\" stroke=\"none\" d=\"M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z\"/><path d=\"M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM18.5 15l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z\"/></svg>"};
+const ico = (n) => `<span class="ico">${ICONOS[n] || ""}</span>`;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+// ---------- Datos de ejemplo (los mismos de las cuentas de prueba) ----------
+const S = {
+  rol: "familia",
+  vista: { tia: "inicio", familia: "inicio" },
+  menu: false, confirmar: null, toast: null,
+  consejosCerrados: false, nuevosCerrados: false,
+  creandoRuta: false, recomendacion: null,
+  alumnos: [
+    { id: "sofia", nombre: "Sofía Demo", curso: "3° básico", colegio: "Colegio Demo", dir: "Los Aromos 1234, Ñuñoa", familia: "familia", x: 60, y: 52 },
+    { id: "tomas", nombre: "Tomás Demo", curso: "5° básico", colegio: "Colegio Demo", dir: "Los Aromos 1234, Ñuñoa", familia: "familia", x: 60, y: 52 },
+    { id: "isidora", nombre: "Isidora Rojas", curso: "1° básico", colegio: "Colegio Demo", dir: "Pedro de Valdivia 2040, Ñuñoa", familia: "otra", x: 150, y: 40 },
+    { id: "benjamin", nombre: "Benjamín Muñoz", curso: "4° básico", colegio: "Colegio Demo", dir: "Irarrázaval 3100, Ñuñoa", familia: "otra", x: 120, y: 130 },
+  ],
+  colegio: { x: 250, y: 150, nombre: "Colegio Demo" },
+  rutas: [
+    { id: "manana", nombre: "Mañana", tipo: "ida", hora: "07:00", orden: ["sofia", "tomas", "benjamin", "isidora"] },
+    { id: "tarde", nombre: "Tarde", tipo: "vuelta", hora: "16:30", orden: ["isidora", "benjamin", "sofia", "tomas"] },
+  ],
+  noVa: {},            // "alumno:tipo" -> true
+  minutosAviso: { sofia: 5, tomas: 5 },
+  recorrido: null,     // { rutaId, progreso 0..1, estados: {alumno: pendiente|entregado|ausente|no_viaja}, avisado: {}, confirmado }
+  mensajes: [
+    { id: 1, de: "Familia Rojas", texto: "¿Mañana pueden pasar 10 minutos más tarde por Isidora?", respuesta: null },
+  ],
+  pagos: [ { mes: "Octubre", monto: 65000, pagado: false }, { mes: "Septiembre", monto: 65000, pagado: true }, { mes: "Agosto", monto: 65000, pagado: true } ],
+  perfil: {
+    tia: { nombre: "Tía Demo", tel: "+56 9 1234 5678", correo: "tia.prueba@furgonapp.cl", foto: null, comunas: "Ñuñoa, Providencia", presentacion: "12 años llevando niños al Colegio Demo.", visible: true },
+    familia: { nombre: "Familia Demo", tel: "+56 9 8765 4321", correo: "familia.prueba@furgonapp.cl", foto: null },
+  },
+  tema: "sistema",
+};
+const alumno = (id) => S.alumnos.find((a) => a.id === id);
+const ruta = (id) => S.rutas.find((r) => r.id === id);
+const noVa = (id, tipo) => !!S.noVa[`${id}:${tipo}`];
+const pesos = (n) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+
+function avisar(txt) { S.toast = txt; pintar(); clearTimeout(avisar.t); avisar.t = setTimeout(() => { S.toast = null; pintar(); }, 2600); }
+
+// ---------- Simulación del recorrido (el furgón avanza solo) ----------
+function puntosRuta(r) {
+  const casas = []; const vistas = new Set();
+  for (const id of r.orden) {
+    const a = alumno(id); const k = `${a.x},${a.y}`;
+    if (noVa(id, r.tipo) || vistas.has(k)) continue; vistas.add(k); casas.push({ x: a.x, y: a.y, ids: r.orden.filter((o) => { const b = alumno(o); return b.x === a.x && b.y === a.y; }) });
+  }
+  const col = { x: S.colegio.x, y: S.colegio.y, ids: [] };
+  return r.tipo === "ida" ? [{ x: 20, y: 180, ids: [] }, ...casas, col] : [col, ...casas];
+}
+function largo(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return L; }
+function puntoEn(pts, f) {
+  let d = largo(pts) * f;
+  for (let i = 1; i < pts.length; i++) {
+    const s = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (d <= s) return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * (d / s), y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * (d / s) };
+    d -= s;
+  }
+  return pts[pts.length - 1];
+}
+// Minutos que faltan para llegar a una casa (la ruta completa dura ~25 min en esta demo).
+function etaMin(idAlumno) {
+  const r = S.recorrido && ruta(S.recorrido.rutaId); if (!r) return null;
+  const pts = puntosRuta(r); const L = largo(pts); let acum = 0;
+  for (let i = 1; i < pts.length; i++) {
+    acum += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (pts[i].ids.includes(idAlumno)) return Math.max(0, Math.round((acum / L - S.recorrido.progreso) * 25));
+  }
+  return null;
+}
+function iniciar(rutaId) {
+  const r = ruta(rutaId);
+  if (!r.orden.length) return avisar("Esta ruta aún no tiene alumnos.");
+  const estados = {}; for (const id of r.orden) estados[id] = noVa(id, r.tipo) ? "no_viaja" : "pendiente";
+  S.recorrido = { rutaId, progreso: 0, estados, avisado: {}, confirmado: {} };
+  if (S.rol === "tia") S.vista.tia = "recorrido"; S.menu = false;
+  clearInterval(iniciar.t);
+  iniciar.t = setInterval(() => {
+    const rec = S.recorrido; if (!rec) return clearInterval(iniciar.t);
+    rec.progreso = Math.min(1, rec.progreso + 0.004);
+    const rr = ruta(rec.rutaId);
+    for (const id of rr.orden) {
+      const m = etaMin(id);
+      if (m !== null && m <= (S.minutosAviso[id] ?? 5) && rec.estados[id] === "pendiente") rec.avisado[id] = true;
+      if (m === 0 && rec.estados[id] === "pendiente") rec.estados[id] = "entregado";
+    }
+    pintar(true);
+  }, 250);
+  pintar();
+}
+function terminar() { clearInterval(iniciar.t); S.recorrido = null; S.vista.tia = "inicio"; avisar("Recorrido terminado. ¡Buen trabajo!"); }
+
+function mapaSVG(r, vanEnFamilia) {
+  const pts = puntosRuta(r); const van = S.recorrido ? puntoEn(pts, S.recorrido.progreso) : pts[0];
+  const calles = [30, 80, 130, 180].map((y) => `<line x1="0" y1="${y}" x2="300" y2="${y}" stroke="var(--calle)" stroke-width="7"/>`).join("")
+    + [40, 100, 160, 220, 280].map((x) => `<line x1="${x}" y1="0" x2="${x}" y2="200" stroke="var(--calle)" stroke-width="7"/>`).join("");
+  const linea = `<polyline points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--marino)" stroke-width="3" stroke-dasharray="5 4" opacity=".7"/>`;
+  let n = 0;
+  const casas = pts.filter((p) => p.ids.length).map((p) => {
+    n++; const mia = vanEnFamilia ? p.ids.some((id) => alumno(id).familia === "familia") : true;
+    if (vanEnFamilia && !mia) return ""; // privacidad: la familia no ve las casas de otros niños
+    const listo = p.ids.every((id) => S.recorrido && S.recorrido.estados[id] !== "pendiente");
+    return `<g><circle cx="${p.x}" cy="${p.y}" r="10" fill="${listo ? "var(--verde)" : "var(--marino)"}" stroke="#fff" stroke-width="2.5"/><text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">${vanEnFamilia ? "⌂" : n}</text></g>`;
+  }).join("");
+  const col = `<g><rect x="${S.colegio.x - 11}" y="${S.colegio.y - 11}" width="22" height="22" rx="5" fill="var(--amarillo)" stroke="#fff" stroke-width="2"/><text x="${S.colegio.x}" y="${S.colegio.y + 4}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--sobreAmarillo)">C</text></g>`;
+  const furgon = `<g transform="translate(${van.x - 13},${van.y - 9})"><rect width="26" height="16" rx="4" fill="#F5B700" stroke="#1F1A00" stroke-width="1.5"/><rect x="3" y="3" width="6" height="5" rx="1" fill="#BFE3F5"/><rect x="11" y="3" width="6" height="5" rx="1" fill="#BFE3F5"/><circle cx="6" cy="16" r="3" fill="#15202B"/><circle cx="20" cy="16" r="3" fill="#15202B"/></g>`;
+  return `<svg class="mapa" viewBox="0 0 300 200" role="img" aria-label="Mapa del recorrido">${calles}${vanEnFamilia ? "" : linea}${casas}${col}${furgon}</svg>`;
+}
+
+// ---------- Piezas comunes ----------
+function avatar(quien, grande) {
+  const p = S.perfil[quien]; const ini = p.nombre.trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+  return `<button type="button" class="avatar${grande ? " grande" : ""}" data-accion="perfil" aria-label="Mi perfil">${p.foto ? `<img src="${p.foto}" alt="">` : esc(ini)}</button>`;
+}
+function encabezado(titulo, derecha) { return `<div class="encabezado"><h1>${esc(titulo)}</h1><div class="fila">${derecha || ""}</div></div>`; }
+function volver(destino) { return `<button type="button" class="btn texto chico" data-ir="${destino}">Volver</button>`; }
+
+// ---------- Pantallas de la tía ----------
+function tiaInicio() {
+  const conRec = S.recorrido;
+  let h = encabezado(`Hola, ${S.perfil.tia.nombre.split(" ")[0]}`, avatar("tia") + `<button type="button" class="puntos" data-accion="menu" aria-label="Más opciones">⋮</button>`);
+  if (!S.consejosCerrados) h += `<div class="aviso">Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas.<br><br>${ico("gps")} Tu celular es el GPS del furgón: mantenlo con batería, con la ubicación activada y en su soporte.<button class="cerrar-aviso" data-accion="cerrar-consejos" aria-label="Cerrar aviso">✕</button></div>`;
+  if (!S.nuevosCerrados) h += `<div class="tarjeta verde"><div class="encabezado"><h2>🆕 Se sumaron a tus rutas</h2><button class="cerrar-aviso" style="position:static" data-accion="cerrar-nuevos" aria-label="Cerrar aviso">✕</button></div>
+    <p>${ico("ida")} <b>Isidora Rojas</b> · Mañana, parada 4</p><p>${ico("casa")} <b>Isidora Rojas</b> · Tarde, parada 1</p>
+    <p class="suave">Quedaron donde menos alargan el recorrido. Su familia ya recibe los avisos.</p></div>`;
+  if (S.recomendacion && S.recomendacion.ok) h += `<div class="aviso exito">${esc(S.recomendacion.ok)}</div>`;
+  for (const r of S.rutas) {
+    const van = r.orden.filter((id) => !noVa(id, r.tipo));
+    const activa = conRec && conRec.rutaId === r.id;
+    h += `<div class="tarjeta ${activa ? "verde" : ""}"><h2>${ico(r.tipo === "ida" ? "ida" : "casa")} ${esc(r.nombre)}</h2>
+      <p class="suave">${r.tipo === "ida" ? "Casa → colegio" : "Colegio → casa"}${r.hora ? ` · ${r.hora}` : ""} · ${S.colegio.nombre}</p>
+      <p class="etiqueta">${r.tipo === "ida" ? "A buscar hoy" : "A dejar hoy"} (${van.length})</p>
+      ${r.orden.length ? r.orden.map((id, i) => { const a = alumno(id); const nv = noVa(id, r.tipo);
+        return `<div class="lista-item"><b class="${nv ? "tachado" : ""}">${i + 1}. ${esc(a.nombre)}</b><span class="suave">${nv ? "Hoy no viaja" : esc(a.dir)}</span></div>`; }).join("") : `<p class="suave">Esta ruta aún no tiene alumnos.</p>`}
+      ${van.length ? `<a class="btn sec" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent("Ñuñoa, Santiago")}">${ico("mapa")} Ver la ruta en Google Maps</a>` : ""}
+      ${!activa && r.orden.length >= 2 ? recomendacionHTML(r) : ""}
+      ${activa ? `<button class="btn exito grande" data-ir="recorrido">Continuar recorrido en curso</button>` : `<button class="btn grande" data-iniciar="${r.id}" ${conRec ? "disabled" : ""}>Iniciar recorrido</button>`}
+    </div>`;
+  }
+  return h;
+}
+function recomendacionHTML(r) {
+  const rec = S.recomendacion && S.recomendacion.rutaId === r.id ? S.recomendacion : null;
+  if (!rec) return `<button class="btn sec" data-recomendar="${r.id}">${ico("brujula")} Calcular la mejor ruta</button>`;
+  if (!rec.cambia) return `<div class="tarjeta amarilla"><p>👍 El orden actual ya es el más corto (≈ ${rec.km} km).</p><button class="btn texto" data-accion="descartar">Cerrar</button></div>`;
+  return `<div class="tarjeta amarilla"><b>✨ Ruta recomendada: ${rec.km} km (antes ${rec.antes} km)</b><p class="suave">Ahorras ${(rec.antes - rec.km).toFixed(1)} km por recorrido. Calculada por calles con Google Maps.</p>
+    ${rec.orden.map((id, i) => `<p>${i + 1}. ${esc(alumno(id).nombre)}</p>`).join("")}
+    <div class="fila"><button class="btn exito" data-aplicar="${r.id}">Aplicar</button><button class="btn sec" data-accion="descartar">Descartar</button></div></div>`;
+}
+function recomendar(id) {
+  const r = ruta(id);
+  // Orden de vecino más cercano, partiendo del extremo opuesto al colegio (como hace el servidor).
+  const pend = [...r.orden]; const orden = []; let pos = r.tipo === "ida" ? { x: 20, y: 180 } : S.colegio;
+  while (pend.length) { pend.sort((a, b) => Math.hypot(alumno(a).x - pos.x, alumno(a).y - pos.y) - Math.hypot(alumno(b).x - pos.x, alumno(b).y - pos.y)); const s = pend.shift(); orden.push(s); pos = alumno(s); }
+  const km = (o) => +(largo([r.tipo === "ida" ? { x: 20, y: 180 } : S.colegio, ...o.map(alumno), ...(r.tipo === "ida" ? [S.colegio] : [])]) / 40).toFixed(1);
+  S.recomendacion = { rutaId: id, orden, km: km(orden), antes: km(r.orden), cambia: orden.join() !== r.orden.join() };
+}
+function tiaRecorrido() {
+  const rec = S.recorrido; if (!rec) { S.vista.tia = "inicio"; return tiaInicio(); }
+  const r = ruta(rec.rutaId);
+  const pend = r.orden.filter((id) => rec.estados[id] === "pendiente");
+  const at = r.orden.filter((id) => rec.estados[id] !== "pendiente");
+  const et = (e) => ({ entregado: r.tipo === "ida" ? "Subió ✅" : "En su hogar ✅", ausente: "Ausente", no_viaja: "Hoy no viaja" })[e];
+  return encabezado(`${r.tipo === "ida" ? "🌅" : "🏠"} ${r.nombre}`, `<span class="chip ok">● En curso</span>`)
+    + mapaSVG(r, false)
+    + `<p class="suave">El furgón avanza solo en esta demo. Las familias reciben la alarma ${S.minutosAviso.sofia} minutos antes.</p>`
+    + (pend.length ? pend.map((id) => { const a = alumno(id); const m = etaMin(id);
+      return `<div class="tarjeta"><h2>${esc(a.nombre)}</h2><p class="suave">${esc(a.dir)}</p>
+        <div class="fila"><span class="chip ${rec.avisado[id] ? "ya" : ""}">${rec.avisado[id] ? "🔔 Apoderado avisado" : "Aún sin aviso"}</span><span class="chip num">~${m ?? "?"} min</span></div>
+        <div class="fila"><button class="btn exito" data-marcar="${id}:entregado">${r.tipo === "ida" ? "Subió" : "En su hogar"}</button><button class="btn sec" data-marcar="${id}:ausente">Ausente</button></div></div>`; }).join("")
+      : `<div class="aviso exito">No quedan alumnos pendientes.</div>`)
+    + (at.length ? `<h2>Atendidos</h2>` + at.map((id) => `<div class="lista-item"><b>${esc(alumno(id).nombre)}</b><span class="suave">${et(rec.estados[id])}</span></div>`).join("") : "")
+    + `<button class="btn peligro" data-accion="terminar">Terminar recorrido</button>`
+    + `<button class="btn texto" data-ir="inicio">Volver al inicio (el recorrido sigue)</button>`;
+}
+function tiaAlumnos() {
+  return encabezado("Alumnos", "") + `<p class="suave">${S.alumnos.length} activos · 2 familias sin la app</p>`
+    + S.alumnos.map((a) => `<div class="tarjeta"><h2>${ico("alumno")} ${esc(a.nombre)}</h2><p class="suave">${esc(a.curso)} · ${esc(a.colegio)}</p><p>${ico("pin")} ${esc(a.dir)}</p>
+      <div class="fila"><span class="chip ${a.familia === "familia" ? "ok" : ""}">${a.familia === "familia" ? "Familia con la app" : "Familia sin la app"}</span>${noVa(a.id, "ida") || noVa(a.id, "vuelta") ? `<span class="chip no">Hoy no viaja</span>` : ""}</div></div>`).join("")
+    + `<button class="btn sec" data-accion="toast-nuevo">+ Registrar alumno</button>`;
+}
+function tiaRutas() {
+  let h = encabezado("Rutas", "") + `<p class="suave">El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Calcular la mejor ruta» calcula el orden más corto con las direcciones de tus alumnos.</p>`;
+  if (S.creandoRuta) h += `<div class="tarjeta amarilla"><h2>Nueva ruta</h2>
+      <div class="campo"><label for="nr-nombre">Nombre</label><input id="nr-nombre" placeholder="Ej.: Mañana Colegio San José"></div>
+      <span class="etiqueta">Tipo</span><div class="segmento"><button type="button" id="nr-ida" aria-pressed="true">🌅 Ida</button><button type="button" id="nr-vuelta" aria-pressed="false">🏠 Vuelta</button></div>
+      <div class="campo"><label for="nr-hora">Hora de salida (opcional)</label><input id="nr-hora" placeholder="07:30" inputmode="numeric"></div>
+      <div class="fila"><button class="btn" data-accion="crear-ruta">Crear ruta</button><button class="btn sec" data-accion="cancelar-ruta">Cancelar</button></div></div>`;
+  else h += `<button class="btn sec" data-accion="nueva-ruta">+ Nueva ruta</button>`;
+  for (const r of S.rutas) {
+    h += `<div class="tarjeta"><h2>${ico(r.tipo === "ida" ? "ida" : "casa")} ${esc(r.nombre)}${r.hora ? ` · ${r.hora}` : ""}</h2>
+      <button class="btn grande" data-iniciar="${r.id}" ${!r.orden.length || S.recorrido ? "disabled" : ""}>Iniciar recorrido</button>
+      ${r.orden.length >= 2 ? recomendacionHTML(r) : ""}
+      ${r.orden.map((id, i) => { const nv = noVa(id, r.tipo); return `<div class="lista-item"><div class="fila" style="justify-content:space-between"><b class="${nv ? "tachado" : ""}" style="flex:1">${i + 1}. ${esc(alumno(id).nombre)}</b>
+        <button class="btn sec chico" data-mover="${r.id}:${id}:-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button><button class="btn sec chico" data-mover="${r.id}:${id}:1" ${i === r.orden.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button><button class="btn sec chico" data-quitar="${r.id}:${id}" aria-label="Quitar">✕</button></div>
+        <button class="btn ${nv ? "peligro" : "sec"} chico" style="width:100%" data-novahoy="${id}:${r.tipo}">${nv ? "📅 Hoy no va · tocar si sí va" : "Hoy no va"}</button></div>`; }).join("") || `<p class="suave">Esta ruta aún no tiene alumnos.</p>`}
+      ${S.alumnos.filter((a) => !r.orden.includes(a.id)).map((a) => `<button class="btn texto" data-agregar="${r.id}:${a.id}">+ ${esc(a.nombre)}</button>`).join("")}
+      <button class="btn texto" style="color:var(--rojo)" data-eliminar-ruta="${r.id}">Eliminar ruta</button></div>`;
+  }
+  return h;
+}
+function tiaMensajes() {
+  return encabezado("Mensajes", "") + (S.mensajes.length ? S.mensajes.map((m) => `<div class="tarjeta ${m.respuesta ? "" : "amarilla"}"><h2>${ico("mensaje")} ${esc(m.de)}</h2><p>${esc(m.texto)}</p>
+    ${m.respuesta ? `<p class="suave">Tu respuesta: ${esc(m.respuesta)}</p>` : `<div class="campo"><label for="resp-${m.id}">Responder</label><textarea id="resp-${m.id}" rows="2" placeholder="Escribe tu respuesta"></textarea></div><button class="btn" data-responder="${m.id}">Enviar respuesta</button>`}</div>`).join("") : `<p class="suave">No hay mensajes.</p>`);
+}
+function tiaSimple(cual) {
+  if (cual === "cobros") return encabezado("Cobros", volver("inicio")) + `<p class="suave">${pesos(130000)} por cobrar este mes · 1 vencido</p>`
+    + ["Familia Demo · Sofía y Tomás", "Familia Rojas · Isidora", "Familia Muñoz · Benjamín"].map((f, i) => `<div class="tarjeta"><h2>${ico("tarjeta")} ${esc(f)}</h2><div class="fila"><span class="num">${pesos(i ? 65000 : 120000)}</span><span class="chip ${i === 2 ? "no" : i === 1 ? "ok" : "ya"}">${i === 2 ? "Vencido" : i === 1 ? "Pagado" : "Por pagar"}</span></div></div>`).join("");
+  if (cual === "licencia") return encabezado("Mi licencia", volver("inicio")) + `<div class="tarjeta"><h2>${ico("licencia")} Clase A3</h2><p>✓ Vigente hasta el 12-10-2028</p><p class="suave">Verificada por la empresa.</p></div><button class="btn sec" data-accion="toast-licencia">${ico("camara")} Subir foto nueva</button>`;
+  if (cual === "conexiones") return encabezado("Familias", volver("inicio")) + `<div class="tarjeta verde"><h2>${ico("conexion")} Familia Pérez quiere conectarse</h2><p class="suave">Ñuñoa · 1 hijo</p><div class="fila"><button class="btn exito" data-accion="aceptar">Aceptar</button><button class="btn sec" data-accion="rechazar">Rechazar</button></div></div>`;
+  return "";
+}
+function menuHTML() {
+  return `<div class="capa" data-accion="cerrar-menu"><div class="hoja" data-dentro>
+    <button class="btn sec" data-ir="perfil">👤 Mi perfil</button>
+    <button class="btn sec" data-ir="cobros">${ico("tarjeta")} Cobros</button>
+    <button class="btn sec" data-ir="conexiones">${ico("conexion")} Familias por conectar (1)</button>
+    <button class="btn sec" data-ir="licencia">${ico("licencia")} Mi licencia · Vigente hasta el 12-10-2028</button>
+    ${S.consejosCerrados || S.nuevosCerrados ? `<button class="btn texto" data-accion="mostrar-avisos">Volver a mostrar los avisos</button>` : ""}
+    <span class="etiqueta">Apariencia</span>${temaHTML()}
+    <button class="btn peligro" data-accion="salir">Salir</button>
+    <button class="btn texto" data-accion="cerrar-menu">Cerrar</button></div></div>`;
+}
+function temaHTML() { return `<div class="segmento">${[["sistema", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, n]) => `<button type="button" data-tema="${v}" aria-pressed="${S.tema === v}">${n}</button>`).join("")}</div>`; }
+
+// ---------- Pantallas de la familia ----------
+function famInicio() {
+  const rec = S.recorrido; const r = rec && ruta(rec.rutaId);
+  let h = encabezado(`Hola, ${S.perfil.familia.nombre.split(" ")[0]}`, avatar("familia") + `<button class="btn texto chico" data-accion="salir">Salir</button>`);
+  const hijos = S.alumnos.filter((a) => a.familia === "familia");
+  const alarma = r && hijos.find((a) => rec.avisado[a.id] && rec.estados[a.id] === "pendiente" && !rec.confirmado[a.id]);
+  if (alarma) h += `<div class="alarma">🔔 El furgón llega en ~${Math.max(1, etaMin(alarma.id))} min a buscar a ${esc(alarma.nombre.split(" ")[0])}<button class="btn" style="background:var(--sobreAmarillo);color:var(--amarillo)" data-confirmar="${alarma.id}">Recibido, estoy atento/a</button></div>`;
+  for (const a of hijos) {
+    const est = rec && rec.estados[a.id];
+    h += `<div class="tarjeta"><h2>${esc(a.nombre)}</h2><p class="suave">${esc(a.colegio)}</p>`;
+    if (r && est) {
+      const m = etaMin(a.id);
+      h += `<div class="tarjeta" style="background:var(--superficie2)"><b>${r.tipo === "ida" ? "🌅 Recorrido de ida en curso" : "🏠 Recorrido de vuelta en curso"}</b>
+        <p>${est === "entregado" ? (r.tipo === "ida" ? "Subió al furgón ✅" : "En su hogar ✅") : est === "no_viaja" ? "Hoy no viaja" : est === "ausente" ? "Marcado ausente por la tía" : rec.avisado[a.id] ? `🔔 Llega en ~${Math.max(1, m)} min` : "Te avisaremos cuando el furgón esté cerca."}</p>
+        ${est === "pendiente" ? `<button class="btn sec" data-ir="seguir">${ico("mapa")} Seguir el furgón en vivo</button>` : ""}</div>`;
+    }
+    h += `<span class="etiqueta">Hoy no viaja</span>
+      ${["ida", "vuelta"].map((tp) => `<div class="fila" style="justify-content:space-between"><span>${tp === "ida" ? "Ida (mañana)" : "Vuelta (tarde)"}</span><input type="checkbox" class="interruptor" aria-label="${a.nombre}: no viaja ${tp}" data-novahoy="${a.id}:${tp}" ${noVa(a.id, tp) ? "checked" : ""}></div>`).join("")}
+      <button class="btn texto" data-minutos="${a.id}">Aviso ${S.minutosAviso[a.id]} min antes · cambiar</button></div>`;
+  }
+  if (!rec) h += `<div class="aviso">En la app real, la tía inicia el recorrido y aquí ves dónde viene el furgón.<br><br><button class="btn" data-iniciar-demo="manana">▶ Simular que la tía inicia la ruta de la mañana</button></div>`;
+  return h + temaHTML();
+}
+function famSeguir() {
+  const rec = S.recorrido; if (!rec) { S.vista.familia = "inicio"; return famInicio(); }
+  const r = ruta(rec.rutaId); const hijo = S.alumnos.find((a) => a.familia === "familia" && rec.estados[a.id] === "pendiente");
+  return encabezado("Furgón en vivo", volver("inicio")) + mapaSVG(r, true)
+    + (hijo ? `<div class="tarjeta"><h2>${ico("furgon")} Llega en ~${Math.max(1, etaMin(hijo.id))} min</h2><p class="suave">Por privacidad no ves las casas de otros niños, solo la tuya.</p></div>` : `<div class="aviso exito">Tus hijos ya subieron ✅</div>`);
+}
+function famPagos() { return encabezado("Pagos", "") + S.pagos.map((p, i) => `<div class="tarjeta"><h2>${ico("tarjeta")} ${p.mes}</h2><div class="fila"><span class="num">${pesos(p.monto)}</span><span class="chip ${p.pagado ? "ok" : "ya"}">${p.pagado ? "Pagado" : "Por pagar"}</span></div>${p.pagado ? "" : `<button class="btn" data-pagar="${i}">Avisar que pagué</button>`}</div>`).join(""); }
+function famMensajes() {
+  const mios = S.mensajes.filter((m) => m.de === "Familia Demo");
+  return encabezado("Mensajes", "") + `<div class="tarjeta"><div class="campo"><label for="msg-nuevo">Escríbele a la tía</label><textarea id="msg-nuevo" rows="3" placeholder="Ej.: Mañana Tomás sale más temprano"></textarea></div><button class="btn" data-accion="enviar-msg">Enviar</button></div>`
+    + mios.map((m) => `<div class="tarjeta"><p>${esc(m.texto)}</p><p class="suave">${m.respuesta ? `Respuesta de la tía: ${esc(m.respuesta)}` : "Esperando respuesta…"}</p></div>`).join("");
+}
+function famFamilia() { return encabezado("Familia", "") + `<div class="tarjeta"><h2>${ico("familia")} Compartir con papá o mamá</h2><p class="suave">Dale este código a la otra persona para que también reciba los avisos.</p><p style="font:700 28px var(--mono);letter-spacing:.1em;text-align:center">FAM-7K2Q</p></div>`; }
+function famFurgon() {
+  const t = S.perfil.tia;
+  return encabezado("Mi furgón", "") + `<div class="tarjeta" style="align-items:center;text-align:center"><span class="avatar grande" style="cursor:default">${t.foto ? `<img src="${t.foto}" alt="">` : "TD"}</span><h2>${esc(t.nombre)}</h2><p class="suave">${esc(t.comunas)}</p><p>${esc(t.presentacion)}</p><span class="chip ok">Conectada</span></div>`;
+}
+
+// ---------- Mi perfil (las dos) ----------
+function perfil(quien) {
+  const p = S.perfil[quien]; const tia = quien === "tia";
+  return encabezado("Mi perfil", volver("inicio")) + `<div style="display:flex;flex-direction:column;align-items:center;gap:10px">${avatar(quien, true)}
+      <p class="suave">${tia ? "Las familias de tu furgón ven tu foto." : "Tu tía o tío del furgón ve tu foto."}</p>
+      <div class="fila"><label class="btn sec chico">${ico("camara")} Tomar foto<input type="file" accept="image/*" capture="user" class="oculto" data-foto="${quien}"></label><label class="btn sec chico">${ico("galeria")} Galería<input type="file" accept="image/*" class="oculto" data-foto="${quien}"></label></div>
+      ${p.foto ? `<button class="btn texto" data-quitar-foto="${quien}">Quitar foto</button>` : ""}</div>
+    <div class="tarjeta"><div class="campo"><label for="pf-nombre">Nombre</label><input id="pf-nombre" value="${esc(p.nombre)}"></div>
+      <div class="campo"><label for="pf-tel">Teléfono</label><input id="pf-tel" value="${esc(p.tel)}" inputmode="tel"><small>${tia ? "Para que la empresa te ubique. Las familias no lo ven en la búsqueda." : "Para la llamada de aviso cuando el furgón está cerca."}</small></div>
+      <span class="etiqueta">Correo</span><p>${esc(p.correo)}</p></div>
+    ${tia ? `<div class="tarjeta"><div class="fila" style="justify-content:space-between"><div><b>Que las familias me encuentren</b><p class="suave">Apareces en la búsqueda con tu nombre, tu furgón y tus comunas. Nunca se muestran tu teléfono ni tus rutas.</p></div><input type="checkbox" class="interruptor verde" id="pf-visible" ${p.visible ? "checked" : ""} aria-label="Que las familias me encuentren"></div>
+      <div class="campo"><label for="pf-comunas">Comunas donde trabajas</label><input id="pf-comunas" value="${esc(p.comunas)}"></div>
+      <div class="campo"><label for="pf-pres">Presentación (opcional)</label><textarea id="pf-pres" rows="3" maxlength="300">${esc(p.presentacion)}</textarea></div></div>` : ""}
+    <button class="btn grande" data-guardar-perfil="${quien}">Guardar</button>`;
+}
+
+// ---------- Dibujar ----------
+const PESTANAS = {
+  tia: [["inicio", "Inicio", "casa"], ["alumnos", "Alumnos", "alumno"], ["rutas", "Rutas", "ruta"], ["mensajes", "Mensajes", "mensaje"]],
+  familia: [["inicio", "Inicio", "casa"], ["pagos", "Pagos", "tarjeta"], ["mensajes", "Mensajes", "mensaje"], ["familia", "Familia", "familia"], ["furgon", "Mi furgón", "conexion"]],
+};
+function pintar(soloVivo) {
+  const v = S.vista[S.rol];
+  // Mientras el furgón avanza solo se redibujan las pantallas que lo muestran (no se pierde lo que escribes).
+  if (soloVivo && !((S.rol === "tia" && v === "recorrido") || (S.rol === "familia" && (v === "inicio" || v === "seguir")) || (S.rol === "tia" && v === "inicio"))) return;
+  if (soloVivo && document.activeElement && document.activeElement.matches("input, textarea")) return;
+  const pantallas = S.rol === "tia"
+    ? { inicio: tiaInicio, recorrido: tiaRecorrido, alumnos: tiaAlumnos, rutas: tiaRutas, mensajes: tiaMensajes, perfil: () => perfil("tia"), cobros: () => tiaSimple("cobros"), licencia: () => tiaSimple("licencia"), conexiones: () => tiaSimple("conexiones") }
+    : { inicio: famInicio, seguir: famSeguir, pagos: famPagos, mensajes: famMensajes, familia: famFamilia, furgon: famFurgon, perfil: () => perfil("familia") };
+  const el = document.getElementById("pantalla");
+  // Pantalla nueva: parte arriba. Misma pantalla redibujada: se queda donde estaba.
+  const clave = S.rol + ":" + v; const y = clave === pintar.ultima ? el.scrollTop : 0; pintar.ultima = clave;
+  el.innerHTML = (pantallas[v] || pantallas.inicio)() + (S.rol === "tia" && S.menu ? menuHTML() : "") + (S.confirmar ? confirmarHTML() : "") + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
+  el.scrollTop = y;
+  const sinBarra = (S.rol === "tia" && v === "recorrido") || (S.rol === "familia" && v === "seguir");
+  const barra = document.getElementById("barra");
+  barra.classList.toggle("oculto", sinBarra);
+  barra.innerHTML = PESTANAS[S.rol].map(([id, nombre, icono]) => `<button type="button" role="tab" aria-selected="${v === id}" data-ir="${id}">${ico(icono)}${nombre}${id === "mensajes" && S.rol === "tia" && S.mensajes.some((m) => !m.respuesta) ? `<span class="punto"></span>` : ""}</button>`).join("");
+  document.getElementById("ver-tia").setAttribute("aria-pressed", S.rol === "tia");
+  document.getElementById("ver-familia").setAttribute("aria-pressed", S.rol === "familia");
+}
+function confirmarHTML() { return `<div class="capa"><div class="hoja"><h2>${esc(S.confirmar.titulo)}</h2><p class="suave">${esc(S.confirmar.texto)}</p><div class="fila"><button class="btn sec" data-accion="no-confirmar">Cancelar</button><button class="btn peligro" data-accion="si-confirmar">Eliminar</button></div></div></div>`; }
+
+// ---------- Acciones ----------
+document.getElementById("ver-tia").onclick = () => { S.rol = "tia"; S.menu = false; pintar(); };
+document.getElementById("ver-familia").onclick = () => { S.rol = "familia"; S.menu = false; pintar(); };
+document.getElementById("telefono").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ir],[data-accion],[data-iniciar],[data-iniciar-demo],[data-recomendar],[data-aplicar],[data-marcar],[data-mover],[data-quitar],[data-agregar],[data-eliminar-ruta],[data-responder],[data-tema],[data-confirmar],[data-minutos],[data-pagar],[data-quitar-foto],[data-guardar-perfil],[data-novahoy]");
+  if (!b) return;
+  if (b.matches(".capa") && e.target !== b) return; // clic dentro de la hoja
+  const d = b.dataset;
+  if (d.ir) { S.vista[S.rol] = d.ir; S.menu = false; S.recomendacion = null; document.getElementById("pantalla").scrollTop = 0; }
+  else if (d.iniciar) iniciar(d.iniciar);
+  else if (d.iniciarDemo) { iniciar(d.iniciarDemo); avisar("La tía inició el recorrido."); return; }
+  else if (d.recomendar) recomendar(d.recomendar);
+  else if (d.aplicar) { ruta(d.aplicar).orden = S.recomendacion.orden; S.recomendacion = { ok: `Listo: ${ruta(d.aplicar).nombre} quedó con el orden recomendado.` }; }
+  else if (d.marcar) { const [id, est] = d.marcar.split(":"); S.recorrido.estados[id] = est; }
+  else if (d.mover) { const [rid, id, dl] = d.mover.split(":"); const o = ruta(rid).orden; const i = o.indexOf(id); const j = i + Number(dl); [o[i], o[j]] = [o[j], o[i]]; }
+  else if (d.quitar) { const [rid, id] = d.quitar.split(":"); const r = ruta(rid); r.orden = r.orden.filter((x) => x !== id); }
+  else if (d.agregar) { const [rid, id] = d.agregar.split(":"); ruta(rid).orden.push(id); avisar(`${alumno(id).nombre} quedó en la ruta.`); }
+  else if (d.eliminarRuta) { const r = ruta(d.eliminarRuta); S.confirmar = { titulo: `¿Eliminar la ruta «${r.nombre}»?`, texto: "Los alumnos siguen registrados; solo se quitan de esta ruta.", rutaId: r.id }; }
+  else if (d.responder) { const m = S.mensajes.find((x) => x.id == d.responder); const v = document.getElementById(`resp-${m.id}`).value.trim(); if (!v) return avisar("Escribe tu respuesta."); m.respuesta = v; avisar("Respuesta enviada a la familia."); }
+  else if (d.tema) { S.tema = d.tema; if (d.tema === "sistema") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", d.tema === "oscuro" ? "dark" : "light"); }
+  else if (d.confirmar) { S.recorrido.confirmado[d.confirmar] = true; avisar("Listo: la tía sabe que estás atento/a."); }
+  else if (d.minutos) { const o = [3, 5, 7, 10, 15]; const a = d.minutos; S.minutosAviso[a] = o[(o.indexOf(S.minutosAviso[a]) + 1) % o.length]; }
+  else if (d.pagar) { S.pagos[d.pagar].pagado = true; avisar("Le avisamos a la tía que pagaste."); }
+  else if (d.quitarFoto) { S.perfil[d.quitarFoto].foto = null; avisar("Foto quitada."); }
+  else if (d.guardarPerfil) {
+    const p = S.perfil[d.guardarPerfil]; const n = document.getElementById("pf-nombre").value.trim();
+    if (n.length < 2) return avisar("Escribe tu nombre.");
+    p.nombre = n; p.tel = document.getElementById("pf-tel").value.trim();
+    if (d.guardarPerfil === "tia") { p.comunas = document.getElementById("pf-comunas").value.trim(); p.presentacion = document.getElementById("pf-pres").value.trim(); p.visible = document.getElementById("pf-visible").checked; }
+    return avisar("Datos guardados.");
+  }
+  else if (d.novahoy) {
+    if (b.type === "checkbox") { S.noVa[d.novahoy] = b.checked; return avisar(b.checked ? "Listo: la tía ya sabe que hoy no viaja." : "Listo: sí viaja."); }
+    S.noVa[d.novahoy] = !S.noVa[d.novahoy];
+  }
+  else switch (d.accion) {
+    case "menu": S.menu = true; break;
+    case "cerrar-menu": if (e.target.closest("[data-dentro]") && !e.target.closest("[data-accion='cerrar-menu'].btn")) return; S.menu = false; break;
+    case "perfil": S.vista[S.rol] = "perfil"; break;
+    case "cerrar-consejos": S.consejosCerrados = true; break;
+    case "cerrar-nuevos": S.nuevosCerrados = true; break;
+    case "mostrar-avisos": S.consejosCerrados = false; S.nuevosCerrados = false; S.menu = false; break;
+    case "descartar": S.recomendacion = null; break;
+    case "terminar": terminar(); return;
+    case "nueva-ruta": S.creandoRuta = true; break;
+    case "cancelar-ruta": S.creandoRuta = false; break;
+    case "crear-ruta": {
+      const n = document.getElementById("nr-nombre").value.trim(); const hora = document.getElementById("nr-hora").value.trim();
+      if (!n) return avisar("Ponle un nombre a la ruta.");
+      if (hora && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(hora)) return avisar("La hora va como 07:30.");
+      S.rutas.push({ id: "r" + Date.now(), nombre: n, tipo: document.getElementById("nr-vuelta").getAttribute("aria-pressed") === "true" ? "vuelta" : "ida", hora, orden: [] });
+      S.creandoRuta = false; avisar(`Ruta «${n}» creada. Agrégale alumnos abajo.`); return;
+    }
+    case "si-confirmar": S.rutas = S.rutas.filter((r) => r.id !== S.confirmar.rutaId); S.confirmar = null; avisar("Ruta eliminada."); return;
+    case "no-confirmar": S.confirmar = null; break;
+    case "enviar-msg": { const v = document.getElementById("msg-nuevo").value.trim(); if (!v) return avisar("Escribe tu mensaje."); const m = { id: Date.now(), de: "Familia Demo", texto: v, respuesta: null }; S.mensajes.unshift(m); avisar("Mensaje enviado a la tía."); setTimeout(() => { m.respuesta = "¡Recibido! Gracias por avisar 😊"; pintar(); }, 4000); return; }
+    case "salir": S.menu = false; avisar("En la app real, aquí se cierra la sesión."); return;
+    case "aceptar": avisar("Familia conectada."); break;
+    case "rechazar": avisar("Solicitud rechazada."); break;
+    case "toast-nuevo": avisar("En la app real se registra con nombre y dirección exacta."); return;
+    case "toast-licencia": avisar("En la app real se toma la foto del frente y del reverso."); return;
+  }
+  pintar();
+});
+document.getElementById("telefono").addEventListener("click", (e) => {
+  const seg = e.target.closest("#nr-ida, #nr-vuelta"); if (!seg) return;
+  document.getElementById("nr-ida").setAttribute("aria-pressed", seg.id === "nr-ida");
+  document.getElementById("nr-vuelta").setAttribute("aria-pressed", seg.id === "nr-vuelta");
+});
+document.getElementById("telefono").addEventListener("change", (e) => {
+  const f = e.target.closest("[data-foto]"); if (!f || !f.files[0]) return;
+  const lector = new FileReader();
+  lector.onload = () => { S.perfil[f.dataset.foto].foto = lector.result; avisar("Foto lista. Toca «Guardar» para dejarla."); };
+  lector.readAsDataURL(f.files[0]);
+});
+pintar();
+</script>
+
+</body></html>
