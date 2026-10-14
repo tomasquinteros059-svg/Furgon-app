@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import Storage from "expo-sqlite/kv-store";
 import { useCallback, useState } from "react";
-import { Alert, Linking, Modal, Pressable, ScrollView, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { llamarFuncion, mensajeError, supabase } from "../../lib/supabase";
-import { iniciarSeguimiento, pedirPermisosUbicacion } from "../../ubicacion/seguimiento";
+import { useIniciarRecorrido } from "../../lib/iniciar-recorrido";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
 import { SelectorTema } from "../../componentes/tema";
 import { EnlacePrivacidad } from "../../componentes/privacidad";
@@ -74,7 +74,6 @@ export default function RutasConductor() {
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [activos, setActivos] = useState<Record<string, string>>({});
   const [noVan, setNoVan] = useState<{ alumno_id: string; tipo: string }[]>([]);
-  const [iniciando, setIniciando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   const [porResponder, setPorResponder] = useState(0);
@@ -85,6 +84,7 @@ export default function RutasConductor() {
   const [nuevosVistosHasta, setNuevosVistosHasta] = useState(() => leer(NUEVOS_VISTOS_HASTA) ?? "");
   const [recomendacion, setRecomendacion] = useState<{ rutaId: string; r: Recomendacion } | null>(null);
   const [calculando, setCalculando] = useState<string | null>(null);
+  const { iniciando, iniciar } = useIniciarRecorrido(setError);
 
   const cargar = useCallback(async () => {
     const { data: fecha } = await supabase.rpc("hoy_empresa");
@@ -113,31 +113,6 @@ export default function RutasConductor() {
 
   const noVaHoy = (alumnoId: string, tipo: "ida" | "vuelta") =>
     noVan.some((x) => x.alumno_id === alumnoId && (x.tipo === tipo || x.tipo === "ambos"));
-
-  async function iniciar(ruta: Ruta) {
-    setError(null);
-    setIniciando(ruta.id);
-    try {
-      // Primero los permisos: así no queda un recorrido iniciado sin GPS.
-      const permisos = await pedirPermisosUbicacion();
-      if (!permisos.ok) {
-        Alert.alert(t("Permiso de ubicación"), permisos.mensaje);
-        return;
-      }
-      const { data: recorridoId, error } = await supabase.rpc("iniciar_recorrido", { p_ruta: ruta.id });
-      if (error) throw error;
-      const gps = await iniciarSeguimiento(recorridoId as string);
-      if (!gps.ok) {
-        Alert.alert(t("Permiso de ubicación"), gps.mensaje);
-        return;
-      }
-      router.push(`/conductor/recorrido/${recorridoId}`);
-    } catch (e) {
-      setError(mensajeError(e));
-    } finally {
-      setIniciando(null);
-    }
-  }
 
   async function recomendar(ruta: Ruta) {
     setError(null);
@@ -291,7 +266,7 @@ export default function RutasConductor() {
               <Boton titulo={t("Continuar recorrido en curso")} variante="exito" grande
                 onPress={() => router.push(`/conductor/recorrido/${activo}`)} />
             ) : (
-              <Boton titulo={t("Iniciar recorrido")} grande cargando={iniciando === ruta.id} onPress={() => iniciar(ruta)} />
+              <Boton titulo={t("Iniciar recorrido")} grande cargando={iniciando === ruta.id} onPress={() => { setError(null); iniciar(ruta.id); }} />
             )}
           </Tarjeta>
         );

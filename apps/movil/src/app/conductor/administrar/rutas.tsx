@@ -1,8 +1,10 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { Text } from "../../../componentes/icono";
-import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
+import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../../componentes/ui";
+import { useIniciarRecorrido } from "../../../lib/iniciar-recorrido";
+import { useSesion } from "../../../lib/sesion";
 import { llamarFuncion, mensajeError, supabase } from "../../../lib/supabase";
 import { locale, t } from "../../../lib/idioma";
 
@@ -10,6 +12,8 @@ interface Ruta {
   id: string;
   nombre: string;
   tipo: "ida" | "vuelta";
+  conductor_id: string | null;
+  hora_salida: string | null;
   ruta_paradas: { alumno_id: string; orden: number; alumnos: { nombre: string } }[];
 }
 interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
@@ -27,11 +31,19 @@ export default function RutasAdmin() {
   const [calculando, setCalculando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
+  const { perfil } = useSesion();
+  const { iniciando, iniciar } = useIniciarRecorrido(setError);
+  // Ruta nueva (por ejemplo, una salida extra o un colegio más).
+  const [creando, setCreando] = useState(false);
+  const [nuevaNombre, setNuevaNombre] = useState("");
+  const [nuevaTipo, setNuevaTipo] = useState<"ida" | "vuelta">("ida");
+  const [nuevaHora, setNuevaHora] = useState("");
+  const [nuevaColegio, setNuevaColegio] = useState("");
 
   const cargar = useCallback(async () => {
     const { data: fecha } = await supabase.rpc("hoy_empresa");
     const [r, a, i] = await Promise.all([
-      supabase.from("rutas").select("id, nombre, tipo, ruta_paradas(alumno_id, orden, alumnos(nombre))").eq("activa", true).order("nombre"),
+      supabase.from("rutas").select("id, nombre, tipo, conductor_id, hora_salida, ruta_paradas(alumno_id, orden, alumnos(nombre))").eq("activa", true).order("nombre"),
       supabase.from("alumnos").select("id, nombre").eq("activo", true).order("nombre"),
       supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", fecha as string),
     ]);
@@ -69,11 +81,50 @@ export default function RutasAdmin() {
     }
   }
 
+  async function crearRuta() {
+    const nombre = nuevaNombre.trim();
+    const hora = nuevaHora.trim();
+    if (!nombre) { setError(t("Ponle un nombre a la ruta.")); return; }
+    if (hora && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(hora)) { setError(t("La hora va como 07:30.")); return; }
+    if (!perfil?.empresa_id) return;
+    await hacer(supabase.from("rutas").insert({
+      empresa_id: perfil.empresa_id, nombre, tipo: nuevaTipo, conductor_id: perfil.id,
+      hora_salida: hora || null, colegio_nombre: nuevaColegio.trim() || null,
+    }), t("Ruta «{ruta}» creada. Agrégale alumnos abajo.", { ruta: nombre }));
+    setCreando(false); setNuevaNombre(""); setNuevaHora(""); setNuevaColegio(""); setNuevaTipo("ida");
+  }
+
+  function eliminarRuta(r: Ruta) {
+    Alert.alert(t("¿Eliminar la ruta «{ruta}»?", { ruta: r.nombre }), t("Los alumnos siguen registrados; solo se quitan de esta ruta."), [
+      { text: t("Cancelar"), style: "cancel" },
+      { text: t("Eliminar"), style: "destructive", onPress: () => hacer(supabase.from("rutas").update({ activa: false }).eq("id", r.id), t("Ruta eliminada.")) },
+    ]);
+  }
+
   return (
     <Pantalla titulo={t("Rutas")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       <Text style={estilos.textoSuave}>{t("El orden es el que sigues y el que usa el sistema para avisar a cada familia a tiempo. «Recomendar ruta» calcula el orden más corto con las direcciones de tus alumnos.")}</Text>
       {error ? <Aviso tipo="error" texto={error} /> : null}
       {exito ? <Aviso tipo="exito" texto={exito} /> : null}
+      {creando ? (
+        <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>{t("Nueva ruta")}</Text>
+          <Campo etiqueta={t("Nombre")} value={nuevaNombre} onChangeText={setNuevaNombre} placeholder={t("Ej.: Mañana Colegio San José")} />
+          <Text style={estilos.etiqueta}>{t("Tipo")}</Text>
+          <View style={[estilos.fila, { marginBottom: 14 }]}>
+            <Boton titulo={t("🌅 Ida (casa → colegio)")} variante={nuevaTipo === "ida" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => setNuevaTipo("ida")} />
+            <Boton titulo={t("🏠 Vuelta (colegio → casa)")} variante={nuevaTipo === "vuelta" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => setNuevaTipo("vuelta")} />
+          </View>
+          <Campo etiqueta={t("Hora de salida (opcional)")} value={nuevaHora} onChangeText={setNuevaHora} placeholder="07:30" keyboardType="numbers-and-punctuation" />
+          <Campo etiqueta={t("Colegio (opcional)")} value={nuevaColegio} onChangeText={setNuevaColegio} />
+          <View style={estilos.fila}>
+            <Boton titulo={t("Crear ruta")} estilo={{ flex: 1 }} onPress={crearRuta} />
+            <Boton titulo={t("Cancelar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setCreando(false)} />
+          </View>
+        </Tarjeta>
+      ) : (
+        <Boton titulo={t("+ Nueva ruta")} variante="secundario" onPress={() => { setError(null); setExito(null); setCreando(true); }} />
+      )}
       {rutas.map((r) => {
         const paradas = [...r.ruta_paradas].sort((a, b) => a.orden - b.orden);
         const fuera = alumnos.filter((a) => !paradas.some((p) => p.alumno_id === a.id));
@@ -81,7 +132,16 @@ export default function RutasAdmin() {
         const nombre = (id: string) => paradas.find((p) => p.alumno_id === id)?.alumnos?.nombre ?? "—";
         return (
           <Tarjeta key={r.id}>
-            <Text style={estilos.subtitulo}>{r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}</Text>
+            <Text style={estilos.subtitulo}>{r.tipo === "ida" ? "🌅" : "🏠"} {r.nombre}{r.hora_salida ? ` · ${r.hora_salida.slice(0, 5)}` : ""}</Text>
+            {r.conductor_id === perfil?.id ? (
+              <Boton titulo={t("Iniciar recorrido")} grande cargando={iniciando === r.id} deshabilitado={paradas.length === 0}
+                onPress={() => { setError(null); setExito(null); iniciar(r.id); }} />
+            ) : r.conductor_id ? (
+              <Text style={estilos.textoSuave}>{t("La maneja otra tía o tío.")}</Text>
+            ) : (
+              <Boton titulo={t("Asignármela para manejarla")} variante="secundario"
+                onPress={() => hacer(supabase.from("rutas").update({ conductor_id: perfil?.id }).eq("id", r.id), t("Listo: ahora puedes iniciar «{ruta}».", { ruta: r.nombre }))} />
+            )}
             {paradas.length >= 2 && !rec ? (
               <Boton titulo={calculando === r.id ? t("Calculando…") : t("✨ Recomendar ruta")} variante="secundario" cargando={calculando === r.id} onPress={() => recomendar(r)} />
             ) : null}
@@ -142,6 +202,7 @@ export default function RutasAdmin() {
                 <Boton titulo={t("Cancelar")} variante="texto" onPress={() => setAgregando(null)} />
               </View>
             ) : <Boton titulo={t("+ Agregar alumno a esta ruta")} variante="texto" onPress={() => setAgregando(r.id)} />}
+            <Boton titulo={t("Eliminar ruta")} variante="texto" onPress={() => eliminarRuta(r)} />
           </Tarjeta>
         );
       })}
