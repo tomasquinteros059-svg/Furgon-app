@@ -14,6 +14,16 @@ export const EN_MOVIL_CONDUCTOR: Record<string, string> = {
   "Administrar: disponible cuando termines el recorrido (no se administra manejando).": "Manage: available when you finish the trip (no managing while driving).",
   "🧑‍💼 Administrar (alumnos, rutas, pagos)": "🧑‍💼 Manage (students, routes, payments)",
   "Volver a mostrar los avisos": "Show the tips again",
+  // Pestaña «Más» de la tía
+  "Cobros": "Billing",
+  "Lo que te deben este mes": "What you're owed this month",
+  "Resumen de administración": "Management summary",
+  "Alumnos, rutas, cobros y consultas": "Students, routes, billing and questions",
+  "Familias por conectar ({n})": "Families waiting to connect ({n})",
+  "Conectar con familias": "Connect with families",
+  "Hay familias esperando tu respuesta": "Families are waiting for your answer",
+  "Busca familias o deja que te encuentren": "Find families or let them find you",
+  "Sube tu licencia de conducir": "Upload your driver's license",
   // Rutas: crear, iniciar y eliminar
   "Nueva ruta": "New route",
   "Nombre": "Name",

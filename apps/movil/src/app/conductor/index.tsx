@@ -1,17 +1,14 @@
 import { router, useFocusEffect } from "expo-router";
-import Storage from "expo-sqlite/kv-store";
 import { useCallback, useState } from "react";
-import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { Avatar } from "../../componentes/avatar";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { llamarFuncion, mensajeError, supabase } from "../../lib/supabase";
 import { useIniciarRecorrido } from "../../lib/iniciar-recorrido";
+import { CONSEJOS_CERRADOS, guardar, leer, NUEVOS_VISTOS_HASTA } from "../../lib/avisos-inicio";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
-import { SelectorTema } from "../../componentes/tema";
-import { EnlacePrivacidad } from "../../componentes/privacidad";
-import { SelectorIdioma } from "../../i18n";
 import { locale, t } from "../../lib/idioma";
 
 interface Parada {
@@ -32,14 +29,6 @@ interface Ruta {
 }
 interface Nuevo { alumno: string; ruta: string; tipo: "ida" | "vuelta"; parada: number; agregado_en: string }
 interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
-
-// Avisos que la tía cerró (se guardan en el teléfono).
-const CONSEJOS_CERRADOS = "inicio-consejos-cerrados";
-const NUEVOS_VISTOS_HASTA = "inicio-nuevos-vistos-hasta";
-const leer = (k: string) => { try { return Storage.getItemSync(k); } catch { return null; } };
-const guardar = (k: string, v: string | null) => {
-  try { if (v == null) Storage.removeItemSync(k); else Storage.setItemSync(k, v); } catch { /* sin almacenamiento */ }
-};
 
 const km = (m: number) => `${(m / 1000).toLocaleString(locale(), { maximumFractionDigits: 1 })} km`;
 
@@ -71,7 +60,7 @@ function AvisoCerrable({ texto, onCerrar }: { texto: string; onCerrar: () => voi
 }
 
 export default function RutasConductor() {
-  const { perfil, cerrarSesion } = useSesion();
+  const { perfil } = useSesion();
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [activos, setActivos] = useState<Record<string, string>>({});
   const [noVan, setNoVan] = useState<{ alumno_id: string; tipo: string }[]>([]);
@@ -80,7 +69,6 @@ export default function RutasConductor() {
   const [porResponder, setPorResponder] = useState(0);
   const [nuevos, setNuevos] = useState<Nuevo[]>([]);
   const [licencia, setLicencia] = useState<EstadoLic | null>(null);
-  const [menu, setMenu] = useState(false);
   const [consejosCerrados, setConsejosCerrados] = useState(() => leer(CONSEJOS_CERRADOS) === "1");
   const [nuevosVistosHasta, setNuevosVistosHasta] = useState(() => leer(NUEVOS_VISTOS_HASTA) ?? "");
   const [recomendacion, setRecomendacion] = useState<{ rutaId: string; r: Recomendacion } | null>(null);
@@ -110,6 +98,9 @@ export default function RutasConductor() {
 
   useFocusEffect(useCallback(() => {
     cargar();
+    // «Volver a mostrar los avisos» (pestaña Más) los borra del teléfono: se releen al volver.
+    setConsejosCerrados(leer(CONSEJOS_CERRADOS) === "1");
+    setNuevosVistosHasta(leer(NUEVOS_VISTOS_HASTA) ?? "");
   }, [cargar]));
 
   const noVaHoy = (alumnoId: string, tipo: "ida" | "vuelta") =>
@@ -136,29 +127,15 @@ export default function RutasConductor() {
     cargar();
   }
 
-  const enRecorrido = Object.keys(activos).length > 0;
   const nuevosSinVer = nuevos.filter((x) => x.agregado_en > nuevosVistosHasta);
   const licenciaConProblema = !!licencia && licencia.estado !== "vigente";
-  const irA = (ruta: string) => { setMenu(false); router.push(ruta as never); };
 
-  const botonMenu = (
-    <Pressable accessibilityRole="button" accessibilityLabel={t("Más opciones")} onPress={() => setMenu(true)} hitSlop={10}
-      style={{ paddingHorizontal: 10, paddingVertical: 4 }}>
-      <Text style={{ fontSize: 26, fontWeight: "900", color: colores.texto }}>⋮</Text>
-      {porResponder || licenciaConProblema ? (
-        <View style={{ position: "absolute", top: 4, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: colores.rojo }} />
-      ) : null}
-    </Pressable>
-  );
 
   return (
     <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={
-      <View style={estilos.fila}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
-          <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={36} />
-        </Pressable>
-        {botonMenu}
-      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
+        <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={44} />
+      </Pressable>
     }>
       {!consejosCerrados ? (
         <AvisoCerrable
@@ -280,43 +257,6 @@ export default function RutasConductor() {
         );
       })}
 
-      {/* Menú de los tres puntitos: todo lo que no se usa a diario. */}
-      <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }} onPress={() => setMenu(false)}>
-          <Pressable onPress={() => {}} style={{ marginTop: 60, marginHorizontal: 12, maxHeight: "85%", backgroundColor: colores.fondo, borderRadius: 16, overflow: "hidden" }}>
-            <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
-              {/* Abajo están Inicio, Alumnos, Rutas y Mensajes (conductor/_layout.tsx); aquí, lo demás. */}
-              <Boton titulo={t("👤 Mi perfil")} variante="secundario" onPress={() => irA("/perfil")} />
-              {perfil?.puede_administrar ? (
-                enRecorrido ? (
-                  <Aviso texto={t("Administrar: disponible cuando termines el recorrido (no se administra manejando).")} />
-                ) : (
-                  <>
-                    <Boton titulo={t("💳 Cobros")} variante="secundario" onPress={() => irA("/conductor/administrar/cobros")} />
-                    <Boton titulo={t("🧑‍💼 Resumen de administración")} variante="secundario" onPress={() => irA("/conductor/administrar")} />
-                  </>
-                )
-              ) : null}
-              <Boton titulo={porResponder ? t("🤝 Familias por conectar ({n})", { n: porResponder }) : t("🤝 Conectar con familias")}
-                variante={porResponder ? "exito" : "secundario"} onPress={() => irA("/conductor/conexiones")} />
-              <Boton titulo={licencia ? t("🪪 Mi licencia · {estado}", { estado: textoLicencia(licencia).txt }) : t("🪪 Mi licencia")}
-                variante="secundario" onPress={() => irA("/conductor/licencia")} />
-              {consejosCerrados || nuevosVistosHasta ? (
-                <Boton titulo={t("Volver a mostrar los avisos")} variante="texto" onPress={() => {
-                  guardar(CONSEJOS_CERRADOS, null); guardar(NUEVOS_VISTOS_HASTA, null);
-                  setConsejosCerrados(false); setNuevosVistosHasta(""); setMenu(false);
-                }} />
-              ) : null}
-              <Tarjeta><SelectorTema /></Tarjeta>
-              <Tarjeta><SelectorIdioma /></Tarjeta>
-              <EnlacePrivacidad />
-              <Boton titulo={t("Eliminar mi cuenta")} variante="texto" onPress={() => irA("/eliminar-cuenta")} />
-              <Boton titulo={t("Salir")} variante="peligro" onPress={() => { setMenu(false); cerrarSesion(); }} />
-              <Boton titulo={t("Cerrar")} variante="texto" onPress={() => setMenu(false)} />
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </Pantalla>
   );
 }

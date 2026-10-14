@@ -2,13 +2,11 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, Switch, View } from "react-native";
 import { Avatar } from "../../componentes/avatar";
-import { Text } from "../../componentes/icono";
-import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
+import { Icono, Text } from "../../componentes/icono";
+import { Aviso, Boton, colores, estilos, FilaMenu, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
 import { comoLista, mensajeError, supabase } from "../../lib/supabase";
-import { SelectorTema } from "../../componentes/tema";
-import { EnlacePrivacidad } from "../../componentes/privacidad";
-import { locale, SelectorIdioma, t } from "../../i18n";
+import { locale, t } from "../../i18n";
 
 interface Alumno {
   id: string;
@@ -119,17 +117,11 @@ export default function InicioApoderado() {
   }
 
   return (
-    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={<View style={estilos.fila}>
+    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={
       <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
-        <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={36} />
+        <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={44} />
       </Pressable>
-      <Boton titulo={t("Salir")} variante="texto" onPress={() => {
-      if (!sinProteger) return cerrarSesion();
-      Alert.alert(t("¿Salir sin proteger tu cuenta?"), t("Entraste con un código: si sales ahora, no podrás volver a entrar. Protégela primero con tu correo."), [
-        { text: t("Proteger mi cuenta"), onPress: () => router.push("/apoderado/proteger-cuenta") },
-        { text: t("Salir igual"), style: "destructive", onPress: cerrarSesion },
-      ]);
-    }} /></View>}>
+    }>
       {sinProteger ? (
         <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
           <Text style={estilos.subtitulo}>{t("🔒 Protege tu cuenta")}</Text>
@@ -196,29 +188,29 @@ export default function InicioApoderado() {
               </View>
             ) : null}
 
-            <Text style={[estilos.etiqueta, { marginTop: 12 }]}>{t("Hoy no viaja")}</Text>
-            {(["ida", "vuelta"] as const).map((tipo) => (
-              <View key={tipo} style={[estilos.fila, { justifyContent: "space-between" }]}>
-                <Text style={estilos.texto}>{tipo === "ida" ? t("Ida (mañana)") : t("Vuelta (tarde)")}</Text>
-                <Switch
-                  value={noViaja.has(`${alumno.id}:${tipo}`)}
-                  onValueChange={(v) => cambiarNoViaja(alumno, tipo, v)}
-                  trackColor={{ true: colores.rojo }}
-                />
-              </View>
-            ))}
+            {/* «Va en la mañana / en la tarde»: encendido = sí va (verde). Apagarlo marca «hoy no viaja». */}
+            {(["ida", "vuelta"] as const).map((tipo) => {
+              const va = !noViaja.has(`${alumno.id}:${tipo}`);
+              return (
+                <View key={tipo} style={[estilos.fila, { justifyContent: "space-between", marginTop: 8 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={estilos.texto}>{tipo === "ida" ? t("Va en la mañana") : t("Va en la tarde")}</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: va ? colores.verde : colores.rojo }}>{va ? t("Sí va") : t("Hoy no va")}</Text>
+                  </View>
+                  <Switch value={va} onValueChange={(v) => cambiarNoViaja(alumno, tipo, !v)}
+                    trackColor={{ true: colores.verde, false: colores.borde }} thumbColor={colores.superficie} />
+                </View>
+              );
+            })}
 
-            <Boton titulo={t("Aviso {min} min antes · cambiar", { min: alumno.minutos_aviso })} variante="texto" onPress={() => cambiarMinutos(alumno)} />
+            <FilaMenu titulo={t("Aviso: {min} min antes", { min: alumno.minutos_aviso })} detalle={t("Cambiar cuándo te avisamos")}
+              izquierda={<Icono nombre="campana" tam={24} color={colores.texto} />} onPress={() => cambiarMinutos(alumno)} />
           </Tarjeta>
         );
       })}
 
-      {/* Pagos, Mensajes, Familia y Mi furgón están en la barra de abajo (apoderado/_layout.tsx). */}
+      {/* Mensajes y Pagos están en la barra de abajo; perfil, familia, furgón y cuenta, en «Más». */}
       {perfil?.empresa_id ? <Boton titulo={t("+ Registrar alumno")} variante="texto" onPress={() => router.push("/apoderado/nuevo-alumno")} /> : null}
-      <Tarjeta><SelectorTema /></Tarjeta>
-      <Tarjeta><SelectorIdioma /></Tarjeta>
-      <Boton titulo={t("Eliminar mi cuenta")} variante="texto" onPress={() => router.push("/eliminar-cuenta")} />
-      <EnlacePrivacidad />
     </Pantalla>
   );
 }

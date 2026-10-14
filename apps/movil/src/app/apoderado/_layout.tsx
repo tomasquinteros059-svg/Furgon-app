@@ -6,12 +6,12 @@ import { t } from "../../lib/idioma";
 
 export default function Layout() {
   const ruta = usePathname();
+  // Como el diseño «Trazo y relleno»: Hoy, Mensajes, Pagos y Más.
   const pestanas: Pestana[] = [
-    { titulo: t("Inicio"), icono: "casa", ruta: "/apoderado", exacta: true },
-    { titulo: t("Pagos"), icono: "tarjeta", ruta: "/apoderado/pagos" },
+    { titulo: t("Hoy"), icono: "casa", ruta: "/apoderado", exacta: true },
     { titulo: t("Mensajes"), icono: "mensaje", ruta: "/apoderado/ayuda" },
-    { titulo: t("Familia"), icono: "familia", ruta: "/apoderado/familia" },
-    { titulo: t("Mi furgón"), icono: "conexion", ruta: "/apoderado/conectar" },
+    { titulo: t("Pagos"), icono: "tarjeta", ruta: "/apoderado/pagos" },
+    { titulo: t("Más"), icono: "menu", ruta: "/apoderado/mas" },
   ];
   // En el mapa en vivo y en la llamada de aviso, pantalla completa sin barra.
   const conBarra = !ruta.startsWith("/apoderado/seguir") && !ruta.startsWith("/apoderado/llamada");

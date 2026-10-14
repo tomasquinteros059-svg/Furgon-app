@@ -1,7 +1,8 @@
 // Íconos propios de Furgón Escolar en la app (fuente única: diseno/iconos.ts).
-import { Children, type ReactNode } from "react";
+import { Children, createContext, type ReactNode, useContext } from "react";
 import { Text as RNText, type StyleProp, StyleSheet, type TextProps, type TextStyle } from "react-native";
 import { SvgXml } from "react-native-svg";
+import { conLetra } from "./letra";
 import { iconoDeEmoji, type NombreIcono, REGEX_EMOJI, svgIcono } from "../../../../diseno/iconos.ts";
 
 export type { NombreIcono };
@@ -38,5 +39,15 @@ function iconizar(texto: string, estilo: StyleProp<TextStyle>): ReactNode[] {
 export function Text(props: TextProps) {
   const { children, style } = props;
   const hijos = Children.map(children, (c) => (typeof c === "string" ? iconizar(c, style) : c));
-  return <RNText {...props}>{hijos}</RNText>;
+  // Letra Poppins con el grosor pedido (componentes/letra.ts). Un texto dentro de otro sin grosor
+  // propio hereda la letra del de afuera.
+  const dentro = useContext(DentroDeTexto);
+  const plano = StyleSheet.flatten(style) ?? {};
+  const letra = dentro && plano.fontWeight == null && plano.fontFamily == null ? null : conLetra(plano);
+  return (
+    <DentroDeTexto.Provider value>
+      <RNText {...props} style={letra ? [style, letra] : style}>{hijos}</RNText>
+    </DentroDeTexto.Provider>
+  );
 }
+const DentroDeTexto = createContext(false);

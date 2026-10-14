@@ -17,23 +17,25 @@ export interface Paleta {
   amarillo: string;    // 20 %: acción principal y selección
   sobreAmarillo: string; // texto sobre amarillo
   amarilloSuave: string; // resaltes muy puntuales
+  amarilloBorde: string; // borde del botón principal (trazo de los íconos)
   marino: string;      // enlaces y avisos informativos
   verde: string;
   rojo: string;
 }
 
 export const PALETA: { claro: Paleta; oscuro: Paleta } = {
+  // Rediseño «Trazo y relleno» (octubre 2026): fondo amarillo muy suave, tarjetas blancas con borde.
   claro: {
-    fondo: "#FFFFFF", superficie: "#FFFFFF", superficie2: "#F3F4F6", borde: "#E3E5E8",
-    texto: "#14181F", suave: "#5F6672",
-    amarillo: "#F5B700", sobreAmarillo: "#1F1A00", amarilloSuave: "#FFF7DB",
-    marino: "#1E3A5F", verde: "#1E8E3E", rojo: "#D93025",
+    fondo: "#FFFBEB", superficie: "#FFFFFF", superficie2: "#FFF4D6", borde: "#EBDDB8",
+    texto: "#1C1A16", suave: "#5B564D",
+    amarillo: "#F5B700", sobreAmarillo: "#1F1A00", amarilloSuave: "#FFF3CC", amarilloBorde: "#7A5800",
+    marino: "#1E3A5F", verde: "#0A6C4C", rojo: "#C0261D",
   },
   oscuro: {
-    fondo: "#0E1116", superficie: "#161A21", superficie2: "#1E232B", borde: "#2A313B",
-    texto: "#F3F4F6", suave: "#9AA3AE",
-    amarillo: "#F7C21A", sobreAmarillo: "#1A1500", amarilloSuave: "#2E2810",
-    marino: "#8DB8E6", verde: "#4DC47F", rojo: "#FF6B5E",
+    fondo: "#14120B", superficie: "#1E1B12", superficie2: "#28241A", borde: "#3A3426",
+    texto: "#F1EEE8", suave: "#ADA69B",
+    amarillo: "#F0C23C", sobreAmarillo: "#1A1500", amarilloSuave: "#3A3116", amarilloBorde: "#F0C23C",
+    marino: "#93BCE8", verde: "#4FC79A", rojo: "#FF8A7D",
   },
 };
 

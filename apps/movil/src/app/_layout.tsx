@@ -2,6 +2,7 @@
 import "../ubicacion/tarea";
 import { alRecibir, alResponder } from "../llamadas-app";
 
+import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
 import { type ErrorBoundaryProps, router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -12,6 +13,7 @@ import { ProveedorIdioma } from "../i18n";
 import { ProveedorSesion, useSesion } from "../lib/sesion";
 import { supabase } from "../lib/supabase";
 import { describirFalla, guardarFalla, tomarUltimaFalla, vigilarFallas } from "../lib/fallas";
+import { FUENTES } from "../componentes/letra";
 import { t } from "../lib/idioma";
 
 SplashScreen.preventAutoHideAsync();
@@ -52,7 +54,10 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 function Navegacion() {
-  const { cargando, sesion, perfil } = useSesion();
+  const { cargando: cargandoSesion, sesion, perfil } = useSesion();
+  // La letra Poppins se carga antes de mostrar la app (si fallara, sigue con la del sistema).
+  const [letraLista, errorLetra] = useFonts(FUENTES);
+  const cargando = cargandoSesion || (!letraLista && !errorLetra);
   // Si la app se cerró por un error la vez anterior, se muestra una vez al abrirla.
   const [fallaAnterior, setFallaAnterior] = useState(tomarUltimaFalla);
 
