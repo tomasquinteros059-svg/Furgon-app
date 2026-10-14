@@ -99,6 +99,7 @@ function Navegacion() {
       </Stack.Protected>
       <Stack.Protected guard={!!sesion}>
         <Stack.Screen name="eliminar-cuenta" />
+        <Stack.Screen name="perfil" />
       </Stack.Protected>
       <Stack.Protected guard={!!sesion && !perfil}>
         <Stack.Screen name="sin-perfil" />

@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Switch, View } from "react-native";
+import { Alert, Pressable, Switch, View } from "react-native";
+import { Avatar } from "../../componentes/avatar";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
@@ -118,13 +119,17 @@ export default function InicioApoderado() {
   }
 
   return (
-    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={<Boton titulo={t("Salir")} variante="texto" onPress={() => {
+    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={<View style={estilos.fila}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
+        <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={36} />
+      </Pressable>
+      <Boton titulo={t("Salir")} variante="texto" onPress={() => {
       if (!sinProteger) return cerrarSesion();
       Alert.alert(t("¿Salir sin proteger tu cuenta?"), t("Entraste con un código: si sales ahora, no podrás volver a entrar. Protégela primero con tu correo."), [
         { text: t("Proteger mi cuenta"), onPress: () => router.push("/apoderado/proteger-cuenta") },
         { text: t("Salir igual"), style: "destructive", onPress: cerrarSesion },
       ]);
-    }} />}>
+    }} /></View>}>
       {sinProteger ? (
         <Tarjeta estilo={{ borderColor: colores.amarillo, borderWidth: 2 }}>
           <Text style={estilos.subtitulo}>{t("🔒 Protege tu cuenta")}</Text>

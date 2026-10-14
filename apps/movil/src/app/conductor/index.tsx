@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import Storage from "expo-sqlite/kv-store";
 import { useCallback, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
+import { Avatar } from "../../componentes/avatar";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
@@ -151,7 +152,14 @@ export default function RutasConductor() {
   );
 
   return (
-    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={botonMenu}>
+    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={
+      <View style={estilos.fila}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
+          <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={36} />
+        </Pressable>
+        {botonMenu}
+      </View>
+    }>
       {!consejosCerrados ? (
         <AvisoCerrable
           texto={t("Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas.") + "\n\n"
@@ -278,6 +286,7 @@ export default function RutasConductor() {
           <Pressable onPress={() => {}} style={{ marginTop: 60, marginHorizontal: 12, maxHeight: "85%", backgroundColor: colores.fondo, borderRadius: 16, overflow: "hidden" }}>
             <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
               {/* Abajo están Inicio, Alumnos, Rutas y Mensajes (conductor/_layout.tsx); aquí, lo demás. */}
+              <Boton titulo={t("👤 Mi perfil")} variante="secundario" onPress={() => irA("/perfil")} />
               {perfil?.puede_administrar ? (
                 enRecorrido ? (
                   <Aviso texto={t("Administrar: disponible cuando termines el recorrido (no se administra manejando).")} />

@@ -1,6 +1,18 @@
 // Traducciones al inglés de la app móvil: familias (apoderado), ingreso y registro, cuenta,
 // componentes compartidos, notificaciones y ubicación. Texto en español → inglés.
 export const EN_MOVIL_FAMILIAS: Record<string, string> = {
+  // Mi perfil (tía y familia)
+  "Mi perfil": "My profile",
+  "👤 Mi perfil": "👤 My profile",
+  "Escribe tu nombre.": "Write your name.",
+  "Foto quitada.": "Photo removed.",
+  "Quitar foto": "Remove photo",
+  "🖼️ Galería": "🖼️ Gallery",
+  "Toca «Guardar» para dejar esta foto.": "Tap «Save» to keep this photo.",
+  "Las familias de tu furgón ven tu foto.": "Families in your van can see your photo.",
+  "Tu tía o tío del furgón ve tu foto.": "Your van driver can see your photo.",
+  "Para la llamada de aviso cuando el furgón está cerca.": "For the alert call when the van is close.",
+  "Para que la empresa te ubique. Las familias no lo ven en la búsqueda.": "So the company can reach you. Families don't see it in the search.",
   // Barra de pestañas de abajo (tía y familia)
   "Inicio": "Home",
   "Mensajes": "Messages",

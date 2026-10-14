@@ -14,6 +14,8 @@ export interface Perfil {
   empresa_id: string | null;
   /** Conductora que también administra (dueña del furgón). */
   puede_administrar: boolean;
+  /** Ruta de su foto en el bucket «fotos-perfil» (null si no tiene). */
+  foto?: string | null;
 }
 
 interface EstadoSesion {
@@ -38,7 +40,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
     const { data, error } = await supabase
       .from("perfiles")
-      .select("id, rol, nombre, empresa_id, puede_administrar, idioma")
+      .select("id, rol, nombre, empresa_id, puede_administrar, idioma, foto")
       .eq("id", s.user.id)
       .maybeSingle();
     if (error) return; // sin conexión: se mantiene lo que había
