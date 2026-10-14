@@ -1,114 +1,112 @@
-// Ayuda: preguntas frecuentes, consultas a la administración y solicitud de cancelación.
+// Mensajes de la familia con su tía o tío (diseño oct. 2026): una sola conversación, como un chat.
+// Por dentro es una consulta («pregunta») con sus mensajes; la tía la ve y la responde en su pestaña
+// Mensajes. Cancelar el servicio, reclamos y preguntas frecuentes siguen en «Otras consultas».
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
-import { Text } from "../../componentes/icono";
-import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
+import { Avatar } from "../../componentes/avatar";
+import { Icono, Text } from "../../componentes/icono";
+import { PantallaFamilia } from "../../componentes/pantalla-familia";
+import { Aviso, Boton, colores, estilos } from "../../componentes/ui";
+import { misConexiones } from "../../lib/conexiones";
+import { useSesion } from "../../lib/sesion";
 import { mensajeError, supabase } from "../../lib/supabase";
-import { t } from "../../lib/idioma";
+import { locale, t } from "../../lib/idioma";
 
-type Tipo = "pregunta" | "cancelacion_servicio" | "cambio_datos" | "reclamo";
-// Funciones (no constantes) para que los nombres salgan en el idioma actual.
-const tipos = (): { id: Tipo; nombre: string }[] => [
-  { id: "pregunta", nombre: t("Pregunta") },
-  { id: "cambio_datos", nombre: t("Cambio de datos") },
-  { id: "reclamo", nombre: t("Reclamo") },
-  { id: "cancelacion_servicio", nombre: t("Cancelar el servicio") },
-];
-const nombreEstado = (estado: string) => ({ abierta: t("Enviada"), respondida: t("Respondida"), cerrada: t("Cerrada") } as Record<string, string>)[estado] ?? estado;
+interface Mensaje { id: string; cuerpo: string; creado_en: string; autor_id: string }
+const ASUNTO = "Mensajes"; // i18n-ignorar: dato guardado, la tía lo ve como asunto
 
-export default function Ayuda() {
-  const [faq, setFaq] = useState<{ id: string; pregunta: string; respuesta: string }[]>([]);
-  const [abierta, setAbierta] = useState<string | null>(null);
-  const [solicitudes, setSolicitudes] = useState<{ id: string; asunto: string; estado: string; tipo: string }[]>([]);
-  const [hijos, setHijos] = useState<{ id: string; nombre: string }[]>([]);
-  const [telefono, setTelefono] = useState<string | null>(null);
-  const [nueva, setNueva] = useState<{ tipo: Tipo; alumno: string | null; asunto: string; mensaje: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const hora = (iso: string) => new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(new Date(iso));
+
+export default function MensajesFamilia() {
+  const { perfil } = useSesion();
+  const [tia, setTia] = useState<string | null>(null);
+  const [conversacion, setConversacion] = useState<string | null>(null);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const TIPOS = tipos();
+  const [error, setError] = useState<string | null>(null);
+  const idRef = useRef<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const [f, s, h, e] = await Promise.all([
-      supabase.from("preguntas_frecuentes").select("id, pregunta, respuesta").order("orden"),
-      supabase.from("solicitudes").select("id, asunto, estado, tipo").order("actualizado_en", { ascending: false }),
-      supabase.from("alumnos").select("id, nombre").eq("activo", true).order("nombre"),
-      supabase.from("empresas").select("telefono_contacto").maybeSingle(),
-    ]);
-    setFaq(f.data ?? []); setSolicitudes(s.data ?? []); setHijos(h.data ?? []); setTelefono(e.data?.telefono_contacto ?? null);
+    // La conversación es la consulta «pregunta» abierta más reciente.
+    const { data: s } = await supabase.from("solicitudes").select("id").eq("tipo", "pregunta").neq("estado", "cerrada")
+      .order("actualizado_en", { ascending: false }).limit(1).maybeSingle();
+    idRef.current = s?.id ?? null;
+    setConversacion(s?.id ?? null);
+    if (!s) { setMensajes([]); return; }
+    const { data } = await supabase.from("solicitud_mensajes").select("id, cuerpo, creado_en, autor_id").eq("solicitud_id", s.id).order("creado_en");
+    setMensajes(data ?? []);
   }, []);
-  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
+
+  useFocusEffect(useCallback(() => {
+    cargar();
+    misConexiones().then((c) => setTia(c.find((x) => x.estado === "aceptada")?.otro_nombre ?? null)).catch(() => {});
+  }, [cargar]));
+
+  // Llegan las respuestas de la tía sin tener que salir y volver.
+  useEffect(() => {
+    const canal = supabase.channel("mensajes-familia")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "solicitud_mensajes" }, (p) => {
+        if ((p.new as { solicitud_id?: string }).solicitud_id === idRef.current) cargar();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(canal); };
+  }, [cargar]);
 
   async function enviar() {
-    if (!nueva) return;
-    setError(null);
-    if (!nueva.asunto.trim() || !nueva.mensaje.trim()) return setError(t("Escribe un asunto y tu mensaje."));
-    if (nueva.tipo === "cancelacion_servicio" && !nueva.alumno) return setError(t("Elige qué alumno deja el furgón."));
-    setEnviando(true);
-    const { error } = await supabase.rpc("crear_solicitud", {
-      p_tipo: nueva.tipo, p_asunto: nueva.asunto.trim(), p_mensaje: nueva.mensaje.trim(), p_alumno: nueva.alumno,
-    });
+    const cuerpo = texto.trim();
+    if (!cuerpo || !perfil) return;
+    setError(null); setEnviando(true);
+    const { error } = conversacion
+      ? await supabase.from("solicitud_mensajes").insert({ solicitud_id: conversacion, autor_id: perfil.id, cuerpo })
+      : await supabase.rpc("crear_solicitud", { p_tipo: "pregunta", p_asunto: ASUNTO, p_mensaje: cuerpo, p_alumno: null });
     setEnviando(false);
-    if (error) return setError(mensajeError(error));
-    setNueva(null); cargar();
+    if (error) { setError(mensajeError(error)); return cargar(); }
+    setTexto(""); cargar();
   }
 
+  const nombreTia = tia ?? t("Tu tía del furgón");
   return (
-    <Pantalla titulo={t("Ayuda")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
-      {nueva ? (
-        <Tarjeta>
-          <Text style={estilos.subtitulo}>{t("Nueva consulta")}</Text>
-          {error ? <Aviso tipo="error" texto={error} /> : null}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {TIPOS.map((x) => (
-              <Pressable key={x.id} onPress={() => setNueva({ ...nueva, tipo: x.id })} accessibilityRole="button"
-                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.tipo === x.id ? colores.amarillo : colores.superficie }}>
-                <Text style={{ color: nueva.tipo === x.id ? colores.sobreAmarillo : colores.texto, fontWeight: "600" }}>{x.nombre}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {hijos.length ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-              {hijos.map((h) => (
-                <Pressable key={h.id} onPress={() => setNueva({ ...nueva, alumno: nueva.alumno === h.id ? null : h.id })} accessibilityRole="button"
-                  style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colores.borde, backgroundColor: nueva.alumno === h.id ? colores.amarillo : colores.tarjeta }}>
-                  <Text style={{ fontWeight: "600", color: colores.texto }}>{h.nombre}</Text>
-                </Pressable>
-              ))}
+    <PantallaFamilia>
+      <View style={[estilos.fila, { gap: 16, backgroundColor: colores.superficie, borderWidth: 2, borderColor: colores.borde, borderRadius: 28, padding: 18, marginBottom: 14 }]}>
+        <Avatar nombre={nombreTia} tam={52} letras={1} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: 20, fontWeight: "700", color: colores.texto }}>{nombreTia}</Text>
+          <Text style={{ fontSize: 16, color: colores.suave }}>{tia ? t("Tía del furgón") : t("Aún no te conectas con tu furgón")}</Text>
+        </View>
+      </View>
+
+      {error ? <Aviso tipo="error" texto={error} /> : null}
+      <View style={{ backgroundColor: colores.superficie, borderWidth: 2, borderColor: colores.borde, borderRadius: 30, padding: 18, gap: 14, marginBottom: 14 }}>
+        {mensajes.length === 0 ? (
+          <Text style={[estilos.textoSuave, { textAlign: "center", paddingVertical: 12 }]}>{t("Escríbele a la tía: le llega a su app y te responde aquí.")}</Text>
+        ) : mensajes.map((m) => {
+          const mio = m.autor_id === perfil?.id;
+          return (
+            <View key={m.id} style={{
+              alignSelf: mio ? "flex-end" : "flex-start", maxWidth: "85%", borderRadius: 24, paddingVertical: 12, paddingHorizontal: 16,
+              backgroundColor: mio ? colores.amarillo : colores.superficie2, borderWidth: mio ? 2 : 0, borderColor: colores.borde,
+            }}>
+              <Text style={{ fontSize: 17, color: mio ? colores.sobreAmarillo : colores.texto, lineHeight: 24 }}>{m.cuerpo}</Text>
+              <Text style={{ fontSize: 13, color: mio ? colores.sobreAmarillo : colores.suave, opacity: 0.75, marginTop: 6 }}>{hora(m.creado_en)}</Text>
             </View>
-          ) : null}
-          {nueva.tipo === "cancelacion_servicio" ? <Aviso texto={t("La administración revisará tu solicitud y te confirmará desde cuándo queda cancelado el servicio.")} /> : null}
-          <Campo etiqueta={t("Asunto")} value={nueva.asunto} onChangeText={(v) => setNueva({ ...nueva, asunto: v })} />
-          <Text style={estilos.etiqueta}>{t("Mensaje")}</Text>
-          <TextInput multiline value={nueva.mensaje} onChangeText={(v) => setNueva({ ...nueva, mensaje: v })}
-            style={[estilos.input, { minHeight: 110, textAlignVertical: "top", marginBottom: 12 }]} />
-          <Boton titulo={t("Enviar")} onPress={enviar} cargando={enviando} />
-          <Boton titulo={t("Cancelar")} variante="texto" onPress={() => setNueva(null)} />
-        </Tarjeta>
-      ) : (
-        <Boton titulo={t("+ Escribir a la administración")} onPress={() => setNueva({ tipo: "pregunta", alumno: hijos.length === 1 ? hijos[0].id : null, asunto: "", mensaje: "" })} />
-      )}
+          );
+        })}
+      </View>
 
-      {solicitudes.length ? <Text style={estilos.subtitulo}>{t("Mis consultas")}</Text> : null}
-      {solicitudes.map((s) => (
-        <Pressable key={s.id} onPress={() => router.push(`/apoderado/solicitud/${s.id}`)} accessibilityRole="button">
-          <Tarjeta>
-            <Text style={[estilos.texto, { fontWeight: "700" }]}>{s.asunto}</Text>
-            <Text style={estilos.textoSuave}>{TIPOS.find((x) => x.id === s.tipo)?.nombre ?? t("Otro")} · {nombreEstado(s.estado)}</Text>
-          </Tarjeta>
+      <View style={[estilos.fila, { gap: 10, marginBottom: 18 }]}>
+        <TextInput value={texto} onChangeText={setTexto} placeholder={t("Escribe a la tía…")} placeholderTextColor={colores.suave}
+          multiline accessibilityLabel={t("Mensaje")}
+          style={[estilos.input, { flex: 1, marginBottom: 0, borderRadius: 999, paddingHorizontal: 20, maxHeight: 120 }]} />
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Enviar")} disabled={!texto.trim() || enviando} onPress={enviar}
+          style={({ pressed }) => ({ width: 56, height: 56, borderRadius: 28, backgroundColor: colores.amarillo, borderWidth: 2, borderColor: colores.borde,
+            alignItems: "center", justifyContent: "center", opacity: !texto.trim() || enviando ? 0.5 : pressed ? 0.8 : 1 })}>
+          <Icono nombre="enviar" tam={26} color={colores.sobreAmarillo} acento="transparent" />
         </Pressable>
-      ))}
+      </View>
 
-      <Text style={estilos.subtitulo}>{t("Preguntas frecuentes")}</Text>
-      {faq.map((f) => (
-        <Pressable key={f.id} onPress={() => setAbierta(abierta === f.id ? null : f.id)} accessibilityRole="button">
-          <Tarjeta>
-            <Text style={[estilos.texto, { fontWeight: "700" }]}>{abierta === f.id ? "▾" : "▸"} {f.pregunta}</Text>
-            {abierta === f.id ? <Text style={[estilos.texto, { marginTop: 6 }]}>{f.respuesta}</Text> : null}
-          </Tarjeta>
-        </Pressable>
-      ))}
-      {telefono ? <Aviso texto={t("¿Urgente? Llama a la administración al {telefono}.", { telefono })} /> : null}
-    </Pantalla>
+      <Boton titulo={t("Otras consultas y preguntas frecuentes")} variante="texto" onPress={() => router.push("/apoderado/consultas")} />
+    </PantallaFamilia>
   );
 }

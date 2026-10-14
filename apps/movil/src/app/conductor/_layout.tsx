@@ -29,10 +29,10 @@ export default function Layout() {
     { titulo: t("Hoy"), icono: "casa", ruta: "/conductor", exacta: true },
     ...(perfil?.puede_administrar ? [
       { titulo: t("Rutas"), icono: "ruta", ruta: "/conductor/administrar/rutas" },
-      { titulo: t("Alumnos"), icono: "alumno", ruta: "/conductor/administrar/alumnos" },
+      { titulo: t("Alumnos"), icono: "personas", ruta: "/conductor/administrar/alumnos" },
       { titulo: t("Mensajes"), icono: "mensaje", ruta: "/conductor/administrar/solicitudes", punto: solicitudes > 0 },
     ] as Pestana[] : []),
-    { titulo: t("Más"), icono: "menu", ruta: "/conductor/mas", punto: conexiones > 0 },
+    { titulo: t("Más"), icono: "mas", ruta: "/conductor/mas", punto: conexiones > 0 },
   ];
 
   // Durante el recorrido no hay barra: la pantalla queda solo para manejar.

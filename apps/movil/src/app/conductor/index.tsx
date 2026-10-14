@@ -1,15 +1,14 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Linking, Pressable, View } from "react-native";
-import { Avatar } from "../../componentes/avatar";
-import { Text } from "../../componentes/icono";
+import { Pressable, View } from "react-native";
+import { Icono, Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
-import { llamarFuncion, mensajeError, supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { useIniciarRecorrido } from "../../lib/iniciar-recorrido";
 import { CONSEJOS_CERRADOS, guardar, leer, NUEVOS_VISTOS_HASTA } from "../../lib/avisos-inicio";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
-import { locale, t } from "../../lib/idioma";
+import { t } from "../../lib/idioma";
 
 interface Parada {
   alumno_id: string;
@@ -28,23 +27,6 @@ interface Ruta {
   ruta_paradas: Parada[];
 }
 interface Nuevo { alumno: string; ruta: string; tipo: "ida" | "vuelta"; parada: number; agregado_en: string }
-interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
-
-const km = (m: number) => `${(m / 1000).toLocaleString(locale(), { maximumFractionDigits: 1 })} km`;
-
-/** Navegación por Google Maps con las paradas en orden (ida: termina en el colegio). */
-function abrirEnMaps(ruta: Ruta, paradas: Parada[]) {
-  const puntos = paradas.filter((p) => p.domicilios).map((p) => `${p.domicilios!.lat},${p.domicilios!.lng}`);
-  const colegio = ruta.colegio_lat != null && ruta.colegio_lng != null ? `${ruta.colegio_lat},${ruta.colegio_lng}` : null;
-  if (ruta.tipo === "ida" && colegio) puntos.push(colegio);
-  if (!puntos.length) return;
-  const destino = puntos[puntos.length - 1];
-  // Google Maps acepta hasta 9 paradas intermedias en el enlace.
-  const intermedias = puntos.slice(0, -1).slice(0, 9).join("|");
-  const url = `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(destino)}`
-    + (intermedias ? `&waypoints=${encodeURIComponent(intermedias)}` : "");
-  Linking.openURL(url).catch(() => {});
-}
 
 /** Aviso que se puede cerrar con la ✕. */
 function AvisoCerrable({ texto, onCerrar }: { texto: string; onCerrar: () => void }) {
@@ -71,8 +53,6 @@ export default function RutasConductor() {
   const [licencia, setLicencia] = useState<EstadoLic | null>(null);
   const [consejosCerrados, setConsejosCerrados] = useState(() => leer(CONSEJOS_CERRADOS) === "1");
   const [nuevosVistosHasta, setNuevosVistosHasta] = useState(() => leer(NUEVOS_VISTOS_HASTA) ?? "");
-  const [recomendacion, setRecomendacion] = useState<{ rutaId: string; r: Recomendacion } | null>(null);
-  const [calculando, setCalculando] = useState<string | null>(null);
   const { iniciando, iniciar } = useIniciarRecorrido(setError);
 
   const cargar = useCallback(async () => {
@@ -106,37 +86,12 @@ export default function RutasConductor() {
   const noVaHoy = (alumnoId: string, tipo: "ida" | "vuelta") =>
     noVan.some((x) => x.alumno_id === alumnoId && (x.tipo === tipo || x.tipo === "ambos"));
 
-  async function recomendar(ruta: Ruta) {
-    setError(null);
-    setExito(null);
-    setCalculando(ruta.id);
-    try {
-      setRecomendacion({ rutaId: ruta.id, r: await llamarFuncion<Recomendacion>("recomendar-ruta", { ruta_id: ruta.id }) });
-    } catch (e) {
-      setError(mensajeError(e));
-    } finally {
-      setCalculando(null);
-    }
-  }
-
-  async function aplicar(ruta: Ruta, orden: string[]) {
-    setRecomendacion(null);
-    const { error } = await supabase.rpc("aplicar_orden_ruta", { p_ruta: ruta.id, p_alumnos: orden });
-    if (error) setError(mensajeError(error));
-    else setExito(t("Listo: {ruta} quedó con el orden recomendado.", { ruta: ruta.nombre }));
-    cargar();
-  }
-
   const nuevosSinVer = nuevos.filter((x) => x.agregado_en > nuevosVistosHasta);
   const licenciaConProblema = !!licencia && licencia.estado !== "vigente";
 
 
   return (
-    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={
-      <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
-        <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={44} />
-      </Pressable>
-    }>
+    <Pantalla antetitulo={t("Tía del furgón")} titulo={t("Hola, {nombre}", { nombre: perfil?.nombre ?? "" })}>
       {!consejosCerrados ? (
         <AvisoCerrable
           texto={t("Inicia el recorrido antes de partir. Los avisos a los apoderados se envían solos: no necesitas tocar el teléfono mientras manejas.") + "\n\n"
@@ -185,74 +140,70 @@ export default function RutasConductor() {
       {rutas.map((ruta) => {
         const activo = activos[ruta.id];
         const paradas = ruta.ruta_paradas;
+        // Primero los que van (numerados en orden); al final, los que hoy no van.
         const van = paradas.filter((p) => !noVaHoy(p.alumno_id, ruta.tipo));
-        const rec = recomendacion?.rutaId === ruta.id ? recomendacion.r : null;
-        const nombre = (id: string) => paradas.find((p) => p.alumno_id === id)?.alumnos?.nombre ?? "—";
+        const noVan = paradas.filter((p) => noVaHoy(p.alumno_id, ruta.tipo));
+        const colegio = ruta.colegio_nombre ?? t("Colegio");
         return (
-          <Tarjeta key={ruta.id} estilo={activo ? { borderColor: colores.verde, borderWidth: 2 } : undefined}>
-            <Text style={estilos.subtitulo}>{ruta.tipo === "ida" ? "🌅" : "🏠"} {ruta.nombre}</Text>
-            <Text style={estilos.textoSuave}>
-              {ruta.tipo === "ida" ? t("Casa → colegio") : t("Colegio → casa")}
-              {ruta.hora_salida ? ` · ${ruta.hora_salida.slice(0, 5)}` : ""}
-              {ruta.colegio_nombre ? ` · ${ruta.colegio_nombre}` : ""}
-            </Text>
+          <Tarjeta key={ruta.id} estilo={activo ? { borderColor: colores.verde } : undefined}>
+            <View style={[estilos.fila, { gap: 14, alignItems: "center" }]}>
+              <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: colores.amarillo, borderWidth: 2, borderColor: colores.amarilloHondo, alignItems: "center", justifyContent: "center" }}>
+                <Icono nombre={ruta.tipo === "ida" ? "furgon" : "casa"} tam={30} color={colores.sobreAmarillo} acento="transparent" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 24, fontWeight: "700", color: colores.texto }}>{ruta.nombre}</Text>
+                {ruta.hora_salida ? (
+                  <View style={[estilos.fila, { gap: 6 }]}>
+                    <Icono nombre="reloj" tam={18} color={colores.suave} acento="transparent" />
+                    <Text style={{ fontSize: 17, color: colores.suave }}>{ruta.hora_salida.slice(0, 5)}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={{ backgroundColor: colores.superficie2, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, flexShrink: 1, maxWidth: "55%" }}>
+                <Text numberOfLines={2} style={{ fontSize: 14, fontWeight: "600", color: colores.texto, textAlign: "center" }}>
+                  {ruta.tipo === "ida" ? `${t("Casa")} → ${colegio}` : `${colegio} → ${t("Casa")}`}
+                </Text>
+              </View>
+            </View>
 
-            {/* Los niños que hay que ir a buscar hoy, en el orden de la ruta. */}
-            <Text style={[estilos.etiqueta, { marginTop: 10 }]}>
-              {ruta.tipo === "ida" ? t("A buscar hoy ({n})", { n: van.length }) : t("A dejar hoy ({n})", { n: van.length })}
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colores.suave, letterSpacing: 1, marginTop: 20, marginBottom: 10 }}>
+              {(ruta.tipo === "ida" ? t("A buscar hoy") : t("A dejar hoy")).toUpperCase()} · {van.length}
             </Text>
             {paradas.length === 0 ? <Text style={estilos.textoSuave}>{t("Esta ruta aún no tiene alumnos.")}</Text> : null}
-            {paradas.map((p, i) => {
-              const noVa = noVaHoy(p.alumno_id, ruta.tipo);
-              return (
-                <View key={p.alumno_id} style={{ paddingVertical: 6, borderBottomWidth: i === paradas.length - 1 ? 0 : 1, borderColor: colores.borde }}>
-                  <Text style={[estilos.texto, { fontWeight: "600" }, noVa && { color: colores.suave, textDecorationLine: "line-through" }]}>
-                    {i + 1}. {p.alumnos?.nombre ?? "—"}
-                  </Text>
-                  {noVa ? (
-                    <Text style={estilos.textoSuave}>{t("Hoy no viaja")}</Text>
-                  ) : p.domicilios?.direccion ? (
-                    <Text style={estilos.textoSuave}>{p.domicilios.direccion}</Text>
+            {van.map((p, i) => (
+              <View key={p.alumno_id} style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colores.crema, borderWidth: 2, borderColor: colores.borde, borderRadius: 22, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colores.amarillo, borderWidth: 2, borderColor: colores.amarilloHondo, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 17, fontWeight: "700", color: colores.sobreAmarillo }}>{i + 1}</Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "600", color: colores.texto }}>{p.alumnos?.nombre ?? "—"}</Text>
+                  {p.domicilios?.direccion ? (
+                    <View style={[estilos.fila, { gap: 6, alignItems: "flex-start" }]}>
+                      <Icono nombre="pin" tam={18} color={colores.suave} acento="transparent" />
+                      <Text style={{ fontSize: 15, color: colores.suave, flex: 1 }}>{p.domicilios.direccion}</Text>
+                    </View>
                   ) : null}
                 </View>
-              );
-            })}
-
-            {/* Mejor ruta: navegar con Google Maps y, si administra, recalcular el orden. */}
-            {van.length ? (
-              <Boton titulo={t("🗺️ Ver la ruta en Google Maps")} variante="secundario" onPress={() => abrirEnMaps(ruta, van)} />
-            ) : null}
-            {perfil?.puede_administrar && paradas.length >= 2 && !rec && !activo ? (
-              <Boton titulo={calculando === ruta.id ? t("Calculando…") : t("🧭 Calcular la mejor ruta")} variante="secundario"
-                cargando={calculando === ruta.id} onPress={() => recomendar(ruta)} />
-            ) : null}
-            {rec ? (
-              <View style={{ gap: 6, padding: 10, borderRadius: 12, borderWidth: 2, borderColor: colores.amarillo, marginTop: 6 }}>
-                {rec.cambia ? (
-                  <>
-                    <Text style={[estilos.texto, { fontWeight: "700" }]}>{t("✨ Ruta recomendada: {km} (antes {antes})", { km: km(rec.metros), antes: km(rec.metrosActual) })}</Text>
-                    <Text style={estilos.textoSuave}>{t("Ahorras {km} por recorrido.", { km: km(rec.ahorroM) })} {rec.fuente === "google" ? t("Calculada por calles con Google Maps.") : t("Calculada por distancia (aproximada).")}</Text>
-                    {rec.orden.map((id, i) => <Text key={id} style={estilos.texto}>{i + 1}. {nombre(id)}</Text>)}
-                    <View style={estilos.fila}>
-                      <Boton titulo={t("Aplicar")} variante="exito" estilo={{ flex: 1 }} onPress={() => aplicar(ruta, rec.orden)} />
-                      <Boton titulo={t("Descartar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setRecomendacion(null)} />
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <Text style={estilos.texto}>{t("👍 El orden actual ya es el más corto (≈ {km}).", { km: km(rec.metrosActual) })}</Text>
-                    <Boton titulo={t("Cerrar")} variante="texto" onPress={() => setRecomendacion(null)} />
-                  </>
-                )}
               </View>
-            ) : null}
+            ))}
+            {noVan.map((p) => (
+              <View key={p.alumno_id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, backgroundColor: colores.superficie2, borderWidth: 2, borderStyle: "dashed", borderColor: colores.borde, borderRadius: 22, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 10 }}>
+                <Text style={{ fontSize: 18, fontWeight: "600", color: colores.suave, textDecorationLine: "line-through", flex: 1 }}>{p.alumnos?.nombre ?? "—"}</Text>
+                <View style={{ backgroundColor: colores.rojoSuave, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 5 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "600", color: colores.rojo }}>{t("Hoy no va")}</Text>
+                </View>
+              </View>
+            ))}
 
-            {activo ? (
-              <Boton titulo={t("Continuar recorrido en curso")} variante="exito" grande
-                onPress={() => router.push(`/conductor/recorrido/${activo}`)} />
-            ) : (
-              <Boton titulo={t("Iniciar recorrido")} grande cargando={iniciando === ruta.id} onPress={() => { setError(null); iniciar(ruta.id); }} />
-            )}
+            <View style={{ marginTop: 8 }}>
+              {activo ? (
+                <Boton titulo={t("Continuar recorrido")} icono="navegar" variante="exito" grande
+                  onPress={() => router.push(`/conductor/recorrido/${activo}`)} />
+              ) : (
+                <Boton titulo={t("Iniciar recorrido")} icono="navegar" grande cargando={iniciando === ruta.id} deshabilitado={van.length === 0}
+                  onPress={() => { setError(null); iniciar(ruta.id); }} />
+              )}
+            </View>
           </Tarjeta>
         );
       })}

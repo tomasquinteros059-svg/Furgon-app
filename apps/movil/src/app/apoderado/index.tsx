@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Switch, View } from "react-native";
 import { Avatar } from "../../componentes/avatar";
+import { tituloFamilia } from "../../componentes/pantalla-familia";
 import { Icono, Text } from "../../componentes/icono";
 import { Aviso, Boton, colores, estilos, FilaMenu, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
@@ -130,7 +131,7 @@ export default function InicioApoderado() {
   }
 
   return (
-    <Pantalla titulo={t("Hola, {nombre}", { nombre: perfil?.nombre.split(" ")[0] ?? "" })} accion={
+    <Pantalla antetitulo={t("Familia")} titulo={tituloFamilia(perfil?.nombre)} accion={
       <Pressable accessibilityRole="button" accessibilityLabel={t("Mi perfil")} onPress={() => router.push("/perfil")} hitSlop={8}>
         <Avatar nombre={perfil?.nombre ?? ""} foto={perfil?.foto} tam={44} />
       </Pressable>

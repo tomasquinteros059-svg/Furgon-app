@@ -1,6 +1,6 @@
 // La familia busca a su tía o tío del furgón y le pide conectarse; también responde
 // las invitaciones que le envían. Al aceptarse, la familia queda en ese furgón.
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Text } from "../../componentes/icono";
@@ -14,7 +14,9 @@ interface Tia { id: string; nombre: string; empresa: string; comunas: string | n
 
 export default function Conectar() {
   const { recargarPerfil } = useSesion();
-  const [texto, setTexto] = useState("");
+  // Desde «Más» se llega con lo que la familia ya escribió en el buscador.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [texto, setTexto] = useState(q ?? "");
   const [resultados, setResultados] = useState<Tia[] | null>(null);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);
   const [eligiendo, setEligiendo] = useState<Tia | null>(null);

@@ -11,7 +11,7 @@ export default function Layout() {
     { titulo: t("Hoy"), icono: "casa", ruta: "/apoderado", exacta: true },
     { titulo: t("Mensajes"), icono: "mensaje", ruta: "/apoderado/ayuda" },
     { titulo: t("Pagos"), icono: "tarjeta", ruta: "/apoderado/pagos" },
-    { titulo: t("Más"), icono: "menu", ruta: "/apoderado/mas" },
+    { titulo: t("Más"), icono: "mas", ruta: "/apoderado/mas" },
   ];
   // En el mapa en vivo y en la llamada de aviso, pantalla completa sin barra.
   const conBarra = !ruta.startsWith("/apoderado/seguir") && !ruta.startsWith("/apoderado/llamada");

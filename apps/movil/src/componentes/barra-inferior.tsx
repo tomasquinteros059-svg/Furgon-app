@@ -23,22 +23,24 @@ export function BarraInferior({ pestanas }: { pestanas: Pestana[] }) {
   return (
     <View style={{
       flexDirection: "row", backgroundColor: colores.superficie, borderTopWidth: 2, borderColor: colores.borde,
-      paddingTop: 6, paddingBottom: Math.max(bottom, 6),
+      paddingTop: 8, paddingBottom: Math.max(bottom, 8), paddingHorizontal: 6,
     }}>
       {pestanas.map((p) => {
         const on = activa(p);
-        const color = on ? colores.texto : colores.suave;
+        const color = on ? colores.sobreAmarillo : colores.suave;
         return (
           <Pressable key={p.ruta} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={p.titulo}
             onPress={() => { if (!on) router.navigate(p.ruta as never); }}
-            style={{ flex: 1, alignItems: "center", gap: 2, paddingVertical: 4 }}>
-            {/* Activa: píldora amarilla suave con borde, como en el diseño «Trazo y relleno». */}
-            <View style={{ paddingHorizontal: 14, paddingVertical: 3, borderRadius: 999, borderWidth: 2,
-              borderColor: on ? colores.amarilloBorde : "transparent", backgroundColor: on ? colores.amarilloSuave : "transparent" }}>
-              <Icono nombre={p.icono} tam={22} color={color} acento={on ? undefined : "transparent"} />
-              {p.punto ? <View style={{ position: "absolute", top: 0, right: 6, width: 9, height: 9, borderRadius: 5, backgroundColor: colores.rojo }} /> : null}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            {/* Activa: píldora amarilla llena con el ícono y el nombre adentro. */}
+            <View style={{ alignItems: "center", gap: 2, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+              backgroundColor: on ? colores.amarillo : "transparent", borderWidth: 2, borderColor: on ? colores.amarilloHondo : "transparent" }}>
+              <View>
+                <Icono nombre={p.icono} tam={26} color={color} acento="transparent" />
+                {p.punto ? <View style={{ position: "absolute", top: -2, right: -4, width: 10, height: 10, borderRadius: 5, backgroundColor: colores.rojo }} /> : null}
+              </View>
+              <Text numberOfLines={1} style={{ fontSize: 13, color, fontWeight: on ? "700" : "500" }}>{p.titulo}</Text>
             </View>
-            <Text numberOfLines={1} style={{ fontSize: 12, color, fontWeight: on ? "700" : "500" }}>{p.titulo}</Text>
           </Pressable>
         );
       })}
