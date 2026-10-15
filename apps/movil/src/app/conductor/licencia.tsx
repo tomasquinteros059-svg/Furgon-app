@@ -3,12 +3,12 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Image, View } from "react-native";
+import { Image, Switch, View } from "react-native";
 import { Text } from "../../componentes/icono";
 import { Aviso, Boton, Campo, colores, estilos, Pantalla, Tarjeta } from "../../componentes/ui";
 import { useSesion } from "../../lib/sesion";
-import { aFecha, type EstadoLic, textoLicencia } from "../../lib/licencia";
-import { mensajeError, supabase } from "../../lib/supabase";
+import { aFecha, type EstadoLic, textoLicencia, textoRostro } from "../../lib/licencia";
+import { llamarFuncion, mensajeError, supabase } from "../../lib/supabase";
 import { t } from "../../lib/idioma";
 
 const CLASES = ["A1", "A3", "A2", "A4", "A5", "B"] as const;
@@ -27,7 +27,8 @@ export default function MiLicencia() {
   const [numero, setNumero] = useState("");
   const [clase, setClase] = useState<string>("A3");
   const [vence, setVence] = useState("");
-  const [fotos, setFotos] = useState<{ frente: string | null; reverso: string | null }>({ frente: null, reverso: null });
+  const [fotos, setFotos] = useState<{ frente: string | null; reverso: string | null; rostro: string | null }>({ frente: null, reverso: null, rostro: null });
+  const [consiento, setConsiento] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
 
@@ -37,10 +38,13 @@ export default function MiLicencia() {
   }, [perfil?.id]);
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
-  async function tomarFoto(lado: "frente" | "reverso", camara: boolean) {
+  async function tomarFoto(lado: "frente" | "reverso" | "rostro", camara: boolean) {
     const permiso = camara ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) return setMsg({ ok: false, txt: t("Necesitamos permiso para la cámara o las fotos.") });
-    const opciones: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.6, allowsEditing: true, aspect: [16, 10] };
+    // La cara se toma siempre en el momento, con la cámara frontal (no desde la galería).
+    const opciones: ImagePicker.ImagePickerOptions = lado === "rostro"
+      ? { mediaTypes: ["images"], quality: 0.6, allowsEditing: true, aspect: [3, 4], cameraType: ImagePicker.CameraType.front }
+      : { mediaTypes: ["images"], quality: 0.6, allowsEditing: true, aspect: [16, 10] };
     const r = camara ? await ImagePicker.launchCameraAsync(opciones) : await ImagePicker.launchImageLibraryAsync(opciones);
     if (!r.canceled && r.assets[0]) setFotos((f) => ({ ...f, [lado]: r.assets[0].uri }));
   }
@@ -59,15 +63,22 @@ export default function MiLicencia() {
     if (numero.trim().length < 3) return setMsg({ ok: false, txt: t("Escribe el número de la licencia (tu RUT).") });
     if (!iso) return setMsg({ ok: false, txt: t("Escribe la fecha de vencimiento como 31-12-2027.") });
     if (!fotos.frente) return setMsg({ ok: false, txt: t("Falta la foto del frente de la licencia.") });
+    if (!fotos.rostro) return setMsg({ ok: false, txt: t("Falta la foto de tu cara.") });
+    if (!consiento) return setMsg({ ok: false, txt: t("Para verificar tu identidad necesitamos tu autorización para comparar tu cara con la licencia.") });
     setEnviando(true);
     try {
       const frente = await subirFoto(fotos.frente, "frente");
       const reverso = fotos.reverso ? await subirFoto(fotos.reverso, "reverso") : null;
-      const { error } = await supabase.rpc("subir_licencia", { p_numero: numero, p_clase: clase, p_vence_en: iso, p_foto_frente: frente, p_foto_reverso: reverso });
+      const rostro = await subirFoto(fotos.rostro, "rostro");
+      const { data: id, error } = await supabase.rpc("subir_licencia", {
+        p_numero: numero, p_clase: clase, p_vence_en: iso, p_foto_frente: frente, p_foto_reverso: reverso, p_foto_rostro: rostro, p_consiento: consiento,
+      });
       if (error) throw error;
       setMsg({ ok: true, txt: t("Licencia enviada. Te avisaremos cuando la empresa la verifique.") });
-      setNumero(""); setVence(""); setFotos({ frente: null, reverso: null });
+      setNumero(""); setVence(""); setFotos({ frente: null, reverso: null, rostro: null }); setConsiento(false);
       cargar();
+      // Comparación de la cara con la licencia: si falla, la empresa compara las fotos a mano.
+      llamarFuncion("comparar-rostro", { licencia_id: id }).catch(() => {}).finally(cargar);
     } catch (e) {
       setMsg({ ok: false, txt: mensajeError(e) });
     } finally {
@@ -86,6 +97,7 @@ export default function MiLicencia() {
           {lic.vence_en ? <Text style={estilos.textoSuave}>{t("Vencimiento: {fecha}", { fecha: aFecha(lic.vence_en) })}</Text> : null}
         </Tarjeta>
       ) : null}
+      {textoRostro(lic) ? <Aviso tipo={lic?.rostro_resultado === "coincide" ? "exito" : lic?.rostro_resultado === "no_coincide" || lic?.rostro_resultado === "sin_rostro" ? "error" : "info"} texto={textoRostro(lic)!} /> : null}
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
       {pedirNueva ? (
         <Tarjeta>
@@ -106,6 +118,16 @@ export default function MiLicencia() {
               </View>
             </View>
           ))}
+          <View style={{ gap: 6, marginBottom: 10 }}>
+            <Text style={estilos.etiqueta}>{t("Foto de tu cara")}</Text>
+            <Text style={estilos.textoSuave}>{t("Tómala ahora, de frente, sin lentes oscuros y con buena luz. Se compara con la foto de tu licencia para que las familias sepan que quien maneja es quien dice ser.")}</Text>
+            {fotos.rostro ? <Image source={{ uri: fotos.rostro }} style={{ width: 160, aspectRatio: 0.75, borderRadius: 16, borderWidth: 1, borderColor: colores.borde, alignSelf: "center" }} /> : null}
+            <Boton titulo={fotos.rostro ? t("📷 Tomar otra") : t("📷 Tomar selfie")} variante="secundario" onPress={() => tomarFoto("rostro", true)} />
+          </View>
+          <View style={[estilos.fila, { alignItems: "flex-start", marginBottom: 12, gap: 12 }]}>
+            <Switch value={consiento} onValueChange={setConsiento} trackColor={{ true: colores.verde }} accessibilityLabel={t("Autorizo la comparación de mi cara")} />
+            <Text style={[estilos.textoSuave, { flex: 1 }]}>{t("Autorizo que se compare mi cara con la foto de mi licencia para verificar mi identidad. Las fotos solo las ve la empresa y puedo pedir que se borren.")}</Text>
+          </View>
           <Boton titulo={t("Enviar para verificar")} cargando={enviando} onPress={enviar} />
           <Text style={estilos.textoSuave}>{t("🔒 Las fotos solo las ve la empresa para verificarla.")}</Text>
         </Tarjeta>

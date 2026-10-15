@@ -4,6 +4,21 @@ import { t } from "./idioma";
 export interface EstadoLic {
   estado: "sin_licencia" | "por_verificar" | "rechazada" | "vigente" | "por_vencer" | "vencida";
   numero: string | null; clase: string | null; vence_en: string | null; dias_restantes: number | null; motivo_rechazo: string | null;
+  foto_rostro?: string | null; rostro_resultado?: string | null; rostro_similitud?: number | null;
+}
+
+/** Resultado de comparar la cara con la foto de la licencia, en palabras (null si no aplica). */
+export function textoRostro(l: EstadoLic | null): string | null {
+  if (!l?.rostro_resultado) return null;
+  const pct = l.rostro_similitud != null ? ` (${Math.round(l.rostro_similitud)} %)` : "";
+  switch (l.rostro_resultado) {
+    case "coincide": return t("✓ Tu cara coincide con la foto de la licencia") + pct;
+    case "dudoso": return t("La comparación no fue clara: la empresa revisará las fotos") + pct;
+    case "no_coincide": return t("Tu cara no coincide con la foto de la licencia. Sube una foto más nítida.") + pct;
+    case "sin_rostro": return t("No se ve bien una cara en las fotos. Toma la selfie de frente y con buena luz.");
+    case "pendiente": return t("Comparando tu cara con la licencia…");
+    default: return t("La empresa comparará tu cara con la licencia.");
+  }
 }
 /** aaaa-mm-dd → dd-mm-aaaa */
 export const aFecha = (iso: string) => iso.split("-").reverse().join("-");

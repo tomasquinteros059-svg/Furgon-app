@@ -2,6 +2,7 @@
 // (supabase/migrations/20261009000001_administracion.sql), que exigen rol admin.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
+  Documento,
   Alumno, Cobro, Conductora, Datos, Empresa, Furgon, Licencia, LlamadaReporte, Mensaje, Pregunta, RecomendacionRuta, RecorridoHoy, Resumen, Ruta, Solicitud,
 } from "./tipos";
 import { t } from "../i18n";
@@ -183,6 +184,17 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
     },
     async fotoLicencia(ruta) {
       const { data, error } = await sb.storage.from("licencias").createSignedUrl(ruta, 300);
+      if (error) throw new Error(traducir(error.message));
+      return data.signedUrl;
+    },
+    async documentos() {
+      return (ok(await sb.rpc("estado_documentos")) ?? []) as Documento[];
+    },
+    async revisarDocumento(id, aprobar, motivo) {
+      ok(await sb.rpc("revisar_documento", { p_documento: id, p_aprobar: aprobar, p_motivo: motivo || null }));
+    },
+    async archivoDocumento(ruta) {
+      const { data, error } = await sb.storage.from("documentos").createSignedUrl(ruta, 300);
       if (error) throw new Error(traducir(error.message));
       return data.signedUrl;
     },

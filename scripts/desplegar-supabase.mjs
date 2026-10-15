@@ -78,7 +78,8 @@ async function secretos() {
   poner("LLAMADAS_HABILITADAS", llamadas || "false", !llamadas);
   poner("FUNCTIONS_PUBLIC_URL", `https://${REF()}.supabase.co/functions/v1`, true);
   for (const k of ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_NUMERO_ORIGEN", "EXPO_ACCESS_TOKEN", "FIREBASE_SERVICE_ACCOUNT",
-    "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID", "WHATSAPP_PLANTILLA", "TWILIO_WHATSAPP_ORIGEN", "TWILIO_WHATSAPP_CONTENT_SID"]) poner(k, process.env[k]?.trim());
+    "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID", "WHATSAPP_PLANTILLA", "TWILIO_WHATSAPP_ORIGEN", "TWILIO_WHATSAPP_CONTENT_SID",
+    "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"]) poner(k, process.env[k]?.trim());
   if (nuevos.length) await api("POST", "/secrets", nuevos);
   console.log(`✓ Secretos: ${nuevos.map((s) => s.name).join(", ") || "sin cambios"} (los valores no se muestran).`);
   if (!google) console.log("  ⚠ Sin GOOGLE_MAPS_API_KEY: el ETA usa la geocerca de respaldo y no hay ruta por calles.");

@@ -53,6 +53,10 @@ jobs:
       WHATSAPP_PLANTILLA: ${{ secrets.WHATSAPP_PLANTILLA }}
       TWILIO_WHATSAPP_ORIGEN: ${{ secrets.TWILIO_WHATSAPP_ORIGEN }}
       TWILIO_WHATSAPP_CONTENT_SID: ${{ secrets.TWILIO_WHATSAPP_CONTENT_SID }}
+      # Comparar la cara de la tía con su licencia (AWS Rekognition, opcional).
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
       # Llamadas: por la app (gratis, con Firebase) y por teléfono si además hay Twilio.
       LLAMADAS_HABILITADAS: ${{ (secrets.TWILIO_ACCOUNT_SID != '' || secrets.FIREBASE_SERVICE_ACCOUNT != '') && 'true' || '' }}
     steps:

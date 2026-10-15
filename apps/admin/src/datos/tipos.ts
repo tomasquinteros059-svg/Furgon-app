@@ -117,6 +117,20 @@ export interface Licencia {
   revisada_en: string | null;
   foto_frente: string | null;
   foto_reverso: string | null;
+  /** Selfie de quien conduce y el resultado de compararla con la licencia. */
+  foto_rostro?: string | null;
+  rostro_resultado?: "pendiente" | "coincide" | "dudoso" | "no_coincide" | "sin_rostro" | "sin_servicio" | "error" | null;
+  rostro_similitud?: number | null;
+}
+
+export type EstadoDocumento = "sin_documento" | "por_verificar" | "rechazado" | "vigente" | "por_vencer" | "vencido";
+
+/** Documento del furgón o de quien conduce (estado_documentos). */
+export interface Documento {
+  tipo: string; de: "furgon" | "conductor"; obligatorio: boolean; vence: boolean; orden: number;
+  conductor_id: string | null; conductor: string | null; furgon_id: string | null; patente: string | null;
+  documento_id: string | null; archivo: string | null; vence_en: string | null; dias_restantes: number | null;
+  estado: EstadoDocumento; motivo_rechazo: string | null;
 }
 
 export interface Furgon {
@@ -254,6 +268,10 @@ export interface Datos {
   revisarLicencia(licenciaId: string, aprobar: boolean, motivo: string): Promise<void>;
   /** URL temporal para ver una foto de licencia (bucket privado). */
   fotoLicencia(ruta: string): Promise<string>;
+  documentos(): Promise<Documento[]>;
+  revisarDocumento(documentoId: string, aprobar: boolean, motivo: string): Promise<void>;
+  /** URL temporal para ver la foto de un documento (bucket privado). */
+  archivoDocumento(ruta: string): Promise<string>;
 
   conductoras(): Promise<Conductora[]>;
   invitarConductora(): Promise<string>;

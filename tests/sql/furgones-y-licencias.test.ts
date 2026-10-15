@@ -27,7 +27,7 @@ beforeAll(async () => {
 const comoAdmin = <T>(fn: () => Promise<T>) => E.como("authenticated", ids.admin, fn);
 const comoTia = <T>(fn: () => Promise<T>) => E.como("authenticated", ids.tia, fn);
 const subir = (uid: string, vence: string) => E.como("authenticated", uid, async () => (await E.uno<{ id: string }>(
-  `select subir_licencia('12.345.678-9', 'a3', $1::date, $2, $3) as id`, [vence, `${uid}/frente.jpg`, `${uid}/reverso.jpg`])).id);
+  `select subir_licencia('12.345.678-9', 'a3', $1::date, $2, $3, $4, true) as id`, [vence, `${uid}/frente.jpg`, `${uid}/reverso.jpg`, `${uid}/cara.jpg`])).id);
 const estado = (uid: string) => comoAdmin(() => E.uno<{ estado: string; dias_restantes: number }>(
   `select estado, dias_restantes from estado_licencias() where conductor_id = $1`, [uid]));
 
@@ -48,7 +48,7 @@ describe("furgones", () => {
 
 describe("licencias", () => {
   it("la tía sube su licencia; queda por verificar; solo con fotos de su carpeta", async () => {
-    await expect(comoTia(() => E.db.query(`select subir_licencia('1', 'A3', $1::date, $2, null)`, [enDias(100), `${ids.tio}/robada.jpg`]))).rejects.toThrow(/no válida|between|check/);
+    await expect(comoTia(() => E.db.query(`select subir_licencia('1', 'A3', $1::date, $2, null, $3, true)`, [enDias(100), `${ids.tio}/robada.jpg`, `${ids.tio}/robada.jpg`]))).rejects.toThrow(/no válida|between|check/);
     await expect(subir(ids.tia, enDias(-1))).rejects.toThrow(/ya está vencida/);
     ids.licTia = await subir(ids.tia, enDias(200));
     expect(await estado(ids.tia)).toEqual({ estado: "por_verificar", dias_restantes: 200 });

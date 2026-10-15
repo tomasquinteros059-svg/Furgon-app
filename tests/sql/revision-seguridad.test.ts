@@ -59,7 +59,7 @@ describe("revisión de seguridad", () => {
 
   it("5. una licencia rechazada o sin revisar por más de 30 días no permite iniciar recorridos", async () => {
     const lic = await como(ids.tia, async () => (await E.uno<{ id: string }>(
-      `select subir_licencia('12345', 'A3', (now() at time zone 'America/Santiago')::date + 400, $1, null) as id`, [`${ids.tia}/f.jpg`])).id);
+      `select subir_licencia('12345', 'A3', (now() at time zone 'America/Santiago')::date + 400, $1, null, $1, true) as id`, [`${ids.tia}/f.jpg`])).id);
     await como(ids.tia, () => E.db.query(`select iniciar_recorrido($1)`, [ids.ruta])); // sin revisar, recién subida: puede
     await E.db.query(`update recorridos set estado = 'finalizado' where ruta_id = $1`, [ids.ruta]);
     await como(ids.admin, () => E.db.query(`select revisar_licencia($1, false, 'Foto ilegible')`, [lic]));

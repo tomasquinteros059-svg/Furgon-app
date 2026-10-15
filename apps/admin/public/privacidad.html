@@ -69,7 +69,7 @@
     <tbody>
       <tr><td>Apoderados y familiares</td><td>Nombre, correo electrónico, teléfono, parentesco, contraseña (guardada cifrada), contactos de emergencia y su orden de prioridad, preferencias de aviso, mensajes y solicitudes enviadas al transportista.</td><td>Los entrega la propia persona o el familiar que la invita al perfil compartido.</td></tr>
       <tr><td>Alumnos</td><td>Nombre, colegio, curso, dirección y ubicación del domicilio (latitud y longitud), días en que no viaja, registro de subida y bajada del furgón, mensualidad y estado de pago.</td><td>Los entrega el apoderado o el transportista.</td></tr>
-      <tr><td>Conductores y transportistas</td><td>Nombre, correo, teléfono, nombre de la empresa, comunas donde trabaja, presentación, datos del furgón (patente, modelo, capacidad), número, clase, vencimiento y fotos de la licencia de conducir.</td><td>Los entrega el propio conductor o su empresa.</td></tr>
+      <tr><td>Conductores y transportistas</td><td>Nombre, correo, teléfono, nombre de la empresa, comunas donde trabaja, presentación, datos del furgón (patente, modelo, capacidad), número, clase, vencimiento y fotos de la licencia de conducir; una foto de su cara (dato biométrico, solo con su consentimiento expreso) para compararla con la licencia; y fotos de los documentos del furgón (padrón, permiso de circulación, revisión técnica, SOAP, registro de transporte escolar) y de sus certificados de antecedentes e inhabilidades para trabajar con menores.</td><td>Los entrega el propio conductor o su empresa.</td></tr>
       <tr><td>Durante un recorrido</td><td>Ubicación del furgón, hora de llegada estimada, estado de cada parada, avisos enviados y si fueron confirmados.</td><td>El teléfono del conductor y la plataforma.</td></tr>
       <tr><td>Llamadas y notificaciones</td><td>Teléfono llamado, hora, duración, resultado (contestó, confirmó, no contestó) y costo. <b>No grabamos las llamadas.</b> Identificador de notificaciones del teléfono.</td><td>La plataforma y nuestros proveedores de llamadas y notificaciones.</td></tr>
       <tr><td>Uso técnico</td><td>Tipo de dispositivo y sistema operativo, versión de la app, registros técnicos de errores y de acceso.</td><td>La app y nuestros servidores.</td></tr>
@@ -97,6 +97,8 @@
     <li>Permitir que familias y conductores se encuentren y se conecten, y que varios familiares compartan el mismo perfil.</li>
     <li>Llevar la contabilidad del transportista: mensualidades, pagos y cobros.</li>
     <li>Verificar la licencia de conducir y avisar antes de que venza.</li>
+    <li>Verificar la identidad de quien conduce comparando su cara con la foto de su licencia. La comparación la hace un proveedor de reconocimiento facial (Amazon Rekognition) que procesa ambas fotos solo para entregar el resultado y no las guarda. Puedes retirar tu consentimiento y pedir que borremos la foto cuando quieras.</li>
+    <li>Verificar que el furgón y quien conduce tengan sus documentos al día, por la seguridad de los niños.</li>
     <li>Dar soporte, mantener la seguridad, prevenir abusos y cumplir obligaciones legales.</li>
   </ol>
   <p>No usamos los datos para publicidad, no los vendemos y no los cedemos a terceros para sus propios fines.</p>
@@ -139,7 +141,7 @@
   </ul>
 
   <h2 id="seguridad">10. Seguridad</h2>
-  <p>Toda la información viaja cifrada (HTTPS). Las contraseñas se guardan cifradas y nunca las vemos. La base de datos aplica reglas de acceso por fila, de modo que cada persona solo puede leer los datos que le corresponden. Las fotos de licencias se guardan en un almacenamiento privado. Las claves de servicio se guardan fuera del código. Ningún sistema es infalible: si ocurre una vulneración que afecte tus datos, te avisaremos a ti y a la autoridad según lo exija la ley.</p>
+  <p>Toda la información viaja cifrada (HTTPS). Las contraseñas se guardan cifradas y nunca las vemos. La base de datos aplica reglas de acceso por fila, de modo que cada persona solo puede leer los datos que le corresponden. Las fotos de licencias, de la cara y de los documentos se guardan en un almacenamiento privado que solo ve la empresa. Las claves de servicio se guardan fuera del código. Ningún sistema es infalible: si ocurre una vulneración que afecte tus datos, te avisaremos a ti y a la autoridad según lo exija la ley.</p>
 
   <h2 id="derechos">11. Tus derechos</h2>
   <p>Puedes ejercer en cualquier momento, sin costo, tus derechos de:</p>

@@ -2,6 +2,7 @@
 // Reproduce las mismas reglas que las RPC del servidor (cobros idempotentes, bajas, etc.).
 import { extremosDeRuta, recomendarRuta } from "../../../../supabase/functions/_shared/core/recomendar-ruta.ts";
 import type {
+  Documento,
   Alumno, Cobro, Conductora, Datos, Empresa, Furgon, Licencia, LlamadaReporte, Mensaje, MedioPago, Pregunta, Ruta, Solicitud,
 } from "./tipos";
 
@@ -67,9 +68,28 @@ export function crearDatosDemo(): Datos {
     <text x="186" y="200" font-family="Arial" font-size="18" fill="#16324F">Ejemplo de la demostración</text></svg>`);
   const licencias: Licencia[] = [
     { conductor_id: "c1", conductor: conductoras[0].nombre, licencia_id: "l1", numero: "12.345.678-9", clase: "A3", vence_en: enDias(24), dias_restantes: 24,
-      estado: "por_vencer", motivo_rechazo: null, revisada_en: iso(haceDias(300)), foto_frente: fotoDemo("MARCELA FUENTES · A3", "Frente"), foto_reverso: fotoDemo("MARCELA FUENTES · A3", "Reverso") },
+      estado: "por_vencer", motivo_rechazo: null, revisada_en: iso(haceDias(300)), foto_frente: fotoDemo("MARCELA FUENTES · A3", "Frente"), foto_reverso: fotoDemo("MARCELA FUENTES · A3", "Reverso"),
+      foto_rostro: null, rostro_resultado: "coincide", rostro_similitud: 98.4 },
     { conductor_id: "c2", conductor: conductoras[1].nombre, licencia_id: "l2", numero: "15.222.333-4", clase: "A1", vence_en: enDias(410), dias_restantes: 410,
-      estado: "por_verificar", motivo_rechazo: null, revisada_en: null, foto_frente: fotoDemo("JORGE DÍAZ · A1", "Frente"), foto_reverso: fotoDemo("JORGE DÍAZ · A1", "Reverso") },
+      estado: "por_verificar", motivo_rechazo: null, revisada_en: null, foto_frente: fotoDemo("JORGE DÍAZ · A1", "Frente"), foto_reverso: fotoDemo("JORGE DÍAZ · A1", "Reverso"),
+      foto_rostro: null, rostro_resultado: "dudoso", rostro_similitud: 81.2 },
+  ];
+  // Documentos de la demostración: el SOAP del primer furgón por revisar y el padrón sin subir.
+  const docDemo = (tipo: string, de: "furgon" | "conductor", orden: number, vence: boolean, estado: Documento["estado"], dias: number | null): Documento => ({
+    tipo, de, obligatorio: tipo !== "seguro_pasajeros", vence, orden, conductor_id: "c1", conductor: conductoras[0].nombre,
+    furgon_id: de === "furgon" ? "f1" : null, patente: de === "furgon" ? "DEMO-11" : null,
+    documento_id: estado === "sin_documento" ? null : `d-${tipo}`, archivo: estado === "sin_documento" ? null : fotoDemo(tipo.toUpperCase().replace(/_/g, " "), "Documento"),
+    vence_en: dias === null ? null : enDias(dias), dias_restantes: dias, estado, motivo_rechazo: null,
+  });
+  const documentos: Documento[] = [
+    docDemo("padron", "furgon", 1, false, "sin_documento", null),
+    docDemo("permiso_circulacion", "furgon", 2, true, "vigente", 160),
+    docDemo("revision_tecnica", "furgon", 3, true, "por_vencer", 12),
+    docDemo("soap", "furgon", 4, true, "por_verificar", 160),
+    docDemo("registro_escolar", "furgon", 5, false, "vigente", null),
+    docDemo("seguro_pasajeros", "furgon", 6, true, "sin_documento", null),
+    docDemo("antecedentes", "conductor", 7, true, "vigente", 50),
+    docDemo("inhabilidades", "conductor", 8, false, "vigente", null),
   ];
   const resumenFurgon = (f: (typeof furgones)[number]): Furgon => {
     const rs = rutas.filter((r) => furgonDeRuta[r.id] === f.id);
@@ -266,7 +286,8 @@ export function crearDatosDemo(): Datos {
       await esperar();
       return conductoras.map((c) => licencias.find((l) => l.conductor_id === c.id) ?? {
         conductor_id: c.id, conductor: c.nombre, licencia_id: null, numero: null, clase: null, vence_en: null, dias_restantes: null,
-        estado: "sin_licencia" as const, motivo_rechazo: null, revisada_en: null, foto_frente: null, foto_reverso: null });
+        estado: "sin_licencia" as const, motivo_rechazo: null, revisada_en: null, foto_frente: null, foto_reverso: null,
+        foto_rostro: null, rostro_resultado: null, rostro_similitud: null });
     },
     async revisarLicencia(id, aprobar, motivo) {
       await esperar();
@@ -276,6 +297,15 @@ export function crearDatosDemo(): Datos {
         motivo_rechazo: aprobar ? null : motivo.trim(), revisada_en: iso(new Date()) });
     },
     async fotoLicencia(ruta) { return ruta; },
+    async documentos() { await esperar(); return structuredClone(documentos); },
+    async revisarDocumento(id, aprobar, motivo) {
+      await esperar();
+      if (!aprobar && !motivo.trim()) throw new Error("Indica el motivo del rechazo para que la tía pueda corregirlo");
+      const d = documentos.find((x) => x.documento_id === id)!;
+      Object.assign(d, { estado: !aprobar ? "rechazado" : d.dias_restantes !== null && d.dias_restantes <= 30 ? "por_vencer" : "vigente",
+        motivo_rechazo: aprobar ? null : motivo.trim() });
+    },
+    async archivoDocumento(ruta) { return ruta; },
 
     async conductoras() { await esperar(); return structuredClone(conductoras); },
     async invitarConductora() { await esperar(); return codigo(); },

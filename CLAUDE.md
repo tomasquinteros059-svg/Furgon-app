@@ -49,6 +49,9 @@ repositorio (Settings → Secrets and variables → Actions):
   (plantilla `aviso_furgon`, o la de `WHATSAPP_PLANTILLA`, con una variable `{{1}}`), o Twilio con
   `TWILIO_WHATSAPP_ORIGEN` (+ `TWILIO_WHATSAPP_CONTENT_SID` fuera del sandbox). Solo a familias que
   activaron «Avisarme también por WhatsApp» en Mi perfil.
+  Comparar la selfie de la tía con su licencia (opcional, `functions/comparar-rostro`, AWS Rekognition):
+  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (por defecto us-east-1). Sin ellas, la
+  empresa compara las fotos a simple vista en el panel.
 - `APK para probar` (`.github/workflows/apk.yml`): `expo prebuild` + Gradle, sin EAS ni token de Expo.
   Publica el APK en Releases. Opcional `GOOGLE_MAPS_ANDROID_API_KEY` (restringida a Android).
 

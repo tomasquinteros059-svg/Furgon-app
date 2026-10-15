@@ -1,5 +1,14 @@
 // Mensajes de error de la base de datos (raise exception en supabase/migrations), en inglés.
 export const EN_ERRORES: Record<string, string> = {
+  "Falta la foto de tu cara": "The photo of your face is missing",
+  "Para verificar tu identidad necesitamos tu autorización para comparar tu cara con la licencia": "To verify your identity we need your permission to compare your face with the license",
+  "Solo la tía o el tío del furgón sube estos documentos": "Only the van driver uploads these documents",
+  "Documento no válido": "Invalid document",
+  "Archivo no válido": "Invalid file",
+  "Falta la fecha de vencimiento del documento": "The document's expiry date is missing",
+  "Ese documento ya está vencido": "That document has already expired",
+  "Aún no tienes un furgón asignado: pídele a la empresa que te lo asigne": "You don't have a van assigned yet: ask the company to assign one",
+  "Documento no encontrado": "Document not found",
   "El recorrido ya terminó": "The trip has already ended",
   "Ese colegio no es de esta ruta": "That school is not on this route",
   // Sesión y permisos
@@ -94,5 +103,9 @@ export const EN_ERRORES_PATRONES: [RegExp, string][] = [
   [
     /^Tu licencia de conducir venció el (.+?)\. Sube la renovada en «Mi licencia» para iniciar recorridos\.$/,
     "Your driver's license expired on $1. Upload the renewed one in “My license” to start trips.",
+  ],
+  [
+    /^Un documento obligatorio está vencido \((.+?)\)\. Sube el vigente en «Documentos» para iniciar recorridos\.$/,
+    "A required document has expired ($1). Upload the current one in “Documents” to start trips.",
   ],
 ];

@@ -7,6 +7,7 @@ import { useSesion } from "../../lib/sesion";
 import { supabase } from "../../lib/supabase";
 import { useIniciarRecorrido } from "../../lib/iniciar-recorrido";
 import { CONSEJOS_CERRADOS, guardar, leer, NUEVOS_VISTOS_HASTA } from "../../lib/avisos-inicio";
+import { type Documento, documentosConProblema } from "../../lib/documentos";
 import { type EstadoLic, textoLicencia } from "../../lib/licencia";
 import { t } from "../../lib/idioma";
 
@@ -52,6 +53,7 @@ export default function RutasConductor() {
   const [porResponder, setPorResponder] = useState(0);
   const [nuevos, setNuevos] = useState<Nuevo[]>([]);
   const [licencia, setLicencia] = useState<EstadoLic | null>(null);
+  const [docsVencidos, setDocsVencidos] = useState(0);
   const [consejosCerrados, setConsejosCerrados] = useState(() => leer(CONSEJOS_CERRADOS) === "1");
   const [nuevosVistosHasta, setNuevosVistosHasta] = useState(() => leer(NUEVOS_VISTOS_HASTA) ?? "");
   const { iniciando, iniciar } = useIniciarRecorrido(setError);
@@ -69,6 +71,8 @@ export default function RutasConductor() {
     setRutas(((r as unknown as Ruta[]) ?? []).map((x) => ({ ...x, ruta_paradas: [...(x.ruta_paradas ?? [])].sort((a, b) => a.orden - b.orden) })));
     setActivos(Object.fromEntries((rec ?? []).map((x) => [x.ruta_id, x.id])));
     setNoVan((i as { alumno_id: string; tipo: string }[]) ?? []);
+    supabase.rpc("estado_documentos").then(({ data }) => setDocsVencidos(documentosConProblema(
+      ((data as Documento[]) ?? []).filter((d) => d.de === "furgon" || d.conductor_id === perfil?.id)).filter((d) => d.estado === "vencido").length));
     const { data: l } = await supabase.rpc("estado_licencias");
     setLicencia(((l as (EstadoLic & { conductor_id: string })[]) ?? []).find((x) => x.conductor_id === perfil?.id) ?? null);
     const { data: n } = await supabase.rpc("nuevos_en_mis_rutas", { p_dias: 3 });
@@ -102,6 +106,13 @@ export default function RutasConductor() {
       {error ? <Aviso texto={error} tipo="error" /> : null}
       {exito ? <Aviso texto={exito} tipo="exito" /> : null}
 
+      {docsVencidos ? (
+        <Tarjeta estilo={{ borderColor: colores.rojo, borderWidth: 2 }}>
+          <Text style={estilos.subtitulo}>{t("Documentos vencidos")}</Text>
+          <Text style={estilos.texto}>{t("Con un documento obligatorio vencido no puedes iniciar recorridos. Sube el vigente.")}</Text>
+          <Boton titulo={t("Ver documentos")} variante="secundario" onPress={() => router.push("/conductor/documentos")} />
+        </Tarjeta>
+      ) : null}
       {licenciaConProblema ? (
         <Tarjeta estilo={{ borderColor: licencia!.estado === "por_verificar" ? colores.amarillo : colores.rojo, borderWidth: 2 }}>
           <Text style={estilos.subtitulo}>{t("🪪 Mi licencia")}</Text>

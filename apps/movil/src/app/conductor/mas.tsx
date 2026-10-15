@@ -12,6 +12,7 @@ import { Aviso, Boton, colores, FilaGrupo, GrupoMenu } from "../../componentes/u
 import { SelectorIdioma } from "../../i18n";
 import { CONSEJOS_CERRADOS, guardar, leer, NUEVOS_VISTOS_HASTA } from "../../lib/avisos-inicio";
 import { aFecha, type EstadoLic, textoLicencia } from "../../lib/licencia";
+import { type Documento, documentosConProblema } from "../../lib/documentos";
 import { useSesion } from "../../lib/sesion";
 import { supabase } from "../../lib/supabase";
 import { formatearTelefono } from "../../lib/core";
@@ -22,12 +23,15 @@ export default function MasTia() {
   const [licencia, setLicencia] = useState<EstadoLic | null>(null);
   const [datos, setDatos] = useState<{ telefono: string | null; comunas: string | null } | null>(null);
   const [porConectar, setPorConectar] = useState(0);
+  const [docsPendientes, setDocsPendientes] = useState(0);
   const [enRecorrido, setEnRecorrido] = useState(false);
   const [avisosCerrados, setAvisosCerrados] = useState(false);
 
   useFocusEffect(useCallback(() => {
     supabase.rpc("estado_licencias").then(({ data }) =>
       setLicencia(((data as (EstadoLic & { conductor_id: string })[]) ?? []).find((x) => x.conductor_id === perfil?.id) ?? null));
+    supabase.rpc("estado_documentos").then(({ data }) => setDocsPendientes(documentosConProblema(
+      ((data as Documento[]) ?? []).filter((d) => d.de === "furgon" || d.conductor_id === perfil?.id)).length));
     supabase.from("perfiles").select("telefono, comunas").eq("id", perfil?.id ?? "").maybeSingle().then(({ data }) => setDatos(data));
     supabase.rpc("mis_conexiones").then(({ data }) =>
       setPorConectar(((data as { estado: string; iniciada_por: string }[] | null) ?? [])
@@ -68,6 +72,12 @@ export default function MasTia() {
         </View>
         <Text style={{ fontSize: 22, color: colores.suave }}>›</Text>
       </Pressable>
+
+      <GrupoMenu>
+        <FilaGrupo titulo={t("Documentos del furgón")} icono="furgon" punto={docsPendientes > 0}
+          detalle={docsPendientes ? (docsPendientes === 1 ? t("1 documento por revisar") : t("{n} documentos por revisar", { n: docsPendientes })) : t("Todo al día")}
+          onPress={() => router.push("/conductor/documentos")} />
+      </GrupoMenu>
 
       {enRecorrido && perfil?.puede_administrar ? (
         <Aviso texto={t("Administrar: disponible cuando termines el recorrido (no se administra manejando).")} />
