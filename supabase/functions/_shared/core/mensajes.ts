@@ -68,6 +68,18 @@ export function mensajeEstadoParada(p: { tipo: TipoRecorrido; nombreAlumno: stri
     : { titulo: `${p.nombreAlumno} está en su hogar`, cuerpo: `${p.nombreAlumno} está en su hogar desde las ${p.hora}.` };
 }
 
+/** Llegada al colegio (ida) o salida del colegio con el niño a bordo (vuelta). */
+export function mensajeColegio(p: { tipo: TipoRecorrido; nombreAlumno: string; colegio: string; hora: string; idioma?: Idioma }) {
+  if (p.idioma === "en") {
+    return p.tipo === "ida"
+      ? { titulo: `${p.nombreAlumno} arrived at school`, cuerpo: `${p.nombreAlumno} arrived at ${p.colegio} at ${p.hora}.` }
+      : { titulo: `${p.nombreAlumno} is on the way home`, cuerpo: `The van left ${p.colegio} with ${p.nombreAlumno} at ${p.hora}.` };
+  }
+  return p.tipo === "ida"
+    ? { titulo: `${p.nombreAlumno} llegó al colegio`, cuerpo: `${p.nombreAlumno} llegó a ${p.colegio} a las ${p.hora}.` }
+    : { titulo: `${p.nombreAlumno} va camino a casa`, cuerpo: `El furgón salió de ${p.colegio} con ${p.nombreAlumno} a las ${p.hora}.` };
+}
+
 /** Hora local de Chile en formato HH:MM. */
 export function horaChile(fecha: Date, zona = "America/Santiago"): string {
   return new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: zona }).format(fecha);

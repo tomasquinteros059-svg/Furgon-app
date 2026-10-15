@@ -1,5 +1,7 @@
 // Mensajes de error de la base de datos (raise exception en supabase/migrations), en inglés.
 export const EN_ERRORES: Record<string, string> = {
+  "El recorrido ya terminó": "The trip has already ended",
+  "Ese colegio no es de esta ruta": "That school is not on this route",
   // Sesión y permisos
   "Sin sesión": "You're not signed in",
   "No autorizado": "Not authorized",

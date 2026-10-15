@@ -2,6 +2,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { Icono, Text } from "../../../componentes/icono";
+import { type Destino, DestinosRuta } from "../../../componentes/destinos-ruta";
 import { PantallaTia } from "../../../componentes/pantalla-tia";
 import { Aviso, Boton, Campo, colores, estilos, Tarjeta } from "../../../componentes/ui";
 import { useIniciarRecorrido } from "../../../lib/iniciar-recorrido";
@@ -16,7 +17,8 @@ interface Ruta {
   conductor_id: string | null;
   hora_salida: string | null;
   colegio_nombre: string | null;
-  ruta_paradas: { alumno_id: string; orden: number; alumnos: { nombre: string }; domicilios: { direccion: string } | null }[];
+  ruta_paradas: { alumno_id: string; orden: number; destino_id: string | null; alumnos: { nombre: string }; domicilios: { direccion: string } | null }[];
+  ruta_destinos: Destino[];
 }
 interface Recomendacion { orden: string[]; metros: number; metrosActual: number; ahorroM: number; cambia: boolean; fuente: "google" | "estimada" }
 
@@ -41,12 +43,11 @@ export default function RutasAdmin() {
   const [nuevaNombre, setNuevaNombre] = useState("");
   const [nuevaTipo, setNuevaTipo] = useState<"ida" | "vuelta">("ida");
   const [nuevaHora, setNuevaHora] = useState("");
-  const [nuevaColegio, setNuevaColegio] = useState("");
 
   const cargar = useCallback(async () => {
     const { data: fecha } = await supabase.rpc("hoy_empresa");
     const [r, a, i] = await Promise.all([
-      supabase.from("rutas").select("id, nombre, tipo, conductor_id, hora_salida, colegio_nombre, ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion))").eq("activa", true).order("nombre"),
+      supabase.from("rutas").select("id, nombre, tipo, conductor_id, hora_salida, colegio_nombre, ruta_paradas(alumno_id, orden, destino_id, alumnos(nombre), domicilios(direccion)), ruta_destinos(id, orden, nombre, direccion)").eq("activa", true).order("nombre"),
       supabase.from("alumnos").select("id, nombre").eq("activo", true).order("nombre"),
       supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", fecha as string),
     ]);
@@ -92,9 +93,9 @@ export default function RutasAdmin() {
     if (!perfil?.empresa_id) return;
     await hacer(supabase.from("rutas").insert({
       empresa_id: perfil.empresa_id, nombre, tipo: nuevaTipo, conductor_id: perfil.id,
-      hora_salida: hora || null, colegio_nombre: nuevaColegio.trim() || null,
-    }), t("Ruta «{ruta}» creada. Agrégale alumnos abajo.", { ruta: nombre }));
-    setCreando(false); setNuevaNombre(""); setNuevaHora(""); setNuevaColegio(""); setNuevaTipo("ida");
+      hora_salida: hora || null,
+    }), t("Ruta «{ruta}» creada. Agrégale el colegio y los alumnos abajo.", { ruta: nombre }));
+    setCreando(false); setNuevaNombre(""); setNuevaHora(""); setNuevaTipo("ida");
   }
 
   function eliminarRuta(r: Ruta) {
@@ -131,7 +132,6 @@ export default function RutasAdmin() {
             <Boton titulo={t("🏠 Vuelta (colegio → casa)")} variante={nuevaTipo === "vuelta" ? "primario" : "secundario"} estilo={{ flex: 1 }} onPress={() => setNuevaTipo("vuelta")} />
           </View>
           <Campo etiqueta={t("Hora de salida (opcional)")} value={nuevaHora} onChangeText={setNuevaHora} placeholder="07:30" keyboardType="numbers-and-punctuation" />
-          <Campo etiqueta={t("Colegio (opcional)")} value={nuevaColegio} onChangeText={setNuevaColegio} />
           <View style={estilos.fila}>
             <Boton titulo={t("Crear ruta")} estilo={{ flex: 1 }} onPress={crearRuta} />
             <Boton titulo={t("Cancelar")} variante="secundario" estilo={{ flex: 1 }} onPress={() => setCreando(false)} />
@@ -145,7 +145,18 @@ export default function RutasAdmin() {
         const rec = recomendacion?.rutaId === r.id ? recomendacion.r : null;
         const nombre = (id: string) => paradas.find((p) => p.alumno_id === id)?.alumnos?.nombre ?? "—";
         const abierta = estaAbierta(r.id);
-        const colegio = r.colegio_nombre ?? t("Colegio");
+        const destinos = [...(r.ruta_destinos ?? [])].sort((a, b) => a.orden - b.orden);
+        const colegio = destinos.length ? destinos.map((d) => d.nombre).join(", ") : r.colegio_nombre ?? t("Colegio");
+        // Colegio principal (donde va un niño sin colegio elegido): el último de la ida, el primero de la vuelta.
+        const principal = r.tipo === "ida" ? destinos[destinos.length - 1] : destinos[0];
+        const colegioDe = (destinoId: string | null) => destinos.find((d) => d.id === destinoId) ?? principal;
+        const siguienteColegio = (destinoId: string | null) => {
+          const i = destinos.indexOf(colegioDe(destinoId)!);
+          return destinos[(i + 1) % destinos.length].id;
+        };
+        const bloqueDestinos = (
+          <DestinosRuta rutaId={r.id} tipo={r.tipo} destinos={destinos} onCambio={cargar} onError={setError} />
+        );
         return (
           <View key={r.id} style={{ backgroundColor: colores.superficie, borderWidth: 2, borderColor: colores.borde, borderRadius: 30, marginBottom: 18, overflow: "hidden" }}>
             {/* Encabezado: se toca para abrir o cerrar la ruta. */}
@@ -178,6 +189,7 @@ export default function RutasAdmin() {
                     onPress={() => hacer(supabase.from("rutas").update({ conductor_id: perfil?.id }).eq("id", r.id), t("Listo: ahora puedes iniciar «{ruta}».", { ruta: r.nombre }))} />
                 )}
 
+                {r.tipo === "vuelta" ? bloqueDestinos : null}
                 {paradas.length === 0 ? <Text style={estilos.textoSuave}>{t("Esta ruta aún no tiene alumnos.")}</Text> : null}
                 {paradas.map((p, i) => {
                   const noVa = noVaHoy(p.alumno_id, r.tipo);
@@ -189,6 +201,14 @@ export default function RutasAdmin() {
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text numberOfLines={1} style={{ fontSize: 17, fontWeight: "600", color: colores.texto, textDecorationLine: noVa ? "line-through" : "none" }}>{p.alumnos?.nombre}</Text>
                         {p.domicilios?.direccion ? <Text numberOfLines={1} style={{ fontSize: 14, color: colores.suave }}>{p.domicilios.direccion}</Text> : null}
+                        {destinos.length > 1 ? (
+                          <Pressable accessibilityRole="button" accessibilityLabel={t("Cambiar colegio")} hitSlop={4}
+                            onPress={() => hacer(supabase.from("ruta_paradas").update({ destino_id: siguienteColegio(p.destino_id) }).eq("ruta_id", r.id).eq("alumno_id", p.alumno_id))}
+                            style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4, backgroundColor: colores.amarilloSuave, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <Icono nombre="colegio" tam={14} color={colores.texto} acento="transparent" />
+                            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "600", color: colores.texto }}>{colegioDe(p.destino_id)?.nombre}</Text>
+                          </Pressable>
+                        ) : null}
                       </View>
                       {flecha("↑", i === 0, () => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: -1 })), t("Subir"))}
                       {flecha("↓", i === paradas.length - 1, () => hacer(supabase.rpc("mover_parada", { p_ruta: r.id, p_alumno: p.alumno_id, p_delta: 1 })), t("Bajar"))}
@@ -205,6 +225,8 @@ export default function RutasAdmin() {
                     </View>
                   );
                 })}
+
+                {r.tipo === "ida" ? bloqueDestinos : null}
 
                 {paradas.length >= 2 && !rec ? (
                   <Boton titulo={calculando === r.id ? t("Calculando…") : t("Calcular la mejor ruta")} icono="brujula" variante="secundario" cargando={calculando === r.id} onPress={() => recomendar(r)} />

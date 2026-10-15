@@ -32,7 +32,7 @@ interface MensajeExpo {
 type TicketExpo = { status: "ok"; id: string } | { status: "error"; message: string; details?: { error?: string } };
 
 export interface Notificacion {
-  tipo: "aviso" | "entregado" | "ausente" | "llamada" | "licencia";
+  tipo: "aviso" | "entregado" | "ausente" | "llamada" | "licencia" | "colegio";
   titulo: string;
   cuerpo: string;
   data: Record<string, unknown>;

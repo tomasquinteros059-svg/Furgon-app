@@ -24,6 +24,7 @@ interface Ruta {
   colegio_nombre: string | null;
   colegio_lat: number | null;
   colegio_lng: number | null;
+  ruta_destinos: { nombre: string; orden: number }[] | null;
   ruta_paradas: Parada[];
 }
 interface Nuevo { alumno: string; ruta: string; tipo: "ida" | "vuelta"; parada: number; agregado_en: string }
@@ -60,7 +61,7 @@ export default function RutasConductor() {
     const [{ data: r }, { data: rec }, { data: i }] = await Promise.all([
       // Solo sus rutas (con permiso de administrar vería también las de otras conductoras).
       supabase.from("rutas")
-        .select("id, nombre, tipo, hora_salida, colegio_nombre, colegio_lat, colegio_lng, ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion, lat, lng))")
+        .select("id, nombre, tipo, hora_salida, colegio_nombre, colegio_lat, colegio_lng, ruta_destinos(nombre, orden), ruta_paradas(alumno_id, orden, alumnos(nombre), domicilios(direccion, lat, lng))")
         .eq("activa", true).eq("conductor_id", perfil?.id ?? "").order("hora_salida"),
       supabase.from("recorridos").select("id, ruta_id").eq("estado", "activo").eq("conductor_id", perfil?.id ?? ""),
       fecha ? supabase.from("inasistencias").select("alumno_id, tipo").eq("fecha", fecha as string) : Promise.resolve({ data: [] }),
@@ -143,7 +144,8 @@ export default function RutasConductor() {
         // Primero los que van (numerados en orden); al final, los que hoy no van.
         const van = paradas.filter((p) => !noVaHoy(p.alumno_id, ruta.tipo));
         const noVan = paradas.filter((p) => noVaHoy(p.alumno_id, ruta.tipo));
-        const colegio = ruta.colegio_nombre ?? t("Colegio");
+        const nombresColegios = [...(ruta.ruta_destinos ?? [])].sort((a, b) => a.orden - b.orden).map((d) => d.nombre);
+        const colegio = nombresColegios.length ? nombresColegios.join(", ") : ruta.colegio_nombre ?? t("Colegio");
         return (
           <Tarjeta key={ruta.id} estilo={activo ? { borderColor: colores.verde } : undefined}>
             <View style={[estilos.fila, { gap: 14, alignItems: "center" }]}>
