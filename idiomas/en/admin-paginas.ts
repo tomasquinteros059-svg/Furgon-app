@@ -470,4 +470,6 @@ export const EN_ADMIN_PAGINAS: Record<string, string> = {
   "Vence en {d} días": "Expires in {d} days",
   "{documento} aprobado.": "{documento} approved.",
   "{documento} rechazado: se le pedirá subirlo de nuevo.": "{documento} rejected: they'll be asked to upload it again.",
+  "Exigir los documentos del furgón y de quien conduce para iniciar recorridos": "Require the van's and driver's documents to start trips",
+  "Recomendado por la seguridad de los niños. Aunque lo desactives, con un documento vencido no se puede iniciar.": "Recommended for the children's safety. Even if you turn it off, an expired document still blocks starting.",
 };

@@ -1,5 +1,6 @@
 // Mensajes de error de la base de datos (raise exception en supabase/migrations), en inglés.
 export const EN_ERRORES: Record<string, string> = {
+  "La ruta no tiene un furgón asignado. Pídele a la empresa que te asigne el furgón para iniciar recorridos.": "The route has no van assigned. Ask the company to assign you the van to start trips.",
   "Falta la foto de tu cara": "The photo of your face is missing",
   "Para verificar tu identidad necesitamos tu autorización para comparar tu cara con la licencia": "To verify your identity we need your permission to compare your face with the license",
   "Solo la tía o el tío del furgón sube estos documentos": "Only the van driver uploads these documents",
@@ -107,5 +108,9 @@ export const EN_ERRORES_PATRONES: [RegExp, string][] = [
   [
     /^Un documento obligatorio está vencido \((.+?)\)\. Sube el vigente en «Documentos» para iniciar recorridos\.$/,
     "A required document has expired ($1). Upload the current one in “Documents” to start trips.",
+  ],
+  [
+    /^Falta un documento obligatorio al día \((.+?): (.+?)\)\. Súbelo en «Documentos del furgón» para iniciar recorridos\.$/,
+    "A required document is not up to date ($1: $2). Upload it in “Van documents” to start trips.",
   ],
 ];

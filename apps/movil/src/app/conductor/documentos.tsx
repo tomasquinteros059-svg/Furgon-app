@@ -78,7 +78,7 @@ export default function Documentos() {
   return (
     <Pantalla titulo={t("Documentos")} accion={<Boton titulo={t("Volver")} variante="texto" onPress={() => router.back()} />}>
       <Text style={{ fontSize: 17, color: colores.suave, marginBottom: 12, lineHeight: 25 }}>
-        {t("Por la seguridad de los niños, la empresa revisa los documentos del furgón y los tuyos. Con uno obligatorio vencido no se pueden iniciar recorridos.")}
+        {t("Por la seguridad de los niños, la empresa revisa los documentos del furgón y los tuyos. Sin los obligatorios al día no se pueden iniciar recorridos.")}
       </Text>
       {msg ? <Aviso tipo={msg.ok ? "exito" : "error"} texto={msg.txt} /> : null}
       {docs && problemas.length === 0 ? <Aviso tipo="exito" texto={t("Todo al día. ¡Gracias!")} /> : null}

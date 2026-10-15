@@ -79,8 +79,23 @@ describe("documentos del furgón y de quien conduce", () => {
   it("con un documento obligatorio vencido no se puede iniciar un recorrido", async () => {
     const iniciar = () => E.db.query(`insert into recorridos (ruta_id, empresa_id, conductor_id, tipo) values ($1, $2, $3, 'ida')`, [ids.ruta, ids.empresa, ids.tia]);
     await E.db.query(`update documentos set vence_en = $2::date where id = $1`, [ids.soap, enDias(-1)]);
-    await expect(iniciar()).rejects.toThrow(/vencido \(soap\)/);
+    await expect(iniciar()).rejects.toThrow(/\(soap: vencido\)/);
     await E.db.query(`update documentos set vence_en = $2::date where id = $1`, [ids.soap, enDias(30)]);
+    await iniciar();
+    await E.db.query(`update recorridos set estado = 'finalizado', finalizado_en = now()`);
+  });
+
+  it("si la empresa exige documentos, sin todos los obligatorios (subidos y no rechazados) no se inicia", async () => {
+    await comoAdmin(() => E.db.query(`update empresas set exige_documentos = true where id = $1`, [ids.empresa]));
+    const iniciar = () => E.db.query(`insert into recorridos (ruta_id, empresa_id, conductor_id, tipo) values ($1, $2, $3, 'ida')`, [ids.ruta, ids.empresa, ids.tia]);
+    await expect(iniciar()).rejects.toThrow(/\(padron: falta\)/);
+    for (const [tipo, vence] of [["padron", null], ["permiso_circulacion", enDias(100)], ["revision_tecnica", enDias(100)],
+      ["registro_escolar", null], ["antecedentes", enDias(60)]] as const) await subirDoc(tipo, vence);
+    // En revisión cuenta; rechazado no.
+    const inh = (await E.uno<{ id: string }>(`select id from documentos where tipo = 'inhabilidades'`)).id;
+    await comoAdmin(() => E.db.query(`select revisar_documento($1, false, 'No se lee')`, [inh]));
+    await expect(iniciar()).rejects.toThrow(/\(inhabilidades: rechazado\)/);
+    await subirDoc("inhabilidades", null);
     await iniciar();
   });
 });

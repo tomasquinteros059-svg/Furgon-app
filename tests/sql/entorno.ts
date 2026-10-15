@@ -11,6 +11,9 @@ export async function crearBaseDeDatos() {
   for (const archivo of readdirSync(MIGRACIONES).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(MIGRACIONES, archivo), "utf8"));
   }
+  // Las empresas de las pruebas no exigen documentos para iniciar recorridos (salvo las pruebas
+  // que lo activan: rostro-y-documentos, demo-revision). Los vencidos bloquean igual.
+  await db.exec(`alter table public.empresas alter column exige_documentos set default false`);
 
   async function como<T>(rol: "authenticated" | "service_role", uid: string | null, fn: () => Promise<T>): Promise<T> {
     await db.exec(`set role ${rol}`);

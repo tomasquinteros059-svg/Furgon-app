@@ -15,7 +15,7 @@ const haceDias = (d: number, h = 9) => { const x = new Date(hoy); x.setDate(x.ge
 const esperar = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 
 export function crearDatosDemo(): Datos {
-  const empresa: Empresa = { id: "e1", nombre: "Furgones Tía Marcela", mensualidad_defecto: 60000, dia_vencimiento: 5, telefono_contacto: "+56 9 5555 1234" };
+  const empresa: Empresa = { id: "e1", nombre: "Furgones Tía Marcela", mensualidad_defecto: 60000, dia_vencimiento: 5, telefono_contacto: "+56 9 5555 1234", exige_documentos: true };
   const conductoras: Conductora[] = [
     { id: "c1", nombre: "Marcela Fuentes (tía Marcela)", telefono: "+56 9 5555 1234", puede_administrar: true },
     { id: "c2", nombre: "Jorge Díaz", telefono: "+56 9 5555 9876", puede_administrar: false },

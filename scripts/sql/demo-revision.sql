@@ -16,8 +16,8 @@ declare
   r record;
 begin
   delete from public.empresas where nombre = 'Furgón Demo (revisión)';
-  insert into public.empresas (nombre, mensualidad_defecto, telefono_contacto)
-    values ('Furgón Demo (revisión)', 65000, '+56912345678') returning id into v_empresa;
+  insert into public.empresas (nombre, mensualidad_defecto, telefono_contacto, exige_documentos)
+    values ('Furgón Demo (revisión)', 65000, '+56912345678', true) returning id into v_empresa;
 
   insert into public.perfiles (id, empresa_id, rol, nombre, telefono, puede_administrar)
     values (v_tia, v_empresa, 'conductor', 'Tía Demo', '+56912345678', true)
@@ -38,6 +38,17 @@ begin
     values (v_empresa, 'Mañana', 'ida', v_furgon, v_tia, 'Colegio Demo', -33.4542, -70.6005, '07:00') returning id into v_ida;
   insert into public.rutas (empresa_id, nombre, tipo, furgon_id, conductor_id, colegio_nombre, colegio_lat, colegio_lng, hora_salida)
     values (v_empresa, 'Tarde', 'vuelta', v_furgon, v_tia, 'Colegio Demo', -33.4542, -70.6005, '16:30') returning id into v_vuelta;
+
+  -- El colegio como destino final (ida) y punto de partida (vuelta).
+  insert into public.ruta_destinos (ruta_id, orden, nombre, direccion, lat, lng) values
+    (v_ida, 1, 'Colegio Demo', 'Av. Irarrázaval 2000, Ñuñoa', -33.4542, -70.6005),
+    (v_vuelta, 1, 'Colegio Demo', 'Av. Irarrázaval 2000, Ñuñoa', -33.4542, -70.6005);
+
+  -- Documentos de ejemplo aprobados (el furgón y la tía al día).
+  insert into public.documentos (empresa_id, tipo, furgon_id, conductor_id, archivo, vence_en, estado, revisada_en)
+  select v_empresa, t.tipo, case when t.de = 'furgon' then v_furgon end, case when t.de = 'conductor' then v_tia end,
+    v_tia::text || '/demo-' || t.tipo || '.jpg', case when t.vence then (now() + interval '1 year')::date end, 'aprobada', now()
+  from public.tipos_documento() t where t.obligatorio;
 
   for r in select * from (values
     ('Sofía Demo', '3° Básico', 'Av. Pedro de Valdivia 900, Providencia', -33.4410, -70.6110, true),

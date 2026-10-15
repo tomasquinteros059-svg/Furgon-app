@@ -22,6 +22,9 @@ export function Configuracion() {
           <label className="campo"><span>{t("Mensualidad por defecto (CLP)")}</span><input id="emp-mensualidad" inputMode="numeric" value={e.mensualidad_defecto} onChange={(x) => setE({ ...e, mensualidad_defecto: Number(x.target.value.replace(/\D/g, "")) || 0 })} /><small>{pesos(e.mensualidad_defecto)} · {t("cada alumno puede tener la suya.")}</small></label>
           <label className="campo"><span>{t("Día de vencimiento")}</span><input id="emp-dia" type="number" min={1} max={28} value={e.dia_vencimiento} onChange={(x) => setE({ ...e, dia_vencimiento: Math.min(28, Math.max(1, Number(x.target.value) || 1)) })} /></label>
         </div>
+        <label className="chk"><input type="checkbox" checked={e.exige_documentos} onChange={(x) => setE({ ...e, exige_documentos: x.target.checked })} />{" "}
+          {t("Exigir los documentos del furgón y de quien conduce para iniciar recorridos")}</label>
+        <small className="tenue">{t("Recomendado por la seguridad de los niños. Aunque lo desactives, con un documento vencido no se puede iniciar.")}</small>
         <div><button className="btn" onClick={async () => {
           try { await datos.guardarEmpresa(e); setMsg({ ok: true, txt: t("Configuración guardada.") }); } catch (x) { setMsg({ ok: false, txt: x instanceof Error ? x.message : String(x) }); }
         }}>{t("Guardar")}</button></div>

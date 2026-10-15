@@ -285,7 +285,7 @@ export function crearDatosSupabase(url: string, anonKey: string): Datos {
       }) as LlamadaReporte);
     },
     async empresa() {
-      return ok(await sb.from("empresas").select("id, nombre, mensualidad_defecto, dia_vencimiento, telefono_contacto").eq("id", empresaId).single()) as Empresa;
+      return ok(await sb.from("empresas").select("id, nombre, mensualidad_defecto, dia_vencimiento, telefono_contacto, exige_documentos").eq("id", empresaId).single()) as Empresa;
     },
     async guardarEmpresa(e) {
       ok(await sb.from("empresas").update(e).eq("id", empresaId));

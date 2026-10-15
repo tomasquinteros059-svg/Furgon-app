@@ -72,7 +72,7 @@ export default function RutasConductor() {
     setActivos(Object.fromEntries((rec ?? []).map((x) => [x.ruta_id, x.id])));
     setNoVan((i as { alumno_id: string; tipo: string }[]) ?? []);
     supabase.rpc("estado_documentos").then(({ data }) => setDocsVencidos(documentosConProblema(
-      ((data as Documento[]) ?? []).filter((d) => d.de === "furgon" || d.conductor_id === perfil?.id)).filter((d) => d.estado === "vencido").length));
+      ((data as Documento[]) ?? []).filter((d) => d.de === "furgon" || d.conductor_id === perfil?.id)).filter((d) => d.estado !== "por_vencer").length));
     const { data: l } = await supabase.rpc("estado_licencias");
     setLicencia(((l as (EstadoLic & { conductor_id: string })[]) ?? []).find((x) => x.conductor_id === perfil?.id) ?? null);
     const { data: n } = await supabase.rpc("nuevos_en_mis_rutas", { p_dias: 3 });
@@ -108,8 +108,8 @@ export default function RutasConductor() {
 
       {docsVencidos ? (
         <Tarjeta estilo={{ borderColor: colores.rojo, borderWidth: 2 }}>
-          <Text style={estilos.subtitulo}>{t("Documentos vencidos")}</Text>
-          <Text style={estilos.texto}>{t("Con un documento obligatorio vencido no puedes iniciar recorridos. Sube el vigente.")}</Text>
+          <Text style={estilos.subtitulo}>{t("Documentos del furgón")}</Text>
+          <Text style={estilos.texto}>{docsVencidos === 1 ? t("Falta 1 documento obligatorio al día. Súbelo para poder iniciar recorridos.") : t("Faltan {n} documentos obligatorios al día. Súbelos para poder iniciar recorridos.", { n: docsVencidos })}</Text>
           <Boton titulo={t("Ver documentos")} variante="secundario" onPress={() => router.push("/conductor/documentos")} />
         </Tarjeta>
       ) : null}

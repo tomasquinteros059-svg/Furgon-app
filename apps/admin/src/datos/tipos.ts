@@ -232,6 +232,8 @@ export interface Empresa {
   mensualidad_defecto: number;
   dia_vencimiento: number;
   telefono_contacto: string | null;
+  /** Pedir los documentos obligatorios al día para iniciar recorridos (los vencidos bloquean siempre). */
+  exige_documentos: boolean;
 }
 
 export interface Datos {

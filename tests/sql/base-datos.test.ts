@@ -38,6 +38,8 @@ beforeAll(async () => {
   for (const archivo of readdirSync(MIGRACIONES).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(MIGRACIONES, archivo), "utf8"));
   }
+  // Como en tests/sql/entorno.ts: esta empresa no exige documentos para iniciar recorridos.
+  await db.exec(`alter table public.empresas alter column exige_documentos set default false`);
 
   // Datos base: empresa, admin, invitaciones, conductor, dos apoderados, ruta.
   ids.empresa = (await uno<{ id: string }>(`insert into empresas (nombre) values ('Transportes Demo') returning id`)).id;
