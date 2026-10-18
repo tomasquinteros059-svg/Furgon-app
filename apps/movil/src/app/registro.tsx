@@ -4,6 +4,7 @@ import { Text } from "../componentes/icono";
 import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { normalizarTelefono } from "../lib/core";
 import { mensajeError, supabase } from "../lib/supabase";
+import { BotonGoogle } from "../componentes/boton-google";
 import { EnlacePrivacidad } from "../componentes/privacidad";
 import { t } from "../lib/idioma";
 import { nombreDeFamilia } from "../lib/familia";
@@ -15,7 +16,7 @@ const nombreRol = (rol: keyof typeof NOMBRE_ROL) => ({ apoderado: t("apoderado")
 export default function Registro() {
   const [codigo, setCodigo] = useState("");
   // Familias sin código: crean su cuenta y después se conectan con su tía o tío desde la búsqueda.
-  const [sinCodigo, setSinCodigo] = useState(false);
+  const [sinCodigo, setSinCodigo] = useState(true);
   const [invitacion, setInvitacion] = useState<{ rol: keyof typeof NOMBRE_ROL; empresa: string } | null>(null);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -67,8 +68,9 @@ export default function Registro() {
           : t("Si el furgón te dio un código de invitación, escríbelo: define si te registras como apoderado o conductor.")}
       </Text>
       {error ? <Aviso texto={error} tipo="error" /> : null}
+      <BotonGoogle onError={setError} />
       {sinCodigo ? (
-        <Boton titulo={t("Tengo un código de invitación")} variante="texto" onPress={() => setSinCodigo(false)} />
+        <Boton titulo={t("Soy tía o tío del furgón / tengo un código")} variante="texto" onPress={() => setSinCodigo(false)} />
       ) : (
         <>
           <Campo etiqueta={t("Código de invitación")} value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />

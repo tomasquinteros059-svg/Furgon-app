@@ -134,6 +134,17 @@ if (!soloMigraciones) {
   // «Entrar con código de familia» usa sesiones anónimas (solo crean perfil con un código válido).
   await api("PATCH", "/config/auth", { external_anonymous_users_enabled: true });
   console.log("✓ Entrar con código de familia habilitado (sesiones anónimas).");
+  // «Continuar con Google» (opcional): cliente OAuth de Google y la dirección de vuelta de la app.
+  const googleId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim(), googleSecreto = process.env.GOOGLE_OAUTH_SECRET?.trim();
+  if (googleId && googleSecreto) {
+    await api("PATCH", "/config/auth", {
+      external_google_enabled: true, external_google_client_id: googleId, external_google_secret: googleSecreto,
+      uri_allow_list: "furgonapp://**",
+    });
+    console.log("✓ Entrar con Google habilitado.");
+  } else {
+    console.log("  ⚠ Sin GOOGLE_OAUTH_CLIENT_ID y GOOGLE_OAUTH_SECRET: la app no muestra «Continuar con Google».");
+  }
   if (sinConfirmarCorreo) {
     await api("PATCH", "/config/auth", { mailer_autoconfirm: true });
     console.log("✓ Las cuentas nuevas no necesitan confirmar el correo (piloto).");

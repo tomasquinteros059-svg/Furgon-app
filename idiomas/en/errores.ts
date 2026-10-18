@@ -1,5 +1,8 @@
 // Mensajes de error de la base de datos (raise exception en supabase/migrations), en inglés.
 export const EN_ERRORES: Record<string, string> = {
+  "Tu cuenta ya está registrada": "Your account is already registered",
+  "Escribe tu nombre": "Enter your name",
+  "Teléfono no válido": "Invalid phone number",
   "La ruta no tiene un furgón asignado. Pídele a la empresa que te asigne el furgón para iniciar recorridos.": "The route has no van assigned. Ask the company to assign you the van to start trips.",
   "Falta la foto de tu cara": "The photo of your face is missing",
   "Para verificar tu identidad necesitamos tu autorización para comparar tu cara con la licencia": "To verify your identity we need your permission to compare your face with the license",

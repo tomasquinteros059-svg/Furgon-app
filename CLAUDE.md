@@ -52,6 +52,9 @@ repositorio (Settings → Secrets and variables → Actions):
   Comparar la selfie de la tía con su licencia (opcional, `functions/comparar-rostro`, AWS Rekognition):
   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (por defecto us-east-1). Sin ellas, la
   empresa compara las fotos a simple vista en el panel.
+  «Continuar con Google» (opcional): `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_SECRET` (cliente OAuth web;
+  URI de redirección `https://<ref>.supabase.co/auth/v1/callback`). La app muestra el botón solo si
+  está activo; quien entra así completa su registro en `sin-perfil` (`completar_registro`).
 - `APK para probar` (`.github/workflows/apk.yml`): `expo prebuild` + Gradle, sin EAS ni token de Expo.
   Publica el APK en Releases. Opcional `GOOGLE_MAPS_ANDROID_API_KEY` (restringida a Android).
 

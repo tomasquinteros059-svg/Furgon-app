@@ -1,8 +1,9 @@
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { Text } from "../componentes/icono";
-import { Aviso, Boton, Campo, colores, estilos, Pantalla } from "../componentes/ui";
+import { BotonGoogle } from "../componentes/boton-google";
+import { Aviso, Boton, Campo, estilos, Pantalla } from "../componentes/ui";
 import { mensajeError, supabase } from "../lib/supabase";
 import { EnlacePrivacidad } from "../componentes/privacidad";
 import { SelectorIdioma, t } from "../i18n";
@@ -32,13 +33,15 @@ export default function Ingresar() {
       <Campo etiqueta={t("Correo")} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
       <Campo etiqueta={t("Contraseña")} value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
       <Boton titulo={t("Ingresar")} onPress={ingresar} cargando={cargando} deshabilitado={!email || !password} />
-      <View style={{ marginTop: 28, gap: 8 }}>
+      <BotonGoogle onError={setError} />
+      <View style={{ marginTop: 18, gap: 8 }}>
+        <Text style={[estilos.textoSuave, { textAlign: "center" }]}>{t("¿Primera vez?")}</Text>
+        <Boton titulo={t("Crear cuenta")} variante="secundario" grande onPress={() => router.push("/registro")} />
+      </View>
+      <View style={{ marginTop: 18, gap: 8 }}>
         <Text style={[estilos.textoSuave, { textAlign: "center" }]}>{t("¿La mamá o el papá te compartió a los hijos?")}</Text>
         <Boton titulo={t("👨‍👩‍👧 Entrar con código de familia")} variante="secundario" grande onPress={() => router.push("/entrar-codigo")} />
       </View>
-      <Link href="/registro" style={{ marginTop: 20, textAlign: "center", color: colores.azul, fontWeight: "600" }}>
-        {t("¿Tienes un código de invitación? Crea tu cuenta")}
-      </Link>
       <EnlacePrivacidad />
       <SelectorIdioma />
     </Pantalla>

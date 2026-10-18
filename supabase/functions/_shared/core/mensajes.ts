@@ -113,3 +113,33 @@ export function mensajeVencimientoLicencia(p: { nombre: string; dias: number; ve
     cuerpo: `${nombre}, tu licencia de conducir vence el ${fecha}. Agenda la renovación y súbela en «Mi licencia».`,
   };
 }
+
+const NOMBRES_DOCUMENTO: Record<string, { es: string; en: string }> = {
+  padron: { es: "el padrón del furgón", en: "the vehicle registration" },
+  permiso_circulacion: { es: "el permiso de circulación", en: "the road permit" },
+  revision_tecnica: { es: "la revisión técnica", en: "the technical inspection" },
+  soap: { es: "el SOAP", en: "the mandatory insurance (SOAP)" },
+  registro_escolar: { es: "el registro de transporte escolar", en: "the school transport registry" },
+  seguro_pasajeros: { es: "el seguro de pasajeros", en: "the passenger insurance" },
+  antecedentes: { es: "el certificado de antecedentes", en: "the criminal record certificate" },
+  inhabilidades: { es: "el certificado de inhabilidades", en: "the clearance to work with minors" },
+};
+
+/** Aviso a la tía de que un documento del furgón (o suyo) vence o venció. */
+export function mensajeVencimientoDocumento(p: { tipo: string; dias: number; venceEn: string; patente?: string | null; idioma?: Idioma }) {
+  const [a, m, d] = p.venceEn.split("-");
+  const fecha = `${d}-${m}-${a}`;
+  const n = NOMBRES_DOCUMENTO[p.tipo] ?? { es: p.tipo, en: p.tipo };
+  if (p.idioma === "en") {
+    const doc = n.en + (p.patente ? ` (${p.patente})` : "");
+    const Doc = doc[0].toUpperCase() + doc.slice(1);
+    if (p.dias < 0) return { titulo: `${Doc} has expired`, cuerpo: `${Doc} expired on ${fecha}. Upload the current one in “Van documents” to keep starting trips.` };
+    if (p.dias === 0) return { titulo: `${Doc} expires today`, cuerpo: `${Doc} expires today (${fecha}). From tomorrow you won't be able to start trips until you upload the new one.` };
+    return { titulo: `${Doc} expires in ${p.dias} day${p.dias === 1 ? "" : "s"}`, cuerpo: `${Doc} expires on ${fecha}. Renew it and upload it in “Van documents”.` };
+  }
+  const doc = n.es + (p.patente ? ` (${p.patente})` : "");
+  const Doc = doc[0].toUpperCase() + doc.slice(1);
+  if (p.dias < 0) return { titulo: `${Doc} venció`, cuerpo: `${Doc} venció el ${fecha}. Sube el vigente en «Documentos del furgón» para seguir iniciando recorridos.` };
+  if (p.dias === 0) return { titulo: `${Doc} vence hoy`, cuerpo: `${Doc} vence hoy (${fecha}). Desde mañana no podrás iniciar recorridos hasta subir el nuevo.` };
+  return { titulo: `${Doc} vence en ${p.dias} día${p.dias === 1 ? "" : "s"}`, cuerpo: `${Doc} vence el ${fecha}. Renuévalo y súbelo en «Documentos del furgón».` };
+}

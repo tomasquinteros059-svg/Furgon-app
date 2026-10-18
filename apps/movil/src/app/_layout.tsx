@@ -80,6 +80,7 @@ function Navegacion() {
       // El aviso abre directo el mapa en vivo; las demás notificaciones, el inicio.
       if (data?.tipo === "aviso" && data.alumnoId) router.navigate(`/apoderado/seguir/${data.alumnoId}`);
       else if (data?.tipo === "licencia") router.navigate("/conductor/licencia");
+      else if (data?.tipo === "documento") router.navigate("/conductor/documentos");
       else if (data?.tipo) router.navigate("/");
     });
     return () => {
@@ -97,6 +98,7 @@ function Navegacion() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="auth" />
       <Stack.Protected guard={!sesion}>
         <Stack.Screen name="ingresar" />
         <Stack.Screen name="registro" />

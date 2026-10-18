@@ -32,3 +32,13 @@ describe("mensajes por idioma", () => {
     expect([idiomaValido("en"), idiomaValido("fr"), idiomaValido(null)]).toEqual(["en", "es", "es"]);
   });
 });
+
+describe("aviso de vencimiento de documentos", () => {
+  it("nombra el documento y la patente, en español e inglés", async () => {
+    const { mensajeVencimientoDocumento } = await import("../supabase/functions/_shared/core/mensajes.ts");
+    expect(mensajeVencimientoDocumento({ tipo: "soap", dias: 7, venceEn: "2026-11-01", patente: "ABCD12" }))
+      .toEqual({ titulo: "El SOAP (ABCD12) vence en 7 días", cuerpo: "El SOAP (ABCD12) vence el 01-11-2026. Renuévalo y súbelo en «Documentos del furgón»." });
+    expect(mensajeVencimientoDocumento({ tipo: "revision_tecnica", dias: 0, venceEn: "2026-11-01", idioma: "en" }).titulo)
+      .toBe("The technical inspection expires today");
+  });
+});

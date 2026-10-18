@@ -53,6 +53,9 @@ jobs:
       WHATSAPP_PLANTILLA: ${{ secrets.WHATSAPP_PLANTILLA }}
       TWILIO_WHATSAPP_ORIGEN: ${{ secrets.TWILIO_WHATSAPP_ORIGEN }}
       TWILIO_WHATSAPP_CONTENT_SID: ${{ secrets.TWILIO_WHATSAPP_CONTENT_SID }}
+      # «Continuar con Google» (opcional): cliente OAuth web de Google Cloud.
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_SECRET: ${{ secrets.GOOGLE_OAUTH_SECRET }}
       # Comparar la cara de la tía con su licencia (AWS Rekognition, opcional).
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
