@@ -8,6 +8,7 @@
 //
 // Se puede ejecutar las veces que haga falta: solo aplica lo que falta.
 
+import { problemaClavesGoogle } from "./claves-google.mjs";
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -135,13 +136,23 @@ if (!soloMigraciones) {
   await api("PATCH", "/config/auth", { external_anonymous_users_enabled: true });
   console.log("✓ Entrar con código de familia habilitado (sesiones anónimas).");
   // «Continuar con Google» (opcional): cliente OAuth de Google y la dirección de vuelta de la app.
+  // Antes de activarlo se revisa que cada valor tenga la forma que da Google (sin mostrarlo): un
+  // ID mal copiado deja el botón visible pero Google responde «invalid_client».
   const googleId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim(), googleSecreto = process.env.GOOGLE_OAUTH_SECRET?.trim();
   if (googleId && googleSecreto) {
-    await api("PATCH", "/config/auth", {
-      external_google_enabled: true, external_google_client_id: googleId, external_google_secret: googleSecreto,
-      uri_allow_list: "furgonapp://**",
-    });
-    console.log("✓ Entrar con Google habilitado.");
+    const problema = problemaClavesGoogle(googleId, googleSecreto);
+    if (problema) {
+      await api("PATCH", "/config/auth", { external_google_enabled: false });
+      console.log(`  ✗ «Continuar con Google» DESACTIVADO: ${problema}`);
+      console.log("::error::Las claves de Google no tienen la forma correcta: " + problema);
+    } else {
+      await api("PATCH", "/config/auth", {
+        external_google_enabled: true, external_google_client_id: googleId, external_google_secret: googleSecreto,
+        uri_allow_list: "furgonapp://**",
+      });
+      // El comienzo del ID es público (aparece en la dirección de Google) y sirve para compararlo con la consola.
+      console.log(`✓ Entrar con Google habilitado (ID de cliente ${googleId.slice(0, 12)}…apps.googleusercontent.com).`);
+    }
   } else {
     console.log("  ⚠ Sin GOOGLE_OAUTH_CLIENT_ID y GOOGLE_OAUTH_SECRET: la app no muestra «Continuar con Google».");
   }
@@ -151,3 +162,4 @@ if (!soloMigraciones) {
   }
 }
 console.log("Listo. Siguiente paso: node scripts/crear-empresa.mjs (ver docs/PUESTA-EN-MARCHA.md).");
+

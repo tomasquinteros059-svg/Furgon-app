@@ -30,6 +30,24 @@ function parametros(url: string): Record<string, string> {
   return salida;
 }
 
+/**
+ * Toma la sesión de la dirección de vuelta de Google (furgonapp://auth#access_token=…).
+ * Devuelve false si la dirección no trae sesión. Lanza un error si Google devolvió uno.
+ */
+export async function sesionDesdeUrl(url: string): Promise<boolean> {
+  const p = parametros(url);
+  if (p.error_description || p.error) throw new Error(p.error_description || p.error);
+  if (p.code) {
+    const { error: e } = await supabase.auth.exchangeCodeForSession(p.code);
+    if (e) throw e;
+    return true;
+  }
+  if (!p.access_token || !p.refresh_token) return false;
+  const { error: e } = await supabase.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
+  if (e) throw e;
+  return true;
+}
+
 /** Abre Google; devuelve false si la persona cerró la ventana. Lanza un error si Google o el servidor fallan. */
 export async function entrarConGoogle(): Promise<boolean> {
   const vuelta = Linking.createURL("auth");
@@ -40,15 +58,6 @@ export async function entrarConGoogle(): Promise<boolean> {
   if (error) throw error;
   const r = await WebBrowser.openAuthSessionAsync(data.url, vuelta);
   if (r.type !== "success") return false;
-  const p = parametros(r.url);
-  if (p.error_description || p.error) throw new Error(p.error_description || p.error);
-  if (p.code) {
-    const { error: e } = await supabase.auth.exchangeCodeForSession(p.code);
-    if (e) throw e;
-    return true;
-  }
-  if (!p.access_token || !p.refresh_token) throw new Error(t("Google no devolvió la sesión. Intenta de nuevo."));
-  const { error: e } = await supabase.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token });
-  if (e) throw e;
+  if (!(await sesionDesdeUrl(r.url))) throw new Error(t("Google no devolvió la sesión. Intenta de nuevo."));
   return true;
 }

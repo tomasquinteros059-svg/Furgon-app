@@ -17,8 +17,9 @@ const CODIGO = `
       } catch (_: Throwable) {}
       anteriorManejador?.uncaughtException(hilo, error)
     }
-    // Cierres que el manejador de arriba no ve (código C++, «la app no responde», falta de memoria):
-    // Android los anota y aquí se recupera el último, si fue una falla y es nuevo.
+    // Cierres que el manejador de arriba no ve (código C++, «la app no responde»): Android los anota
+    // y aquí se recupera el último, si fue una falla y es nuevo. «Falta de memoria» NO cuenta: es
+    // Android cerrando la app en segundo plano para liberar memoria (normal, no es un error).
     if (android.os.Build.VERSION.SDK_INT >= 30) {
       try {
         val am = getSystemService(android.app.ActivityManager::class.java)
@@ -26,8 +27,7 @@ const CODIGO = `
         val prefs = getSharedPreferences("registro-fallas", MODE_PRIVATE)
         val graves = setOf(
           android.app.ApplicationExitInfo.REASON_CRASH, android.app.ApplicationExitInfo.REASON_CRASH_NATIVE,
-          android.app.ApplicationExitInfo.REASON_ANR, android.app.ApplicationExitInfo.REASON_LOW_MEMORY,
-          android.app.ApplicationExitInfo.REASON_INITIALIZATION_FAILURE
+          android.app.ApplicationExitInfo.REASON_ANR, android.app.ApplicationExitInfo.REASON_INITIALIZATION_FAILURE
         )
         if (salida != null && salida.timestamp != prefs.getLong("visto", 0L) && salida.reason in graves) {
           prefs.edit().putLong("visto", salida.timestamp).apply()

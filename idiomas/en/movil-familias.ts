@@ -394,4 +394,5 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "Te registras como familia. Después buscas a tu tía o tío del furgón y te conectas con un toque.": "You sign up as a family. Then you look up your van driver and connect with one tap.",
   "¿Primera vez?": "First time?",
   "Google no devolvió la sesión. Intenta de nuevo.": "Google didn't return the session. Try again.",
+  "No se pudo entrar con Google": "Couldn't sign in with Google",
 };

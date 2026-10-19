@@ -26,7 +26,12 @@ export function tomarUltimaFalla(): string | null {
   // Error nativo de Android: lo escribe plugins/registro-fallas.js justo antes de cerrarse.
   try {
     const nativa = new File(Paths.document, "ultima-falla-nativa.txt");
-    if (nativa.exists) { fallas.push(nativa.textSync()); nativa.delete(); }
+    if (nativa.exists) {
+      const texto = nativa.textSync();
+      nativa.delete();
+      // Android cerró la app en segundo plano por falta de memoria: no es un error de la app.
+      if (!/\nmotivo 3:/.test(texto)) fallas.push(texto);
+    }
   } catch { /* sin archivo */ }
   return fallas.length ? fallas.join("\n\n") : null;
 }
