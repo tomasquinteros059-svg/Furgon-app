@@ -56,6 +56,12 @@ jobs:
       # «Continuar con Google» (opcional): cliente OAuth web de Google Cloud.
       GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_OAUTH_SECRET: ${{ secrets.GOOGLE_OAUTH_SECRET || secrets.GOOGLE_CLIENT_SECRET }}
+      # Correo propio para confirmar cuentas (p. ej. Gmail con contraseña de aplicación).
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PUERTO: ${{ secrets.SMTP_PUERTO }}
+      SMTP_USUARIO: ${{ secrets.SMTP_USUARIO }}
+      SMTP_CLAVE: ${{ secrets.SMTP_CLAVE }}
+      SMTP_REMITENTE: ${{ secrets.SMTP_REMITENTE }}
       # Comparar la cara de la tía con su licencia (AWS Rekognition, opcional).
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -109,7 +115,14 @@ jobs:
           fi
 
       - name: Publicar base de datos, funciones y tareas programadas
-        run: node scripts/desplegar-supabase.mjs --sin-confirmar-correo
+        # Confirmación de correo: se activa con la variable CONFIRMAR_CORREO = si (Settings → Secrets and
+        # variables → Actions → pestaña Variables) y necesita los secretos SMTP_*.
+        run: |
+          if [ "${{ vars.CONFIRMAR_CORREO }}" = "si" ]; then
+            node scripts/desplegar-supabase.mjs
+          else
+            node scripts/desplegar-supabase.mjs --sin-confirmar-correo
+          fi
 
       - name: Cuentas de prueba
         if: github.event_name == 'push' || inputs.cuentas

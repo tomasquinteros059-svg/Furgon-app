@@ -24,6 +24,8 @@ export default function Registro() {
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Con la confirmación de correo activa, la cuenta queda creada pero sin sesión hasta tocar el enlace.
+  const [revisaCorreo, setRevisaCorreo] = useState<string | null>(null);
 
   // Valida el código mientras se escribe, para mostrar a qué furgón y con qué rol se unirá.
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function Registro() {
     if (!tel) return setError(t("Revisa el teléfono (ej: 9 1234 5678)."));
     if (password.length < 8) return setError(t("La contraseña debe tener al menos 8 caracteres."));
     setCargando(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
@@ -57,7 +59,18 @@ export default function Registro() {
     });
     setCargando(false);
     if (error) return setError(mensajeError(error));
+    if (!data.session) return setRevisaCorreo(email.trim());
     router.replace("/");
+  }
+
+  if (revisaCorreo) {
+    return (
+      <Pantalla titulo={t("Revisa tu correo")}>
+        <Aviso tipo="exito" texto={t("Te enviamos un correo a {correo}. Ábrelo en este teléfono y toca el enlace para activar tu cuenta.", { correo: revisaCorreo })} />
+        <Text style={[estilos.textoSuave, { marginBottom: 16 }]}>{t("Si no llega en unos minutos, revisa la carpeta de spam o «Promociones».")}</Text>
+        <Boton titulo={t("Ya lo activé: ingresar")} onPress={() => router.replace("/ingresar")} />
+      </Pantalla>
+    );
   }
 
   return (

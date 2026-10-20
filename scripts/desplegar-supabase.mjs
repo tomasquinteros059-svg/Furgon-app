@@ -156,10 +156,39 @@ if (!soloMigraciones) {
   } else {
     console.log("  ⚠ Sin GOOGLE_OAUTH_CLIENT_ID y GOOGLE_OAUTH_SECRET: la app no muestra «Continuar con Google».");
   }
-  if (sinConfirmarCorreo) {
-    await api("PATCH", "/config/auth", { mailer_autoconfirm: true });
-    console.log("✓ Las cuentas nuevas no necesitan confirmar el correo (piloto).");
-  }
+  await confirmacionDeCorreo();
 }
 console.log("Listo. Siguiente paso: node scripts/crear-empresa.mjs (ver docs/PUESTA-EN-MARCHA.md).");
+
+// Confirmación de correo: sin ella cualquiera puede registrarse con el correo de otra persona.
+// Para pedirla hace falta un servidor de correo propio (SMTP): el de Supabase solo envía a los
+// miembros del equipo del proyecto. Sin SMTP se deja desactivada (si no, nadie podría registrarse).
+async function confirmacionDeCorreo() {
+  const smtp = {
+    host: process.env.SMTP_HOST?.trim(), puerto: process.env.SMTP_PUERTO?.trim() || "465",
+    usuario: process.env.SMTP_USUARIO?.trim(), clave: process.env.SMTP_CLAVE?.trim(),
+    remitente: process.env.SMTP_REMITENTE?.trim() || process.env.SMTP_USUARIO?.trim(),
+  };
+  const hayCorreo = !!(smtp.host && smtp.usuario && smtp.clave);
+  if (hayCorreo) {
+    await api("PATCH", "/config/auth", {
+      smtp_host: smtp.host, smtp_port: smtp.puerto, smtp_user: smtp.usuario, smtp_pass: smtp.clave,
+      smtp_admin_email: smtp.remitente, smtp_sender_name: "Furgón Escolar",
+    });
+    console.log("✓ Correo propio (SMTP) configurado.");
+  }
+  if (sinConfirmarCorreo) {
+    await api("PATCH", "/config/auth", { mailer_autoconfirm: true });
+    console.log("⚠ Las cuentas nuevas NO confirman el correo (modo piloto). Actívalo antes de abrir la app al público.");
+    return;
+  }
+  if (!hayCorreo) {
+    await api("PATCH", "/config/auth", { mailer_autoconfirm: true });
+    console.log("::error::Se pidió confirmar el correo, pero falta el servidor de correo (SMTP_HOST, SMTP_USUARIO, SMTP_CLAVE). Sigue desactivada para no bloquear los registros.");
+    return;
+  }
+  // El enlace del correo abre la app (furgonapp://auth), que toma la sesión y entra.
+  await api("PATCH", "/config/auth", { mailer_autoconfirm: false, site_url: "furgonapp://auth", uri_allow_list: "furgonapp://**" });
+  console.log("✓ Las cuentas nuevas deben confirmar su correo.");
+}
 

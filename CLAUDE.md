@@ -55,8 +55,14 @@ repositorio (Settings → Secrets and variables → Actions):
   «Continuar con Google» (opcional): `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_SECRET` (cliente OAuth web;
   URI de redirección `https://<ref>.supabase.co/auth/v1/callback`). La app muestra el botón solo si
   está activo; quien entra así completa su registro en `sin-perfil` (`completar_registro`).
+  Confirmación de correo: variable de repositorio `CONFIRMAR_CORREO = si` + secretos `SMTP_HOST`,
+  `SMTP_USUARIO`, `SMTP_CLAVE` (opcionales `SMTP_PUERTO`, `SMTP_REMITENTE`). Sin SMTP queda desactivada
+  (el correo de Supabase solo llega al equipo del proyecto). El enlace del correo abre `furgonapp://auth`.
 - `APK para probar` (`.github/workflows/apk.yml`): `expo prebuild` + Gradle, sin EAS ni token de Expo.
   Publica el APK en Releases. Opcional `GOOGLE_MAPS_ANDROID_API_KEY` (restringida a Android).
+  Firma: con `ANDROID_KEYSTORE_BASE64` y `ANDROID_KEYSTORE_PASSWORD` (los crea una vez «Crear clave de
+  firma», `.github/workflows/clave-firma.yml`, alias `furgon-escolar`) se firma con la clave propia;
+  sin ellos queda con la clave de prueba, que es pública (no publicar así).
 
 El repositorio es público: los registros de Actions también. Nunca imprimir contraseñas ni claves.
 

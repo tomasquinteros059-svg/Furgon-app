@@ -116,6 +116,30 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/entrega"
           cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/entrega/FurgonEscolar-${{ steps.nombre.outputs.sufijo }}.apk"
 
+      - name: Firmar con la clave propia
+        env:
+          FIRMA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          CLAVE_FIRMA: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          # Sin la clave propia (workflow «Crear clave de firma») el APK queda con la clave de prueba,
+          # que es pública: sirve para probar, NO para publicar.
+          if [ -z "$FIRMA" ] || [ -z "$CLAVE_FIRMA" ]; then
+            echo "::warning::APK firmado con la clave de PRUEBA (pública). Antes de publicar, corre «Crear clave de firma»."
+            echo "FIRMA_PROPIA=no" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$FIRMA" | base64 -d > "$RUNNER_TEMP/firma.jks"
+          firmador=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in entrega/*.apk; do
+            "$firmador" sign --ks "$RUNNER_TEMP/firma.jks" --ks-key-alias furgon-escolar \
+              --ks-pass env:CLAVE_FIRMA --key-pass env:CLAVE_FIRMA "$apk"
+            "$firmador" verify "$apk"
+          done
+          rm -f "$RUNNER_TEMP/firma.jks" entrega/*.idsig
+          echo "FIRMA_PROPIA=si" >> "$GITHUB_ENV"
+          echo "Firmado con la clave propia."
+
       - name: Huella de la firma (para restringir la clave de Google a esta app)
         continue-on-error: true
         run: |
@@ -143,7 +167,7 @@ jobs:
           gh release create "$ETIQUETA" entrega/*.apk \
             --target "$GITHUB_SHA" --prerelease \
             --title "APK de prueba ${{ steps.nombre.outputs.sufijo }}" \
-            --notes "APK para instalar y probar en Android (firmado con clave de depuración, no es para Google Play)."
+            --notes "APK para instalar y probar en Android. Firma propia: $FIRMA_PROPIA."
           # Enlace fijo que siempre tiene la última: .../releases/tag/ultimo-apk
           gh release delete ultimo-apk --yes --cleanup-tag 2>/dev/null || true
           gh release create ultimo-apk entrega/*.apk \

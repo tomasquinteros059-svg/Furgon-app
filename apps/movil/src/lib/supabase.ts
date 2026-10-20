@@ -41,6 +41,7 @@ export function mensajeError(e: unknown): string {
   if (/Invalid login credentials/i.test(m)) return t("Correo o contraseña incorrectos.");
   if (/Network request failed|Failed to fetch/i.test(m)) return t("Sin conexión. Revisa tu señal e intenta de nuevo.");
   if (/User already registered/i.test(m)) return t("Ya existe una cuenta con ese correo.");
+  if (/Email not confirmed/i.test(m)) return t("Falta confirmar tu correo: abre el correo que te enviamos y toca el enlace.");
   if (/Database error saving new user/i.test(m)) return t("No se pudo crear la cuenta. Revisa el código de invitación.");
   // Los mensajes de la base de datos vienen en español: se traducen si están en el diccionario.
   return t(m);

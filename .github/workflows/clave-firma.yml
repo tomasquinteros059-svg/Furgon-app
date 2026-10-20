@@ -1,0 +1,89 @@
+# Crea la clave PROPIA con la que se firma la app (reemplaza la clave de prueba, que es pública).
+#
+# Se corre UNA sola vez: Actions → «Crear clave de firma» → Run workflow.
+# Deja un archivo «firma-furgon-escolar» en Artifacts (dura 1 día) con dos valores que se pegan
+# como secretos del repositorio: ANDROID_KEYSTORE_BASE64 y ANDROID_KEYSTORE_PASSWORD.
+# Ese archivo es el ÚNICO respaldo de la clave: guárdalo en un lugar seguro y privado. Si se
+# pierde, las instalaciones existentes no se pueden actualizar (hay que desinstalar y reinstalar).
+#
+# Nada de la clave se imprime en el registro.
+
+name: Crear clave de firma
+
+on:
+  workflow_dispatch:
+    inputs:
+      reemplazar:
+        description: "Ya hay una clave guardada y quiero reemplazarla (las apps instaladas tendrán que desinstalarse)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  crear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      YA_HAY_CLAVE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Revisar que no exista ya una clave
+        if: env.YA_HAY_CLAVE == 'true' && !inputs.reemplazar
+        run: |
+          {
+            echo "## Ya hay una clave de firma guardada"
+            echo
+            echo "No se creó otra: cambiar la clave obliga a desinstalar la app en todos los teléfonos."
+            echo "Si de verdad quieres reemplazarla, vuelve a correr marcando «reemplazar»."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Ya existe ANDROID_KEYSTORE_BASE64. No se creó otra clave."
+          exit 1
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Crear la clave
+        run: |
+          umask 077
+          clave=$(openssl rand -base64 36 | tr -dc 'A-Za-z0-9' | head -c 32)
+          echo "::add-mask::$clave"
+          keytool -genkeypair -v -storetype PKCS12 -keystore firma.jks -alias furgon-escolar \
+            -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass "$clave" -keypass "$clave" \
+            -dname "CN=Furgon Escolar, O=Empresa de Servicios y Tecnologia Innova, C=CL" >/dev/null 2>&1
+          huella=$(keytool -list -v -keystore firma.jks -storepass "$clave" -alias furgon-escolar | grep -m1 "SHA1:" | awk '{print $2}')
+          {
+            echo "CLAVE DE FIRMA DE FURGÓN ESCOLAR — guarda este archivo en un lugar privado y seguro."
+            echo "Es el único respaldo: si se pierde, la app instalada no se puede actualizar."
+            echo
+            echo "1) En GitHub → Settings → Secrets and variables → Actions → New repository secret:"
+            echo
+            echo "   Nombre: ANDROID_KEYSTORE_PASSWORD"
+            echo "   Valor (una línea):"
+            echo "$clave"
+            echo
+            echo "   Nombre: ANDROID_KEYSTORE_BASE64"
+            echo "   Valor (todo el bloque de abajo, en una sola línea):"
+            base64 -w0 firma.jks
+            echo
+            echo
+            echo "2) Huella SHA-1 (para Google Maps y Firebase): $huella"
+          } > firma-furgon-escolar.txt
+          rm firma.jks
+          {
+            echo "## Clave de firma creada ✅"
+            echo
+            echo "Descarga **firma-furgon-escolar** al final de esta página (en *Artifacts*; dura 1 día), ábrelo"
+            echo "y copia los dos valores como secretos del repositorio. Guarda el archivo en un lugar seguro."
+            echo
+            echo "Huella SHA-1 de la nueva firma: \`$huella\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firma-furgon-escolar
+          path: firma-furgon-escolar.txt
+          retention-days: 1

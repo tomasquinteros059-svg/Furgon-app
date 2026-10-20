@@ -395,4 +395,9 @@ export const EN_MOVIL_FAMILIAS: Record<string, string> = {
   "¿Primera vez?": "First time?",
   "Google no devolvió la sesión. Intenta de nuevo.": "Google didn't return the session. Try again.",
   "No se pudo entrar con Google": "Couldn't sign in with Google",
+  "Revisa tu correo": "Check your email",
+  "Te enviamos un correo a {correo}. Ábrelo en este teléfono y toca el enlace para activar tu cuenta.": "We sent an email to {correo}. Open it on this phone and tap the link to activate your account.",
+  "Si no llega en unos minutos, revisa la carpeta de spam o «Promociones».": "If it doesn't arrive in a few minutes, check your spam or “Promotions” folder.",
+  "Ya lo activé: ingresar": "I've activated it: sign in",
+  "Falta confirmar tu correo: abre el correo que te enviamos y toca el enlace.": "You still need to confirm your email: open the email we sent you and tap the link.",
 };
