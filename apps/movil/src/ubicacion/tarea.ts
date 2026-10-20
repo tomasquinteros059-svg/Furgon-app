@@ -3,6 +3,7 @@
 // la app solo para entregar ubicaciones.
 import type { LocationObject } from "expo-location";
 import * as TaskManager from "expo-task-manager";
+import { GPS_TRANSISTOR, registrarTareaCerrada } from "./motor-transistor";
 import { procesarLecturas, TAREA_GPS } from "./seguimiento";
 
 TaskManager.defineTask<{ locations: LocationObject[] }>(TAREA_GPS, async ({ data, error }) => {
@@ -12,3 +13,6 @@ TaskManager.defineTask<{ locations: LocationObject[] }>(TAREA_GPS, async ({ data
   }
   if (data?.locations?.length) await procesarLecturas(data.locations);
 });
+
+// Con Transistorsoft: lecturas que llegan con la app cerrada (la tía la cerró a mitad de recorrido).
+if (GPS_TRANSISTOR) registrarTareaCerrada(procesarLecturas);

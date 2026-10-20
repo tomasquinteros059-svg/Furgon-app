@@ -1,4 +1,5 @@
 // GPS en segundo plano del conductor: solo existe mientras hay un recorrido activo.
+// Dos motores: Transistorsoft (si el APK trae la licencia) o expo-location (respaldo).
 import * as Crypto from "expo-crypto";
 import * as Location from "expo-location";
 import { Alert } from "react-native";
@@ -8,6 +9,7 @@ import { type PosicionGps, type ResultadoEnvio, vaciarCola } from "../lib/core";
 import { t } from "../lib/idioma";
 import { SUPABASE_URL, supabase } from "../lib/supabase";
 import { colaSqlite } from "./cola-sqlite";
+import { detenerTransistor, GPS_TRANSISTOR, iniciarTransistor, type Lectura, reconectarTransistor, transistorActivo } from "./motor-transistor";
 
 export const TAREA_GPS = "furgon-gps";
 const CLAVE_RECORRIDO = "recorrido_activo";
@@ -23,7 +25,14 @@ export function recorridoActivo(): string | null {
 
 /** ¿El GPS está enviando para este recorrido? (Tras reiniciar el teléfono la clave queda, pero el GPS no.) */
 export async function gpsActivoPara(recorridoId: string): Promise<boolean> {
-  return recorridoActivo() === recorridoId && await Location.hasStartedLocationUpdatesAsync(TAREA_GPS).catch(() => false);
+  if (recorridoActivo() !== recorridoId) return false;
+  if (GPS_TRANSISTOR) {
+    const activo = await transistorActivo();
+    // El GPS siguió con la app cerrada: se vuelven a conectar sus lecturas a esta pantalla.
+    if (activo) await reconectarTransistor(procesarLecturas).catch(() => {});
+    return activo;
+  }
+  return await Location.hasStartedLocationUpdatesAsync(TAREA_GPS).catch(() => false);
 }
 
 export type ResultadoInicio = { ok: true } | { ok: false; mensaje: string };
@@ -67,6 +76,10 @@ export async function iniciarSeguimiento(recorridoId: string): Promise<Resultado
 
   Storage.setItemSync(CLAVE_RECORRIDO, recorridoId);
   ultimaEncoladaMs = 0;
+  if (GPS_TRANSISTOR) {
+    await iniciarTransistor(procesarLecturas);
+    return { ok: true };
+  }
   if (await Location.hasStartedLocationUpdatesAsync(TAREA_GPS)) {
     await Location.stopLocationUpdatesAsync(TAREA_GPS);
   }
@@ -90,6 +103,14 @@ export async function iniciarSeguimiento(recorridoId: string): Promise<Resultado
 
 /** Detiene el GPS y envía lo que quede en la cola. Sin recorrido no hay rastreo. */
 export async function detenerSeguimiento(): Promise<void> {
+  await apagarGps();
+  await enviarCola().catch(() => {});
+  Storage.removeItemSync(CLAVE_RECORRIDO);
+}
+
+/** Apaga el motor de GPS que esté en uso. */
+async function apagarGps(): Promise<void> {
+  if (GPS_TRANSISTOR) return detenerTransistor();
   try {
     if (await Location.hasStartedLocationUpdatesAsync(TAREA_GPS)) {
       await Location.stopLocationUpdatesAsync(TAREA_GPS);
@@ -97,16 +118,14 @@ export async function detenerSeguimiento(): Promise<void> {
   } catch {
     // la tarea no estaba registrada
   }
-  await enviarCola().catch(() => {});
-  Storage.removeItemSync(CLAVE_RECORRIDO);
 }
 
 /** Llamado por la tarea en segundo plano con cada lote de lecturas del GPS. */
-export async function procesarLecturas(lecturas: LocationObject[]): Promise<void> {
+export async function procesarLecturas(lecturas: (LocationObject | Lectura)[]): Promise<void> {
   const recorridoId = recorridoActivo();
   if (!recorridoId) {
-    // El recorrido terminó pero la tarea siguió viva: se apaga.
-    await Location.stopLocationUpdatesAsync(TAREA_GPS).catch(() => {});
+    // El recorrido terminó pero el GPS siguió vivo: se apaga.
+    await apagarGps();
     return;
   }
   const nuevas: PosicionGps[] = [];
@@ -158,7 +177,7 @@ async function enviarLote(recorridoId: string, lote: PosicionGps[]): Promise<Res
       // El recorrido ya no está activo (lo cerró el conductor o el sistema): no se rastrea más.
       if (recorridoActivo() === recorridoId) {
         Storage.removeItemSync(CLAVE_RECORRIDO);
-        await Location.stopLocationUpdatesAsync(TAREA_GPS).catch(() => {});
+        await apagarGps();
       }
       return { ok: false, reintentable: false, error: `recorrido no activo (${resp.status})` };
     }

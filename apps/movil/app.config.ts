@@ -5,6 +5,9 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 const GOOGLE_MAPS_ANDROID = process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? "";
 const GOOGLE_MAPS_IOS = process.env.GOOGLE_MAPS_IOS_API_KEY ?? "";
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID;
+// Licencia de Transistorsoft Background Geolocation (secreto TRANSISTORSOFT_LICENSE). Va dentro del
+// APK, ligada al paquete cl.furgonapp.movil. Sin ella, el GPS usa expo-location.
+const LICENCIA_GPS = process.env.TRANSISTORSOFT_LICENSE?.trim() ?? "";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -56,6 +59,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "./plugins/registro-fallas", // muestra el error si la app se cae por algo nativo de Android
+    ["react-native-background-geolocation", { license: LICENCIA_GPS || undefined }],
     "expo-router",
     "expo-sqlite",
     [

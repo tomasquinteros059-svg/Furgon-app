@@ -63,6 +63,9 @@ repositorio (Settings → Secrets and variables → Actions):
   Firma: con `ANDROID_KEYSTORE_BASE64` y `ANDROID_KEYSTORE_PASSWORD` (los crea una vez «Crear clave de
   firma», `.github/workflows/clave-firma.yml`, alias `furgon-escolar`) se firma con la clave propia;
   sin ellos queda con la clave de prueba, que es pública (no publicar así).
+  GPS: con el secreto `TRANSISTORSOFT_LICENSE` (licencia v5 de Transistorsoft para `cl.furgonapp.movil`)
+  el recorrido usa `react-native-background-geolocation` (`src/ubicacion/motor-transistor.ts`, sigue con
+  la app cerrada); sin licencia usa expo-location. Ambos llenan la misma cola SQLite.
 
 El repositorio es público: los registros de Actions también. Nunca imprimir contraseñas ni claves.
 

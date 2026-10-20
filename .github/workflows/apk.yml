@@ -31,6 +31,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      # Licencia del GPS de Transistorsoft (opcional; sin ella el GPS usa expo-location).
+      TRANSISTORSOFT_LICENSE: ${{ secrets.TRANSISTORSOFT_LICENSE }}
       EXPO_NO_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@v4
@@ -102,6 +104,15 @@ jobs:
           fi
           echo "GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE/apps/movil/google-services.json" >> "$GITHUB_ENV"
           echo "Con Firebase."
+
+      - name: GPS (Transistorsoft)
+        run: |
+          if [ -n "$TRANSISTORSOFT_LICENSE" ]; then
+            echo "EXPO_PUBLIC_GPS_TRANSISTOR=1" >> "$GITHUB_ENV"
+            echo "GPS con Transistorsoft (licencia cargada)."
+          else
+            echo "::warning::Sin TRANSISTORSOFT_LICENSE: el GPS usa expo-location."
+          fi
 
       - name: Generar el proyecto Android
         working-directory: apps/movil
