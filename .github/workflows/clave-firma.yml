@@ -11,6 +11,10 @@
 name: Crear clave de firma
 
 on:
+  # También con un commit cuyo mensaje contenga [clave-firma] (el botón «Run workflow» solo aparece
+  # para los workflows que están en la rama principal).
+  push:
+    branches: ["**"]
   workflow_dispatch:
     inputs:
       reemplazar:
@@ -23,6 +27,7 @@ permissions:
 
 jobs:
   crear:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[clave-firma]')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
